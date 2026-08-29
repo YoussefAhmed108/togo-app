@@ -100,7 +100,7 @@ CREATE TABLE place_tags (
 CREATE TABLE spaces (
   id         BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   name       VARCHAR(255)    NOT NULL,
-  icon       VARCHAR(10)     NOT NULL DEFAULT '🌍',
+  icon       VARCHAR(32)     NOT NULL DEFAULT '🌍',
   banner_key VARCHAR(512)    NULL,  -- R2 / S3 object key
   owner_id   BIGINT UNSIGNED NOT NULL,
   created_at TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
