@@ -1,0 +1,25 @@
+{
+  "migIndex": 1,
+  "data": [
+    {
+      "path": "src/assets/fonts/Caprasimo-Regular.ttf",
+      "sha1": "6f100ef079735948063d9f56161c4d285e716271"
+    },
+    {
+      "path": "src/assets/fonts/Figtree-Bold.ttf",
+      "sha1": "b9a14d612fe75e5a760dbbc387dce3d2b97df5b2"
+    },
+    {
+      "path": "src/assets/fonts/Figtree-Medium.ttf",
+      "sha1": "2bf3ecc0d70eac5a4c3bb960ad5bf29b17681d6b"
+    },
+    {
+      "path": "src/assets/fonts/Figtree-Regular.ttf",
+      "sha1": "c63f9140747d5d98a1825dca595434bde207a376"
+    },
+    {
+      "path": "src/assets/fonts/Figtree-SemiBold.ttf",
+      "sha1": "214ba3ef2078a3d4bd634cd12ee9058461463110"
+    }
+  ]
+}

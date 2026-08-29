@@ -1,0 +1,647 @@
+<title>Who Pays for the Pin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+  :root {
+    --ground:      #F4F4F8;
+    --surface:     #FFFFFF;
+    --surface-alt: #EDEDF3;
+    --ink:         #0F0E17;
+    --ink-soft:    #45414F;
+    --muted:       #6E6A78;
+    --rule:        #DCDAE4;
+    --accent:      #FF6B35;
+    --accent-soft: #FFF0E9;
+    --counter:     #3A4FA0;
+    --counter-soft:#ECEEF8;
+    --good:        #1E7A5A;
+    --warn:        #A8621B;
+    --bad:         #A32C32;
+
+    --measure: 68ch;
+    --step-0: 1.0rem;
+    --step-1: 1.1875rem;
+    --step-2: 1.5rem;
+    --step-3: 2rem;
+    --step-4: 2.75rem;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:      #131218;
+      --surface:     #1C1A23;
+      --surface-alt: #24222D;
+      --ink:         #F3F1F7;
+      --ink-soft:    #C4C0CE;
+      --muted:       #918C9E;
+      --rule:        #332F3D;
+      --accent:      #FF8354;
+      --accent-soft: #3A2118;
+      --counter:     #8E9EE0;
+      --counter-soft:#1E2138;
+      --good:        #4FBF95;
+      --warn:        #D89A4E;
+      --bad:         #E2727A;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:      #131218;
+    --surface:     #1C1A23;
+    --surface-alt: #24222D;
+    --ink:         #F3F1F7;
+    --ink-soft:    #C4C0CE;
+    --muted:       #918C9E;
+    --rule:        #332F3D;
+    --accent:      #FF8354;
+    --accent-soft: #3A2118;
+    --counter:     #8E9EE0;
+    --counter-soft:#1E2138;
+    --good:        #4FBF95;
+    --warn:        #D89A4E;
+    --bad:         #E2727A;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "Source Serif 4", Georgia, serif;
+    font-size: var(--step-1);
+    line-height: 1.6;
+    margin: 0;
+    padding: clamp(1.5rem, 4vw, 4rem) clamp(1rem, 5vw, 2rem) 6rem;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 78rem;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 3.5rem;
+  }
+
+  .col {
+    max-width: var(--measure);
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+  }
+
+  h1, h2, h3, .eyebrow, .fig, th, .pill, .btn {
+    font-family: "Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
+  }
+
+  h1 {
+    font-size: clamp(2.25rem, 6vw, var(--step-4));
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.02;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  h2 {
+    font-size: var(--step-2);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  h3 {
+    font-size: var(--step-1);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+
+  p { margin: 0; }
+  strong { font-weight: 600; }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0;
+  }
+
+  .lede {
+    font-size: var(--step-2);
+    line-height: 1.4;
+    color: var(--ink-soft);
+    text-wrap: pretty;
+  }
+
+  /* ---- header ---- */
+
+  header { display: flex; flex-direction: column; gap: 1.25rem; }
+
+  .header-rule {
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent) 0%, var(--accent) 38%, var(--rule) 38%);
+    border-radius: 2px;
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.5rem;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ---- sections ---- */
+
+  section { display: flex; flex-direction: column; gap: 1.5rem; }
+
+  .section-head { display: flex; flex-direction: column; gap: 0.5rem; max-width: var(--measure); }
+
+  /* ---- data blocks ---- */
+
+  .block {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .block-title {
+    padding: 0.85rem 1.15rem;
+    border-bottom: 1px solid var(--rule);
+    background: var(--surface-alt);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+
+  .block-title .note {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    text-transform: none;
+  }
+
+  .scroll { overflow-x: auto; }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 0.9rem;
+    line-height: 1.45;
+  }
+
+  th {
+    text-align: left;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 0.7rem 1.15rem;
+    border-bottom: 1px solid var(--rule);
+    white-space: nowrap;
+    vertical-align: bottom;
+  }
+
+  td {
+    padding: 0.8rem 1.15rem;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+    color: var(--ink-soft);
+  }
+
+  tr:last-child td { border-bottom: none; }
+  td:first-child { color: var(--ink); font-weight: 600; }
+
+  .num {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+    font-size: 0.86rem;
+    white-space: nowrap;
+    color: var(--ink);
+  }
+
+  .free { color: var(--good); font-weight: 600; }
+  .full { color: var(--bad); }
+
+  /* ---- pills ---- */
+
+  .pill {
+    display: inline-block;
+    font-size: 0.66rem;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    padding: 0.16rem 0.5rem;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+  .pill-now   { background: var(--accent-soft);  color: var(--accent); }
+  .pill-next  { background: var(--counter-soft); color: var(--counter); }
+  .pill-later { background: var(--surface-alt);  color: var(--muted); }
+  .pill-no    { background: var(--surface-alt);  color: var(--muted); text-decoration: line-through; }
+
+  /* ---- figure strip ---- */
+
+  .figs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .figs > div {
+    background: var(--surface);
+    padding: 1.15rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .fig {
+    font-size: 1.9rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .fig-label {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.66rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .fig-sub { font-size: 0.85rem; color: var(--muted); line-height: 1.35; }
+
+  /* ---- phases ---- */
+
+  .phases { display: flex; flex-direction: column; gap: 1px; background: var(--rule);
+            border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; }
+
+  .phase {
+    background: var(--surface);
+    padding: 1.25rem;
+    display: grid;
+    grid-template-columns: 3.5rem 1fr;
+    gap: 0 1.25rem;
+    align-items: start;
+  }
+
+  .phase-n {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--accent);
+    padding-top: 0.15rem;
+    letter-spacing: 0.04em;
+  }
+
+  .phase-body { display: flex; flex-direction: column; gap: 0.45rem; }
+  .phase-gate {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+  .phase p { font-size: 0.95rem; line-height: 1.5; color: var(--ink-soft); }
+
+  /* ---- callout ---- */
+
+  .callout {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-soft);
+    padding: 1.1rem 1.25rem;
+    border-radius: 0 8px 8px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-width: var(--measure);
+  }
+  .callout p { font-size: 0.98rem; line-height: 1.5; }
+
+  ul { margin: 0; padding-left: 1.15rem; display: flex; flex-direction: column; gap: 0.5rem; }
+  li { color: var(--ink-soft); }
+  li::marker { color: var(--accent); }
+
+  footer {
+    border-top: 1px solid var(--rule);
+    padding-top: 1.25rem;
+    font-size: 0.85rem;
+    color: var(--muted);
+    max-width: var(--measure);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  code {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.85em;
+    background: var(--surface-alt);
+    padding: 0.1em 0.35em;
+    border-radius: 3px;
+  }
+
+  @media (max-width: 34rem) {
+    .phase { grid-template-columns: 1fr; gap: 0.5rem; }
+  }
+</style>
+
+<div class="page">
+
+  <header>
+    <div class="header-rule"></div>
+    <p class="eyebrow">Business model options · Places &amp; Memories</p>
+    <h1>Who Pays for the Pin</h1>
+    <p class="lede">Every TikTok share costs real money to turn into a place. This is what it costs, why the obvious answer doesn't work in Cairo, and the four ways someone else can pay for it.</p>
+    <div class="meta">
+      <span>Cairo first, global next</span>
+      <span>Costs measured 29 Aug 2026</span>
+      <span>Decision doc</span>
+    </div>
+  </header>
+
+  <!-- ================= UNIT ECONOMICS ================= -->
+  <section>
+    <div class="section-head">
+      <p class="eyebrow">The constraint</p>
+      <h2>A share costs 4.2 cents. That was the whole problem.</h2>
+      <p>Measured on a live Cairo TikTok, not estimated. Google Places is 77% of it — Claude is the cheap half. Caching now removes most of that, which is what makes a free consumer product survivable at all.</p>
+    </div>
+
+    <div class="figs">
+      <div>
+        <span class="fig-label">Cold extraction</span>
+        <span class="fig">$0.0417</span>
+        <span class="fig-sub">$0.032 Google + $0.0097 Claude · 20.4s</span>
+      </div>
+      <div>
+        <span class="fig-label">Same video again</span>
+        <span class="fig free">$0.0000</span>
+        <span class="fig-sub">URL cache · 1ms</span>
+      </div>
+      <div>
+        <span class="fig-label">Same venue, new video</span>
+        <span class="fig">$0.0097</span>
+        <span class="fig-sub">Query cache skips Google · 10.2s</span>
+      </div>
+      <div>
+        <span class="fig-label">Mature blended target</span>
+        <span class="fig">~$0.009</span>
+        <span class="fig-sub">Projected, once a city's venues are warm</span>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-title">
+        <h3>Monthly cost at 10,000 active users</h3>
+        <span class="note">assumes 5 shares/user/month = 50,000 extractions</span>
+      </div>
+      <div class="scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Scenario</th>
+              <th>URL hits</th>
+              <th>Query hits</th>
+              <th>Paid in full</th>
+              <th>Monthly cost</th>
+              <th>Per share</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>No caching (before this week)</td>
+              <td class="num">0%</td>
+              <td class="num">0%</td>
+              <td class="num">50,000</td>
+              <td class="num full">$2,085</td>
+              <td class="num">$0.0417</td>
+            </tr>
+            <tr>
+              <td>Early — one city, thin coverage</td>
+              <td class="num">35%</td>
+              <td class="num">40%</td>
+              <td class="num">19,500</td>
+              <td class="num">$939</td>
+              <td class="num">$0.0188</td>
+            </tr>
+            <tr>
+              <td>Mature — venues warm, links circulating</td>
+              <td class="num">60%</td>
+              <td class="num">60%</td>
+              <td class="num">8,000</td>
+              <td class="num">$450</td>
+              <td class="num">$0.0090</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="callout">
+      <p><strong>The cache gets cheaper as you grow — that's the important part.</strong> A city has a bounded set of venues worth filming, and TikTok concentrates hard on whichever are having a moment. The fiftieth video about the same New Cairo restaurant costs one cent, not four. Cost per user falls with density instead of rising with scale.</p>
+    </div>
+
+    <p class="col">Two caveats on the table above. The first row is measured; the second and third are projections with the hit rates stated — real numbers will arrive in the <code>extract/cache</code> logs within a day of traffic. And Google's Places free tier (roughly 5,000 Pro-SKU calls per month, worth confirming against current pricing) covers the first few thousand extractions outright, so early bills will run under even the optimistic row.</p>
+  </section>
+
+  <!-- ================= WHY NOT FREEMIUM ================= -->
+  <section>
+    <div class="section-head">
+      <p class="eyebrow">The rejected default</p>
+      <h2>Consumer subscriptions don't work here — and it isn't just willingness to pay</h2>
+    </div>
+    <div class="col">
+      <p>The instinct is a $4.99 Pro tier. In Egypt that fails on three independent counts, any one of which would be enough:</p>
+      <ul>
+        <li><strong>Price anchoring.</strong> $4.99 is roughly EGP 240/month against local media subscriptions in the EGP 60–100 range. A place-keeping app is not priced above a music service.</li>
+        <li><strong>Billing rails.</strong> Recurring card billing has thin penetration. The country runs on InstaPay, Fawry and mobile wallets — one-off rails, not subscription rails. This is infrastructure, not preference, and no amount of product work fixes it.</li>
+        <li><strong>Category.</strong> Social utilities are the hardest possible sell for consumer payment anywhere. Conversion would sit under 1%, on a base that isn't large yet.</li>
+      </ul>
+      <p>So the model has to put the bill somewhere other than the person sharing the TikTok. Fortunately Cairo F&amp;B already spends heavily on exactly the audience this app collects.</p>
+    </div>
+  </section>
+
+  <!-- ================= OPTIONS ================= -->
+  <section>
+    <div class="section-head">
+      <p class="eyebrow">The options</p>
+      <h2>Seven ways to fund it, ranked by fit</h2>
+      <p>All revenue below is supply-side except where noted. The user never pays.</p>
+    </div>
+
+    <div class="block">
+      <div class="block-title">
+        <h3>Option comparison</h3>
+        <span class="note">verdict reflects Cairo at launch, not the ceiling</span>
+      </div>
+      <div class="scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Option</th>
+              <th>Who pays</th>
+              <th>Needs</th>
+              <th>Ceiling</th>
+              <th>Verdict</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Claimed venue dashboard<br><span class="fig-sub">"312 people saved you this month"</span></td>
+              <td>Restaurants, cafés</td>
+              <td>~2k users in one city; a salesperson</td>
+              <td>Medium, very sticky</td>
+              <td><span class="pill pill-now">Build toward</span></td>
+            </tr>
+            <tr>
+              <td>Promoted recommendations<br><span class="fig-sub">paid slot in the existing reason-stripe row</span></td>
+              <td>Venues, local chains</td>
+              <td>Same density; ad labelling</td>
+              <td>Medium–high</td>
+              <td><span class="pill pill-now">Build toward</span></td>
+            </tr>
+            <tr>
+              <td>Creator-curated Spaces<br><span class="fig-sub">sponsored maps from the food creators you already ingest</span></td>
+              <td>Brands, via creators</td>
+              <td>Creator relationships</td>
+              <td>Medium</td>
+              <td><span class="pill pill-next">Revenue + growth</span></td>
+            </tr>
+            <tr>
+              <td>Affiliate / CPA<br><span class="fig-sub">delivery, reservations, travel booking</span></td>
+              <td>Talabat, elmenus, booking platforms</td>
+              <td>Integration only — no sales team</td>
+              <td>Low per user, scales free</td>
+              <td><span class="pill pill-next">Only headcount-free option</span></td>
+            </tr>
+            <tr>
+              <td>Aggregate trend data<br><span class="fig-sub">what's rising on TikTok, by neighbourhood</span></td>
+              <td>Chains, F&amp;B investors</td>
+              <td>Real volume; privacy discipline</td>
+              <td>High, slow</td>
+              <td><span class="pill pill-later">Later, if volume comes</span></td>
+            </tr>
+            <tr>
+              <td>One-off micro-unlock<br><span class="fig-sub">EGP 49 lifetime, Fawry / InstaPay</span></td>
+              <td>Power users</td>
+              <td>Local payment integration</td>
+              <td>Low</td>
+              <td><span class="pill pill-later">Test, don't plan on it</span></td>
+            </tr>
+            <tr>
+              <td>Display advertising</td>
+              <td>Ad networks</td>
+              <td>Large DAU</td>
+              <td>Negligible at this scale</td>
+              <td><span class="pill pill-no">No</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="col">
+      <p><strong>Why ads are out.</strong> Egyptian display CPMs sit low single digits. At 50,000 monthly sessions that is tens of dollars against a several-hundred-dollar API bill — it doesn't cover its own integration, and it degrades the one screen you want people trusting.</p>
+      <p><strong>The uncomfortable truth about the top two.</strong> Both need someone walking into cafés with a laptop. They are the highest-value options and they are a sales business, not a self-serve one. If nobody on the team will do that, affiliate is the only line above that earns anything without headcount — plan accordingly rather than assuming the dashboard sells itself.</p>
+    </div>
+  </section>
+
+  <!-- ================= SEQUENCE ================= -->
+  <section>
+    <div class="section-head">
+      <p class="eyebrow">Sequence</p>
+      <h2>Density first, revenue second</h2>
+      <p>These are ordered because each phase is gated on the one before it. Supply-side revenue is unsellable without users, so the early work is cost control and growth, funded out of pocket.</p>
+    </div>
+
+    <div class="phases">
+      <div class="phase">
+        <div class="phase-n">NOW</div>
+        <div class="phase-body">
+          <h3>Survive on zero revenue</h3>
+          <p class="phase-gate">Gate: none — done this week</p>
+          <p>Caching shipped: cold shares still cost 4.2¢, repeats cost nothing, and the same venue from a new video costs a penny. Per-user import caps (10/hour, 40/day) bound the worst case at about $1.64/user/day. Watch the <code>extract/cache</code> hit rates and replace the projections above with real numbers.</p>
+        </div>
+      </div>
+      <div class="phase">
+        <div class="phase-n">NEXT</div>
+        <div class="phase-body">
+          <h3>Wire affiliate links into recommendations</h3>
+          <p class="phase-gate">Gate: any user base at all</p>
+          <p>Earns from free users, needs no sales team, and fits the existing recommendation row without a redesign. Won't cover costs alone — it buys runway and proves venues convert, which is the argument you'll make in the next phase.</p>
+        </div>
+      </div>
+      <div class="phase">
+        <div class="phase-n">THEN</div>
+        <div class="phase-body">
+          <h3>Claimed venue profiles, sold by hand</h3>
+          <p class="phase-gate">Gate: ~2,000 active users concentrated in one city</p>
+          <p>Start with the dashboard, not the ad slot. Venues pay for the numbers first; once they're logging in to check saves, promoted placement is an upsell to an existing customer instead of a cold pitch. Price in EGP, monthly, cancel anytime.</p>
+        </div>
+      </div>
+      <div class="phase">
+        <div class="phase-n">LATER</div>
+        <div class="phase-body">
+          <h3>Creator Spaces as the growth engine</h3>
+          <p class="phase-gate">Gate: a working venue-side product to sell against</p>
+          <p>The creators whose videos you already ingest bring their own audience. A sponsored Space is revenue and acquisition in one motion — the only line in this doc that does both.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= GLOBAL ================= -->
+  <section>
+    <div class="section-head">
+      <p class="eyebrow">Expansion</p>
+      <h2>What changes outside Egypt</h2>
+    </div>
+    <div class="col">
+      <p>The extraction pipeline is already market-neutral: language detection returns any ISO code rather than defaulting to Arabic, cache keys are built from whatever the model read, and each city warms its own working set independently. Nothing needs rewriting to open a second market.</p>
+      <p>The <em>model</em> is what changes, and it inverts. In the Gulf, Europe or North America the consumer subscription this doc rejects becomes the obvious first line — card billing works, price anchors are 5–10× higher, and a $4.99 tier at 2% conversion beats hand-selling cafés. The supply-side plan is the right answer for Cairo specifically, not a universal one.</p>
+      <p>Two things to protect while expanding: keep cache keys market-scoped so a thin new city can't dilute a warm one, and don't let venue-side commitments in Cairo constrain what the product does elsewhere.</p>
+    </div>
+  </section>
+
+  <!-- ================= RISKS ================= -->
+  <section>
+    <div class="section-head">
+      <p class="eyebrow">What would break this</p>
+      <h2>Four risks worth naming</h2>
+    </div>
+    <div class="col">
+      <ul>
+        <li><strong>TikTok closes the door.</strong> Extraction depends on yt-dlp reaching the video; it already retried four times on the test link. If that path closes, the caption-only fallback is materially worse at picking the right branch — and the whole differentiator narrows.</li>
+        <li><strong>Density never arrives.</strong> Every supply-side option is gated on concentration in one city. Users spread thinly across Egypt are worth far less than the same number inside Cairo.</li>
+        <li><strong>Google's pricing or free tier moves.</strong> It's 77% of an uncached share. The query cache blunts this, but a Places price rise still lands directly on the cost line.</li>
+        <li><strong>Promoted placement erodes trust.</strong> Recommendations are the surface users are least suspicious of. Label paid slots honestly and cap their share of the row, or you spend the asset you're trying to sell.</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    <p>Cost figures measured 29 August 2026 against a live Cairo TikTok (Sushimi by K), Claude Haiku 4.5 at $1/$5 per MTok and Google Places Text Search Pro at list price. Cache hit rates in the projection rows are assumptions, not measurements.</p>
+    <p>Market claims about Egyptian payment rails and price anchoring are informed judgement, not researched figures — worth validating before anyone commits headcount to the sales-led phases.</p>
+  </footer>
+
+</div>

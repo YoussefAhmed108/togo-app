@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: app-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: SERVER_ADDR
+        value: ":8080"
+      - key: MYSQL_PORT
+        value: "4000"
+      - key: MYSQL_TLS
+        value: "true"
+      # Set in the Render dashboard (marked secret), NOT here:
+      #   MYSQL_HOST, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE
+      #   JWT_SECRET, R2_*, GOOGLE_MAPS_API_KEY, ANTHROPIC_API_KEY

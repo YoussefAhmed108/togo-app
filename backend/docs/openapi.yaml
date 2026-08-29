@@ -1,0 +1,1182 @@
+openapi: "3.0.3"
+info:
+  title: To-Go Places API
+  version: "1.0.0"
+  description: |
+    Backend API for the To-Go Places mobile app.
+
+    **Authentication flow:**
+    1. `POST /auth/register` → receive `access_token` + `refresh_token`
+    2. `POST /auth/profile-setup` (with access token) → complete onboarding, receive new tokens
+    3. Use `Authorization: Bearer <access_token>` on all protected endpoints
+    4. When the access token expires, call `POST /auth/refresh` to rotate tokens
+
+    **Image upload flow:**
+    1. `POST /uploads/presign` → receive `presign_url` + `key` + `cdn_url`
+    2. Client `PUT`s the image bytes directly to `presign_url` (no backend involved)
+    3. Pass the `key` to the relevant create/update endpoint
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local development
+
+tags:
+  - name: Auth
+    description: Registration, login, token refresh, profile setup
+  - name: Users
+    description: Current user profile
+  - name: Places
+    description: User-owned places with tags and photo memories
+  - name: Spaces
+    description: Shared groups with members and place lists
+  - name: Uploads
+    description: Presigned URL generation for direct-to-R2 uploads
+
+# ──────────────────────────────────────────────────────────────
+# Security
+# ──────────────────────────────────────────────────────────────
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  # ──────────────────────────────────────────────────────────────
+  # Reusable schemas
+  # ──────────────────────────────────────────────────────────────
+  schemas:
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "invalid credentials"
+
+    TokenPair:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            access_token:
+              type: string
+              example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            refresh_token:
+              type: string
+              example: "dGhpcyBpcyBhIHNhbXBsZSByZWZyZXNoIHRva2Vu"
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        email:
+          type: string
+          format: email
+          example: "alice@example.com"
+        name:
+          type: string
+          nullable: true
+          example: "Alice"
+        username:
+          type: string
+          nullable: true
+          example: "alice_wanders"
+        avatar_url:
+          type: string
+          nullable: true
+          example: "https://cdn.example.com/avatar/1/abc123"
+
+    Place:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 42
+        owner_id:
+          type: integer
+          format: int64
+          example: 1
+        name:
+          type: string
+          example: "Blue Bottle Coffee"
+        address:
+          type: string
+          nullable: true
+          example: "300 Webster St, Oakland, CA"
+        lat:
+          type: number
+          format: double
+          example: 37.8044
+        lng:
+          type: number
+          format: double
+          example: -122.2712
+        tags:
+          type: array
+          items:
+            type: string
+          example: ["coffee", "cozy"]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Memory:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 7
+        place_id:
+          type: integer
+          format: int64
+          example: 42
+        image_url:
+          type: string
+          example: "https://cdn.example.com/memory/1/uuid"
+        caption:
+          type: string
+          nullable: true
+          example: "Best latte ever"
+        created_at:
+          type: string
+          format: date-time
+
+    Space:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 5
+        name:
+          type: string
+          example: "Road Trip 2025"
+        owner_id:
+          type: integer
+          format: int64
+          example: 1
+        banner_url:
+          type: string
+          nullable: true
+          example: "https://cdn.example.com/space_banner/1/uuid"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    SpaceMember:
+      type: object
+      properties:
+        user_id:
+          type: integer
+          format: int64
+          example: 3
+        role:
+          type: string
+          enum: [owner, member]
+          example: "member"
+        joined_at:
+          type: string
+          format: date-time
+
+    PresignResult:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            presign_url:
+              type: string
+              description: PUT this URL with the raw image bytes (no auth header needed)
+              example: "https://abc.r2.cloudflarestorage.com/bucket/memory/1/uuid?X-Amz-Signature=..."
+            cdn_url:
+              type: string
+              description: Public CDN URL — store this key in the backend after upload
+              example: "https://cdn.example.com/memory/1/uuid"
+            key:
+              type: string
+              description: Object key to pass to the backend endpoint that saves the image
+              example: "memory/1/550e8400-e29b-41d4-a716-446655440000"
+
+# ──────────────────────────────────────────────────────────────
+# Paths
+# ──────────────────────────────────────────────────────────────
+paths:
+
+  # ── Auth ────────────────────────────────────────────────────
+
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new account
+      description: |
+        Creates a user with email + password. The returned access token has
+        `profile_complete: false` — the client must call `/auth/profile-setup`
+        before accessing any other protected endpoint.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "alice@example.com"
+                password:
+                  type: string
+                  minLength: 8
+                  example: "supersecret"
+      responses:
+        "201":
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenPair"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Log in with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "alice@example.com"
+                password:
+                  type: string
+                  example: "supersecret"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenPair"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Rotate refresh token
+      description: |
+        Exchanges a valid refresh token for a new token pair. The old refresh
+        token is immediately invalidated (rotation). Only one refresh token is
+        active per user at a time.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token:
+                  type: string
+                  example: "dGhpcyBpcyBhIHNhbXBsZSByZWZyZXNoIHRva2Vu"
+      responses:
+        "200":
+          description: New token pair
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenPair"
+        "401":
+          description: Invalid or expired refresh token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /auth/profile-setup:
+    post:
+      tags: [Auth]
+      summary: Complete profile onboarding
+      description: |
+        Sets the user's display name and unique username. Must be called once
+        after registration before any other protected endpoint is accessible.
+        Returns a new token pair where `profile_complete` is `true`.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, username]
+              properties:
+                name:
+                  type: string
+                  example: "Alice Wanderer"
+                username:
+                  type: string
+                  pattern: '^[a-zA-Z0-9_]{3,20}$'
+                  example: "alice_wanders"
+      responses:
+        "200":
+          description: Profile saved, new tokens issued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenPair"
+        "400":
+          description: Invalid username format
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Missing or invalid access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Username already taken
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  # ── Users ────────────────────────────────────────────────────
+
+  /users/me:
+    get:
+      tags: [Users]
+      summary: Get current user profile
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    put:
+      tags: [Users]
+      summary: Update current user profile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  example: "Alice Wanderer"
+                avatar_key:
+                  type: string
+                  nullable: true
+                  description: R2 object key from `/uploads/presign`
+                  example: "avatar/1/550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  # ── Places ───────────────────────────────────────────────────
+
+  /places:
+    get:
+      tags: [Places]
+      summary: List all places owned by the current user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of places
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Place"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    post:
+      tags: [Places]
+      summary: Create a new place
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, lat, lng]
+              properties:
+                name:
+                  type: string
+                  example: "Blue Bottle Coffee"
+                address:
+                  type: string
+                  nullable: true
+                  example: "300 Webster St, Oakland, CA"
+                lat:
+                  type: number
+                  format: double
+                  example: 37.8044
+                lng:
+                  type: number
+                  format: double
+                  example: -122.2712
+                tags:
+                  type: array
+                  items:
+                    type: string
+                  example: ["coffee", "cozy"]
+      responses:
+        "201":
+          description: Place created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Place"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /places/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+
+    get:
+      tags: [Places]
+      summary: Get a single place (includes memories)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Place with memories
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    allOf:
+                      - $ref: "#/components/schemas/Place"
+                      - type: object
+                        properties:
+                          memories:
+                            type: array
+                            items:
+                              $ref: "#/components/schemas/Memory"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    put:
+      tags: [Places]
+      summary: Update a place
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, lat, lng]
+              properties:
+                name:
+                  type: string
+                  example: "Blue Bottle Coffee"
+                address:
+                  type: string
+                  nullable: true
+                lat:
+                  type: number
+                  format: double
+                lng:
+                  type: number
+                  format: double
+      responses:
+        "200":
+          description: Updated place
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Place"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      tags: [Places]
+      summary: Delete a place
+      description: Cascades to tags, memories, and any space_places entries.
+      security:
+        - bearerAuth: []
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /places/{id}/tags:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+
+    post:
+      tags: [Places]
+      summary: Add tags to a place
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tags]
+              properties:
+                tags:
+                  type: array
+                  items:
+                    type: string
+                  example: ["coffee", "dog-friendly"]
+      responses:
+        "200":
+          description: Updated tag list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      tags:
+                        type: array
+                        items:
+                          type: string
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+    delete:
+      tags: [Places]
+      summary: Remove a tag from a place
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tag]
+              properties:
+                tag:
+                  type: string
+                  example: "coffee"
+      responses:
+        "200":
+          description: Updated tag list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      tags:
+                        type: array
+                        items:
+                          type: string
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /places/{id}/memories:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+
+    get:
+      tags: [Places]
+      summary: List memories for a place
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of memories
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Memory"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+    post:
+      tags: [Places]
+      summary: Add a memory (photo) to a place
+      description: |
+        The image must already be uploaded to R2 via `/uploads/presign` before
+        calling this endpoint. Pass the `key` returned by the presign endpoint.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [image_key]
+              properties:
+                image_key:
+                  type: string
+                  description: R2 object key from `/uploads/presign`
+                  example: "memory/1/550e8400-e29b-41d4-a716-446655440000"
+                caption:
+                  type: string
+                  nullable: true
+                  example: "Best latte I've ever had"
+      responses:
+        "201":
+          description: Memory created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Memory"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /places/{id}/memories/{memoryId}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      - name: memoryId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+
+    delete:
+      tags: [Places]
+      summary: Delete a memory
+      security:
+        - bearerAuth: []
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  # ── Spaces ───────────────────────────────────────────────────
+
+  /spaces:
+    get:
+      tags: [Spaces]
+      summary: List spaces the current user belongs to
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of spaces
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Space"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    post:
+      tags: [Spaces]
+      summary: Create a new space
+      description: The creator is automatically added as the space owner.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  example: "Road Trip 2025"
+      responses:
+        "201":
+          description: Space created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Space"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /spaces/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+
+    get:
+      tags: [Spaces]
+      summary: Get a space
+      description: Requires the caller to be a member.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Space
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Space"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    put:
+      tags: [Spaces]
+      summary: Update a space
+      description: Requires owner role.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  example: "Road Trip 2025"
+                banner_key:
+                  type: string
+                  nullable: true
+                  description: R2 object key from `/uploads/presign`
+                  example: "space_banner/1/550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        "200":
+          description: Updated space
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Space"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+    delete:
+      tags: [Spaces]
+      summary: Delete a space
+      description: Requires owner role. Cascades to members and place links.
+      security:
+        - bearerAuth: []
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /spaces/{id}/members:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+
+    post:
+      tags: [Spaces]
+      summary: Add a member to a space
+      description: Requires owner role.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id]
+              properties:
+                user_id:
+                  type: integer
+                  format: int64
+                  example: 3
+      responses:
+        "200":
+          description: Updated member list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SpaceMember"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /spaces/{id}/members/{userId}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+
+    delete:
+      tags: [Spaces]
+      summary: Remove a member from a space
+      description: |
+        Requires owner role. The owner cannot remove themselves — delete the
+        space instead.
+      security:
+        - bearerAuth: []
+      responses:
+        "204":
+          description: Removed
+        "400":
+          description: Owner cannot remove themselves
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /spaces/{id}/places:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+
+    get:
+      tags: [Spaces]
+      summary: List places in a space
+      description: Requires member role.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of places
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Place"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+    post:
+      tags: [Spaces]
+      summary: Add a place to a space
+      description: |
+        The caller must own the place being added AND be a member of the space.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [place_id]
+              properties:
+                place_id:
+                  type: integer
+                  format: int64
+                  example: 42
+      responses:
+        "200":
+          description: Updated place list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Place"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /spaces/{id}/places/{placeId}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      - name: placeId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+
+    delete:
+      tags: [Spaces]
+      summary: Remove a place from a space
+      description: Requires space owner role OR ownership of the place.
+      security:
+        - bearerAuth: []
+      responses:
+        "204":
+          description: Removed
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  # ── Uploads ──────────────────────────────────────────────────
+
+  /uploads/presign:
+    post:
+      tags: [Uploads]
+      summary: Get a presigned URL for a direct-to-R2 upload
+      description: |
+        Returns a short-lived presigned `PUT` URL. The client uploads the raw
+        image bytes directly to that URL (no `Authorization` header needed for
+        the R2 PUT). After a successful upload, pass the returned `key` to the
+        relevant endpoint (`image_key` for memories, `banner_key` for spaces,
+        `avatar_key` for user profile).
+
+        Valid `context` values:
+        - `memory` — photo attached to a place
+        - `space_banner` — banner image for a space
+        - `avatar` — user avatar
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [context]
+              properties:
+                context:
+                  type: string
+                  enum: [memory, space_banner, avatar]
+                  example: "memory"
+      responses:
+        "200":
+          description: Presigned URL ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PresignResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+# ──────────────────────────────────────────────────────────────
+# Shared response references
+# ──────────────────────────────────────────────────────────────
+  responses:
+    BadRequest:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: Missing or invalid Bearer token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: Authenticated but not authorized
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"

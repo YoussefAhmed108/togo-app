@@ -1,0 +1,12 @@
+node_modules/
+.env
+.env.local
+.env.*.local
+src/config/maps.generated.ts
+ios/frontend/GoogleMapsAPIKey.generated.h
+ios/Pods/
+android/.gradle/
+android/app/build/
+*.keystore
+!debug.keystore
+ios/build/
