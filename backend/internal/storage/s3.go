@@ -31,14 +31,15 @@ import (
 // Call IsLocalMode to know which mode is active.
 type Client struct {
 	// R2 / S3
+	api        *s3.Client // kept for HeadBucket in Ping; presigning never hits the network
 	presigner  *s3.PresignClient
 	bucket     string
 	publicBase string // e.g. "https://cdn.yourdomain.com"
 
 	// Local disk
 	localMode bool
-	localDir  string   // absolute or relative path to store files
-	localBase string   // base URL accessible from the device, e.g. "http://192.168.1.5:8080"
+	localDir  string // absolute or relative path to store files
+	localBase string // base URL accessible from the device, e.g. "http://192.168.1.5:8080"
 }
 
 // NewClient creates an R2-backed client (production).
@@ -61,6 +62,7 @@ func NewClient(cfg *config.Config) (*Client, error) {
 	})
 
 	return &Client{
+		api:        s3Client,
 		presigner:  s3.NewPresignClient(s3Client),
 		bucket:     cfg.R2BucketName,
 		publicBase: cfg.R2PublicBaseURL,
@@ -78,6 +80,16 @@ func NewLocalClient(dir, baseURL string) *Client {
 		localDir:  dir,
 		localBase: baseURL,
 	}
+}
+
+// Ping verifies the bucket is reachable with the configured credentials.
+// Local mode has no remote to check, so it always succeeds.
+func (c *Client) Ping(ctx context.Context) error {
+	if c.localMode {
+		return nil
+	}
+	_, err := c.api.HeadBucket(ctx, &s3.HeadBucketInput{Bucket: aws.String(c.bucket)})
+	return err
 }
 
 // IsLocalMode reports whether the client is using local-disk storage.

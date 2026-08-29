@@ -59,6 +59,15 @@ func RegisterRoutes(r *mux.Router, deps Dependencies) {
 		w.Write([]byte(`{"status":"ok"}`))
 	}).Methods(http.MethodGet)
 
+	// Deep health check (public): probes DB, R2, Google Maps and Anthropic.
+	// Kept separate from /health so a platform health check never fails because
+	// a third party is down, and never makes outbound calls on every probe.
+	// Limit() keys on GetUserID, which is 0 here, so this is one shared bucket
+	// across all callers — enough to stop anyone hammering the outbound probes.
+	healthH := NewHealthHandler(deps.DB, deps.Storage, deps.Config.GooglePlacesKey, deps.Config.AnthropicAPIKey)
+	deepLimiter := middleware.NewRateLimiter(120, 2000)
+	api.HandleFunc("/health/deep", deepLimiter.Limit(healthH.Deep)).Methods(http.MethodGet)
+
 	// API docs (public)
 	api.HandleFunc("/docs", serveSwaggerUI).Methods(http.MethodGet)
 	api.HandleFunc("/docs/openapi.yaml", serveOpenAPISpec).Methods(http.MethodGet)

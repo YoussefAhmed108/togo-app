@@ -47,6 +47,30 @@ components:
   # ──────────────────────────────────────────────────────────────
   schemas:
 
+    DeepHealth:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded]
+        checks:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              ok: { type: boolean }
+              latency_ms: { type: integer }
+              detail:
+                type: string
+                description: Present only on failure. Never contains credentials.
+      example:
+        status: degraded
+        checks:
+          db: { ok: true, latency_ms: 67 }
+          r2: { ok: true, latency_ms: 98 }
+          maps: { ok: false, latency_ms: 289, detail: "key rejected" }
+          claude: { ok: true, latency_ms: 211 }
+
     Error:
       type: object
       properties:
@@ -214,6 +238,48 @@ components:
 # Paths
 # ──────────────────────────────────────────────────────────────
 paths:
+
+  # ── Health ──────────────────────────────────────────────────
+
+  /health:
+    get:
+      tags: [Health]
+      summary: Liveness probe
+      description: |
+        Returns immediately and makes no outbound calls. This is the endpoint
+        platform health checks should use — it stays green when a third party
+        is down.
+      responses:
+        '200':
+          description: Process is up
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "ok" }
+
+  /health/deep:
+    get:
+      tags: [Health]
+      summary: Dependency readiness probe
+      description: |
+        Probes the database, Cloudflare R2, Google Maps and the Anthropic API
+        concurrently, reporting each result separately. Key checks are chosen to
+        avoid billable calls. Rate limited across all callers.
+      responses:
+        '200':
+          description: Every dependency reachable
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DeepHealth' }
+        '503':
+          description: At least one dependency failed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DeepHealth' }
+        '429':
+          description: Rate limit exceeded
 
   # ── Auth ────────────────────────────────────────────────────
 
