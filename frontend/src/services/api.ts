@@ -2,6 +2,12 @@ import axios, {AxiosError, InternalAxiosRequestConfig} from 'axios';
 import {Platform} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// Deployed backend origin, e.g. 'https://togo-app.onrender.com'.
+// When set this wins in EVERY build, debug included — a debug build otherwise
+// ignores the production URL below and keeps talking to DEV_HOST.
+// Set it back to '' to go back to a local backend.
+const DEPLOYED_API = 'https://togo-app.fly.dev';
+
 // Host the app talks to in development.
 // Simulator / emulator: leave as null — the per-platform defaults below apply.
 // PHYSICAL DEVICE: set your Mac's LAN IP (`ipconfig getifaddr en0`), e.g. '192.168.1.33'.
@@ -9,13 +15,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const DEV_HOST: string | null = '192.168.1.33';
 
 // Android emulator → 10.0.2.2, iOS simulator → localhost
-const BASE_URL = __DEV__
-  ? DEV_HOST
-    ? `http://${DEV_HOST}:8080/api/v1`
-    : Platform.OS === 'android'
-      ? 'http://10.0.2.2:8080/api/v1'
-      : 'http://localhost:8080/api/v1'
-  : 'https://your-production-api.com/api/v1';
+const BASE_URL = DEPLOYED_API
+  ? `${DEPLOYED_API}/api/v1`
+  : __DEV__
+    ? DEV_HOST
+      ? `http://${DEV_HOST}:8080/api/v1`
+      : Platform.OS === 'android'
+        ? 'http://10.0.2.2:8080/api/v1'
+        : 'http://localhost:8080/api/v1'
+    : 'https://your-production-api.com/api/v1';
 
 export const STORAGE_KEYS = {
   REFRESH_TOKEN: '@app/refresh_token',
