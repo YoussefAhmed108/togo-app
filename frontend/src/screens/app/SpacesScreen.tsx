@@ -1,5 +1,6 @@
 import React, {useCallback, useState} from 'react';
-import {ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {WaypointLoader} from '../../components/WaypointLoader';
+import {ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
@@ -48,7 +49,7 @@ export default function SpacesScreen() {
           </TouchableOpacity>
         </View>
         {loading ? (
-          <ActivityIndicator color={colors.primary} />
+          <WaypointLoader size={72} style={{marginTop: 48}} />
         ) : (
           <View style={s.grid}>
             {spaces.map(item => (

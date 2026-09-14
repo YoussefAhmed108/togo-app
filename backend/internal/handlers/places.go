@@ -55,6 +55,8 @@ func (h *PlaceHandler) CreatePlace(w http.ResponseWriter, r *http.Request) {
 		// Places lookup (TikTok extraction or autocomplete); absent for a pin
 		// the user dropped by hand.
 		GooglePlaceID *string `json:"google_place_id"`
+		// SourceURL is the TikTok the place was extracted from.
+		SourceURL *string `json:"source_url"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
@@ -69,6 +71,19 @@ func (h *PlaceHandler) CreatePlace(w http.ResponseWriter, r *http.Request) {
 	if !validTags(req.Tags) {
 		writeError(w, http.StatusBadRequest, "invalid tags")
 		return
+	}
+
+	// Only http(s) links: the app opens this URL, so nothing else gets stored.
+	if req.SourceURL != nil {
+		u := strings.TrimSpace(*req.SourceURL)
+		if u == "" {
+			req.SourceURL = nil
+		} else if len(u) > 2048 || !(strings.HasPrefix(u, "https://") || strings.HasPrefix(u, "http://")) {
+			writeError(w, http.StatusBadRequest, "invalid source_url")
+			return
+		} else {
+			req.SourceURL = &u
+		}
 	}
 
 	saved := true
@@ -87,10 +102,16 @@ func (h *PlaceHandler) CreatePlace(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		placeID = existing
+		if placeID != 0 && req.SourceURL != nil {
+			if err := h.places.SetSourceURLIfEmpty(r.Context(), placeID, *req.SourceURL); err != nil {
+				serverError(w, err)
+				return
+			}
+		}
 	}
 	if placeID == 0 {
 		var err error
-		placeID, err = h.places.CreatePlace(r.Context(), userID, req.Name, req.Address, req.Lat, req.Lng, saved, req.GooglePlaceID)
+		placeID, err = h.places.CreatePlace(r.Context(), userID, req.Name, req.Address, req.Lat, req.Lng, saved, req.GooglePlaceID, req.SourceURL)
 		if err != nil {
 			serverError(w, err)
 			return
@@ -528,6 +549,7 @@ func placeResponse(p *models.Place, s *storage.Client) map[string]any {
 		"lat":             p.Lat,
 		"lng":             p.Lng,
 		"google_place_id": p.GooglePlaceID,
+		"source_url":      p.SourceURL,
 		"tags":            tags,
 		"created_at":      p.CreatedAt,
 		"updated_at":      p.UpdatedAt,

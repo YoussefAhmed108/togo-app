@@ -1,6 +1,6 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {WaypointLoader} from '../../components/WaypointLoader';
 import {
-  ActivityIndicator,
   Animated,
   Image,
   Linking,
@@ -387,7 +387,7 @@ export default function MapScreen() {
           </View>
           <ScrollView contentContainerStyle={s.list} showsVerticalScrollIndicator={false}>
             {!loaded ? (
-              <ActivityIndicator color={colors.primary} style={s.loader} />
+              <WaypointLoader size={64} style={s.loader} />
             ) : list.length === 0 ? (
               <Text style={s.empty}>{raw.length === 0 ? 'No saved places yet.' : 'No places match this filter.'}</Text>
             ) : (

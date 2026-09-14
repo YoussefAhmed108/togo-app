@@ -89,6 +89,16 @@ func TestCreatePlace_MissingName(t *testing.T) {
 	}
 }
 
+func TestCreatePlace_RejectsNonHTTPSourceURL(t *testing.T) {
+	rr, req := placeRequest(t, http.MethodPost, "/places", map[string]any{
+		"name": "Cafe", "lat": 40.7, "lng": -74.0, "source_url": "javascript:alert(1)",
+	}, 1, nil)
+	handlers.NewPlaceHandler(&mockPlaceStore{}, &mockSpaceStore{}, noopStorage()).CreatePlace(rr, req)
+	if rr.Code != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", rr.Code)
+	}
+}
+
 // --- Get Place ---
 
 func TestGetPlace_Success(t *testing.T) {

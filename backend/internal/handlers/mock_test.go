@@ -115,9 +115,10 @@ type mockPlaceStore struct {
 	addDishes           func(uint64, []models.Dish) error
 }
 
-func (m *mockPlaceStore) CreatePlace(ctx context.Context, ownerID uint64, name string, address *string, lat, lng float64, saved bool, googlePlaceID *string) (uint64, error) {
+func (m *mockPlaceStore) CreatePlace(ctx context.Context, ownerID uint64, name string, address *string, lat, lng float64, saved bool, googlePlaceID, sourceURL *string) (uint64, error) {
 	return m.createPlace(ctx, ownerID, name, address, lat, lng, saved)
 }
+func (m *mockPlaceStore) SetSourceURLIfEmpty(context.Context, uint64, string) error { return nil }
 func (m *mockPlaceStore) AddDishes(_ context.Context, memoryID uint64, dishes []models.Dish) error {
 	if m.addDishes != nil {
 		return m.addDishes(memoryID, dishes)

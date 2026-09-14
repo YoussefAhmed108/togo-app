@@ -12,14 +12,14 @@ type PlaceRepository struct {
 	Base
 }
 
-func (r *PlaceRepository) CreatePlace(ctx context.Context, ownerID uint64, name string, address *string, lat, lng float64, saved bool, googlePlaceID *string) (uint64, error) {
+func (r *PlaceRepository) CreatePlace(ctx context.Context, ownerID uint64, name string, address *string, lat, lng float64, saved bool, googlePlaceID, sourceURL *string) (uint64, error) {
 	savedInt := 1
 	if !saved {
 		savedInt = 0
 	}
 	res, err := r.DB.ExecContext(ctx,
-		`INSERT INTO places (owner_id, saved, name, address, lat, lng, google_place_id) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		ownerID, savedInt, name, address, lat, lng, googlePlaceID,
+		`INSERT INTO places (owner_id, saved, name, address, lat, lng, google_place_id, source_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		ownerID, savedInt, name, address, lat, lng, googlePlaceID, sourceURL,
 	)
 	if err != nil {
 		return 0, err
@@ -44,11 +44,19 @@ func (r *PlaceRepository) FindByGoogleID(ctx context.Context, ownerID uint64, go
 	return id, err
 }
 
+// SetSourceURLIfEmpty records where a reused place was found, keeping the
+// first link when it already has one.
+func (r *PlaceRepository) SetSourceURLIfEmpty(ctx context.Context, id uint64, sourceURL string) error {
+	_, err := r.DB.ExecContext(ctx,
+		`UPDATE places SET source_url = ? WHERE id = ? AND (source_url IS NULL OR source_url = '')`, sourceURL, id)
+	return err
+}
+
 func (r *PlaceRepository) GetPlace(ctx context.Context, id uint64) (*models.Place, error) {
 	p := &models.Place{}
 	err := r.DB.QueryRowContext(ctx,
-		`SELECT id, owner_id, saved, visited, name, address, lat, lng, google_place_id, created_at, updated_at FROM places WHERE id = ?`, id,
-	).Scan(&p.ID, &p.OwnerID, &p.Saved, &p.Visited, &p.Name, &p.Address, &p.Lat, &p.Lng, &p.GooglePlaceID, &p.CreatedAt, &p.UpdatedAt)
+		`SELECT id, owner_id, saved, visited, name, address, lat, lng, google_place_id, source_url, created_at, updated_at FROM places WHERE id = ?`, id,
+	).Scan(&p.ID, &p.OwnerID, &p.Saved, &p.Visited, &p.Name, &p.Address, &p.Lat, &p.Lng, &p.GooglePlaceID, &p.SourceURL, &p.CreatedAt, &p.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +71,7 @@ func (r *PlaceRepository) GetPlace(ctx context.Context, id uint64) (*models.Plac
 // ListPlacesByOwner returns only places explicitly saved by the user (saved = 1).
 func (r *PlaceRepository) ListPlacesByOwner(ctx context.Context, ownerID uint64) ([]*models.Place, error) {
 	rows, err := r.DB.QueryContext(ctx,
-		`SELECT id, owner_id, saved, visited, name, address, lat, lng, google_place_id, created_at, updated_at
+		`SELECT id, owner_id, saved, visited, name, address, lat, lng, google_place_id, source_url, created_at, updated_at
 		 FROM places WHERE owner_id = ? AND saved = 1 ORDER BY created_at DESC`, ownerID,
 	)
 	if err != nil {
@@ -74,7 +82,7 @@ func (r *PlaceRepository) ListPlacesByOwner(ctx context.Context, ownerID uint64)
 	var places []*models.Place
 	for rows.Next() {
 		p := &models.Place{}
-		if err := rows.Scan(&p.ID, &p.OwnerID, &p.Saved, &p.Visited, &p.Name, &p.Address, &p.Lat, &p.Lng, &p.GooglePlaceID, &p.CreatedAt, &p.UpdatedAt); err != nil {
+		if err := rows.Scan(&p.ID, &p.OwnerID, &p.Saved, &p.Visited, &p.Name, &p.Address, &p.Lat, &p.Lng, &p.GooglePlaceID, &p.SourceURL, &p.CreatedAt, &p.UpdatedAt); err != nil {
 			return nil, err
 		}
 		places = append(places, p)

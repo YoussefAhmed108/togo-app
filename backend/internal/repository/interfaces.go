@@ -29,7 +29,8 @@ type UserStore interface {
 
 // PlaceStore is the interface satisfied by PlaceRepository.
 type PlaceStore interface {
-	CreatePlace(ctx context.Context, ownerID uint64, name string, address *string, lat, lng float64, saved bool, googlePlaceID *string) (uint64, error)
+	CreatePlace(ctx context.Context, ownerID uint64, name string, address *string, lat, lng float64, saved bool, googlePlaceID, sourceURL *string) (uint64, error)
+	SetSourceURLIfEmpty(ctx context.Context, id uint64, sourceURL string) error
 	FindByGoogleID(ctx context.Context, ownerID uint64, googlePlaceID string) (uint64, error)
 	GetPlace(ctx context.Context, id uint64) (*models.Place, error)
 	ListPlacesByOwner(ctx context.Context, ownerID uint64) ([]*models.Place, error)

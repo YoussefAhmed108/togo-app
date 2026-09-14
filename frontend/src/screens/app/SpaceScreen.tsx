@@ -3,6 +3,7 @@
  */
 
 import React, {useCallback, useEffect, useRef, useState} from 'react';
+import {WaypointLoader} from '../../components/WaypointLoader';
 import {useFocusEffect} from '@react-navigation/native';
 import {
   ActivityIndicator,
@@ -401,7 +402,7 @@ function AddPlaceSheet({spaceId, existingIds, onDismiss, onAdded}: AddPlaceSheet
         <Text style={sheet.sub}>Select one of your saved places to add to this space.</Text>
 
         {loading ? (
-          <ActivityIndicator color={colors.primary} style={{marginTop: spacing.lg}} />
+          <WaypointLoader size={64} style={{marginTop: spacing.lg}} />
         ) : available.length === 0 ? (
           <View style={sheet.empty}>
             <Text style={sheet.emptyEmoji}>📍</Text>
@@ -1255,7 +1256,7 @@ export default function SpaceScreen({route, navigation}: Props) {
 
       <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
         {loading ? (
-          <ActivityIndicator color={colors.primary} style={s.loader} />
+          <WaypointLoader size={72} style={s.loader} />
         ) : places.length === 0 ? (
           <Text style={s.emptyNote}>No places yet. Tap Add place to put the first one in this space.</Text>
         ) : (

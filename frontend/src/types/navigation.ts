@@ -32,6 +32,8 @@ export type AppStackParamList = {
     places: ExtractedPlace[];
     /** Opened from a space: that space is every place's default destination. */
     spaceId?: number;
+    /** The TikTok the places came from. */
+    sourceUrl?: string;
   };
   SpaceDetail: {
     spaceId: number;

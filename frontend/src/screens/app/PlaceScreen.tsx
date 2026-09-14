@@ -20,9 +20,11 @@
  */
 
 import React, {useCallback, useEffect, useRef, useState} from 'react';
+import {WaypointLoader} from '../../components/WaypointLoader';
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   FlatList,
   Image,
   Modal,
@@ -351,7 +353,7 @@ export default function PlaceScreen({route, navigation}: Props) {
   if (loading) {
     return (
       <View style={[s.loadWrap, {paddingTop: insets.top}]}>
-        <ActivityIndicator color={colors.primary} size="large" />
+        <WaypointLoader />
       </View>
     );
   }
@@ -416,6 +418,26 @@ export default function PlaceScreen({route, navigation}: Props) {
                 </View>
               ))}
             </View>
+          )}
+
+          {!!place.source_url && (
+            <TouchableOpacity
+              style={s.sourceCard}
+              onPress={() => Linking.openURL(place.source_url!).catch(() => Alert.alert('Could not open TikTok'))}
+              activeOpacity={0.8}
+              accessibilityRole="link"
+              accessibilityLabel="Open the TikTok this place was found in">
+              <View style={s.sourceIcon}>
+                <View style={s.sourcePlay} />
+              </View>
+              <View style={s.sourceBody}>
+                <Text style={s.sourceTitle}>Found on TikTok</Text>
+                <Text style={s.sourceUrl} numberOfLines={1}>
+                  {place.source_url.replace(/^https?:\/\/(www\.)?/, '')}
+                </Text>
+              </View>
+              <Text style={s.sourceArrow}>↗</Text>
+            </TouchableOpacity>
           )}
 
           {/* Visited toggle */}
@@ -557,6 +579,41 @@ const s = StyleSheet.create({
     backgroundColor: colors.background,
   },
   errorText: {fontFamily: fonts.regular, fontSize: 16, color: colors.textSecondary},
+  sourceCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 14,
+    padding: 12,
+    borderRadius: 16,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  sourceIcon: {
+    width: 34,
+    height: 42,
+    borderRadius: 9,
+    backgroundColor: colors.text,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // A play triangle from borders, like the TikTok wait's video.
+  sourcePlay: {
+    width: 0,
+    height: 0,
+    marginLeft: 3,
+    borderTopWidth: 6,
+    borderBottomWidth: 6,
+    borderLeftWidth: 10,
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
+    borderLeftColor: colors.white,
+  },
+  sourceBody: {flex: 1, gap: 2},
+  sourceTitle: {fontFamily: fonts.bold, fontSize: 15, color: colors.text},
+  sourceUrl: {fontFamily: fonts.regular, fontSize: 12, color: colors.textSecondary},
+  sourceArrow: {fontFamily: fonts.bold, fontSize: 18, color: colors.primary},
   backFallback: {marginTop: spacing.md},
   backFallbackText: {fontFamily: fonts.semibold, fontSize: 15, color: colors.primary},
 

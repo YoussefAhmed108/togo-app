@@ -78,6 +78,8 @@ CREATE TABLE places (
   -- Dedupe key: the same venue shared from several TikToks, by several users,
   -- must converge on one identity. NULL for manually dropped pins.
   google_place_id VARCHAR(255) NULL,
+  -- The TikTok the place was extracted from, shown on the place page.
+  source_url VARCHAR(2048) NULL,
   created_at TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP       DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT fk_place_owner FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE

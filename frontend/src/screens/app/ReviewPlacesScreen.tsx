@@ -41,7 +41,7 @@ type SavedRow = {name: string; where: string};
  * one destination on several places at once without touching their others.
  */
 export default function ReviewPlacesScreen({route, navigation}: Props) {
-  const {spaceId} = route.params;
+  const {spaceId, sourceUrl} = route.params;
   // A venue Google could not match has no pin, so it cannot be saved from
   // here — it is named below the list instead.
   const [places] = useState(() => route.params.places.filter(p => p.candidates.length > 0));
@@ -102,7 +102,7 @@ export default function ReviewPlacesScreen({route, navigation}: Props) {
     for (const {r, i} of included) {
       const c = candOf(i);
       try {
-        const place = await placeService.create(c.name, c.lat, c.lng, c.address, r.dests.includes('saved'), c.google_place_id);
+        const place = await placeService.create(c.name, c.lat, c.lng, c.address, r.dests.includes('saved'), c.google_place_id, sourceUrl);
         const reached: Dest[] = r.dests.includes('saved') ? ['saved'] : [];
         for (const d of r.dests) {
           if (d === 'saved') continue;

@@ -183,7 +183,7 @@ export default function CreatePlaceScreen({route, navigation}: Props) {
         // A roundup: each venue gets its own destinations on the review screen.
         // `places` is absent from a backend that predates multi-place.
         if ((result.places ?? []).filter(p => p.selected).length > 1) {
-          navigation.replace('ReviewPlaces', {places: result.places, spaceId});
+          navigation.replace('ReviewPlaces', {places: result.places, spaceId, sourceUrl: tiktokUrl});
           return;
         }
 
@@ -332,6 +332,7 @@ export default function CreatePlaceScreen({route, navigation}: Props) {
         pickedLocation.address,
         savedPlacesSelected,
         googlePlaceId,
+        tiktokUrl ?? null,
       );
 
       if (tags.length > 0) {
