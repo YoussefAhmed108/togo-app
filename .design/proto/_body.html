@@ -1,0 +1,954 @@
+<div class="app {{ themeClass }}" dir="{{ dir }}" style="width: 430px; box-sizing: border-box; padding: 20px; background: {{ boardBg }}; display: flex; flex-direction: column; gap: 16px;">
+  <div class="phone">
+
+    <!-- ============ AUTH ============ -->
+    <sc-if value="{{ isLogin }}" hint-placeholder-val="{{ false }}">
+      <div class="scroll" style="padding: 92px 24px 40px; display: flex; flex-direction: column;">
+        <div style="display: flex; align-items: center; gap: 9px;">
+          <div style="position: relative; width: 34px; height: 34px; border-radius: 10px; background: var(--a1);">
+            <div style="position: absolute; inset-inline-end: -4px; bottom: -4px; width: 17px; height: 17px; border-radius: 50%; background: var(--a2); border: 2px solid var(--pageBg);"></div>
+          </div>
+          <div style="font-size: 21px; font-weight: 800; color: var(--text); letter-spacing: -0.01em;">Waypoint</div>
+        </div>
+        <div style="font-size: 13px; color: var(--muted); margin-top: 8px;">{{ t.tagline }}</div>
+        <div class="h1" style="margin-top: 44px;">{{ t.welcomeBack }}</div>
+        <div class="mut" style="margin-top: 6px;">{{ t.signinSub }}</div>
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 26px;">
+          <div class="field"><span class="fieldPh">{{ t.emailPh }}</span></div>
+          <div class="field"><span class="fieldPh">{{ t.password }}</span></div>
+        </div>
+        <button class="btnP" style="margin-top: 20px;" onClick="{{ doLogin }}">{{ t.signIn }}</button>
+        <div style="text-align: center; margin-top: 20px; font-size: 13px; color: var(--muted);">{{ t.noAccount }}
+          <button style="background: none; border: none; padding: 0 0 0 4px; font-family: inherit; font-size: 13px; font-weight: 700; color: var(--a1); cursor: pointer;" onClick="{{ goSignup }}">{{ t.createOne }}</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isSignup }}" hint-placeholder-val="{{ false }}">
+      <div class="scroll" style="padding: 72px 24px 40px;">
+        <button class="back" aria-label="{{ t.back }}" onClick="{{ goLogin }}"><svg class="mirror backIcon" width="10" height="16" viewBox="0 0 10 16" fill="none"><path d="M8 1L2 8l6 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+        <div class="h1" style="margin-top: 20px;">{{ t.createAccount }}</div>
+        <div class="mut" style="margin-top: 6px;">{{ t.createSub }}</div>
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 24px;">
+          <div class="field"><span class="fieldPh">{{ t.email }}</span></div>
+          <div class="field"><span class="fieldPh">{{ t.phone }}</span></div>
+          <div class="field"><span class="fieldPh">{{ t.password }}</span></div>
+          <div>
+            <div style="display: flex; gap: 5px;">
+              <div style="flex: 1; height: 4px; border-radius: 2px; background: var(--ok);"></div>
+              <div style="flex: 1; height: 4px; border-radius: 2px; background: var(--ok);"></div>
+              <div style="flex: 1; height: 4px; border-radius: 2px; background: var(--border);"></div>
+            </div>
+            <div class="mut" style="margin-top: 6px;">{{ t.strengthGood }}</div>
+          </div>
+          <div class="field"><span class="fieldPh">{{ t.confirmPw }}</span></div>
+        </div>
+        <button class="btnP" style="margin-top: 20px;" onClick="{{ goSetup }}">{{ t.createAccount }}</button>
+        <div class="mut" style="text-align: center; margin-top: 16px; line-height: 1.5;">{{ t.terms }}</div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isSetup }}" hint-placeholder-val="{{ false }}">
+      <div class="scroll" style="padding: 92px 24px 40px;">
+        <div style="font-size: 34px;">👋</div>
+        <div class="h1" style="margin-top: 14px;">{{ t.lastStep }}</div>
+        <div class="mut" style="margin-top: 6px;">{{ t.lastStepSub }}</div>
+        <div style="margin-top: 26px;">
+          <div class="lab">{{ t.displayName }}</div>
+          <div class="field"><span class="fieldPh">{{ t.displayNamePh }}</span></div>
+        </div>
+        <div style="margin-top: 16px;">
+          <div class="lab">{{ t.username }}</div>
+          <div class="field"><span class="fieldPh">{{ t.usernamePh }}</span></div>
+          <div class="mut" style="margin-top: 7px;">{{ t.usernameHint }}</div>
+        </div>
+        <button class="btnP" style="margin-top: 24px;" onClick="{{ goInterests }}">{{ t.continueLbl }}</button>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isInterests }}" hint-placeholder-val="{{ false }}">
+      <div class="scroll" style="padding: 72px 20px 116px;">
+        <div style="font-size: 30px;">✨</div>
+        <div class="h1" style="margin-top: 12px;">{{ t.interestsTitle }}</div>
+        <div class="mut" style="margin-top: 6px;">{{ t.interestsSub }}</div>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 22px;">
+          <sc-for list="{{ interests }}" as="it" hint-placeholder-count="8">
+            <button style="position: relative; text-align: start; background: {{ it.bg }}; border: 1.5px solid {{ it.border }}; border-radius: 14px; padding: 14px 12px; cursor: pointer; font-family: inherit;" onClick="{{ it.toggle }}">
+              <div style="font-size: 22px;">{{ it.emoji }}</div>
+              <div style="font-size: 13.5px; font-weight: 700; color: var(--text); margin-top: 8px;">{{ it.label }}</div>
+              <div class="mut" style="margin-top: 2px;">{{ it.hint }}</div>
+              <sc-if value="{{ it.on }}" hint-placeholder-val="{{ true }}">
+                <div style="position: absolute; top: 10px; inset-inline-end: 10px; width: 20px; height: 20px; border-radius: 50%; background: var(--a1Fill); color: #fff; display: flex; align-items: center; justify-content: center;"><svg class="pop" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4.5 4.5L19 7"></path></svg></div>
+              </sc-if>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+      <div style="position: absolute; inset-inline: 0; bottom: 0; padding: 14px 20px 30px; background: var(--pageBg); border-top: 1px solid var(--border);">
+        <button class="btnP" onClick="{{ finishOnboarding }}">{{ interestCta }}</button>
+        <button style="width: 100%; background: none; border: none; padding: 12px 0 0; font-family: inherit; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer;" onClick="{{ finishOnboarding }}">{{ t.skip }}</button>
+      </div>
+    </sc-if>
+
+    <!-- ============ HOME ============ -->
+    <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+      <div class="scroll">
+        <div class="band" aria-hidden="true"></div>
+        <div class="bandSheet" aria-hidden="true"></div>
+
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--s4);">
+          <div style="display: flex; align-items: center; gap: var(--s2);">
+            <div class="logoMark" style="position: relative; width: 30px; height: 30px; border-radius: 9px; background: var(--a1); flex-shrink: 0;">
+              <div style="position: absolute; inset-inline-end: -4px; bottom: -4px; width: 16px; height: 16px; border-radius: 50%; background: var(--a2); border: 2px solid var(--pageBg);"></div>
+            </div>
+            <div style="font-size: 19px; font-weight: 800; color: var(--headInk); letter-spacing: -0.01em;">Waypoint</div>
+          </div>
+          <button class="stripe4" aria-label="{{ t.profile }}" style="width: 44px; height: 44px; border-radius: 50%; border: none; cursor: pointer; flex-shrink: 0; margin-inline-end: -5px; background-clip: content-box; padding: 5px;" onClick="{{ goProfile }}"></button>
+        </div>
+
+        <div class="capture">
+          <button class="captureRow" onClick="{{ openAdd }}">
+            <div style="width: 38px; height: 38px; border-radius: 11px; background: var(--a1Fill); flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #fff;">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+            </div>
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-size: 14.5px; font-weight: 700; color: var(--text);">{{ t.addPlace }}</div>
+              <div class="mut" style="margin-top: 2px;">{{ t.addPlaceSub }}</div>
+            </div>
+            <svg class="mirror" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2.5" stroke-linecap="round" style="flex-shrink: 0;"><path d="M9 6l6 6-6 6"></path></svg>
+          </button>
+          <button class="captureRow captureScope" onClick="{{ openLocation }}">
+            <div style="width: 16px; height: 16px; border-radius: 50% 50% 50% 0; background: var(--a1); transform: rotate(-45deg); flex-shrink: 0; margin-inline-start: 11px;"></div>
+            <div style="flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;">
+              <div style="font-size: 13.5px; font-weight: 700; color: var(--text);">{{ locationLabel }}</div>
+              <div class="mut">{{ t.scopeNote }}</div>
+            </div>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"></path></svg>
+          </button>
+        </div>
+
+        <div class="section" style="margin-top: var(--s6);">
+          <div class="secHead">
+            <div class="sec">{{ t.trendingNow }}</div>
+          </div>
+          <sc-if value="{{ hasRecs }}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; gap: var(--s3); margin-inline: -20px; padding: 0 20px 6px; overflow-x: auto;">
+              <sc-for list="{{ recs }}" as="rec" hint-placeholder-count="3">
+                <div style="flex-shrink: 0; width: 196px;">
+                  <div class="stripe8" style="position: relative; width: 196px; height: 132px; border-radius: 14px; overflow: hidden;">
+                    <sc-if value="{{ rec.trending }}" hint-placeholder-val="{{ true }}">
+                      <div style="position: absolute; top: 8px; inset-inline-start: 8px; display: flex; align-items: center; gap: 5px; background: var(--a1Fill); color: #fff; font-size: 11px; font-weight: 700; border-radius: 999px; padding: 5px 9px;">
+                        <svg class="mirror" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"></path><path d="M15 7h6v6"></path></svg>
+                        <span>{{ rec.signal }}</span>
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{ rec.sponsored }}" hint-placeholder-val="{{ false }}">
+                      <div style="position: absolute; top: 8px; inset-inline-start: 8px; background: var(--rowBg); color: var(--text); font-size: 11px; font-weight: 700; border-radius: 999px; padding: 5px 10px; box-shadow: 0 1px 3px oklch(20% 0.02 250 / 20%);">{{ t.sponsored }}</div>
+                    </sc-if>
+                    <button class="recSave {{ rec.saveCls }}" aria-label="{{ rec.cta }}" aria-pressed="{{ rec.pressed }}" onClick="{{ rec.save }}"><span><svg width="16" height="16" viewBox="0 0 24 24" fill="{{ rec.iconFill }}" stroke="currentColor" stroke-width="2.3" stroke-linejoin="round"><path d="M6 3.5h12v17l-6-4.2-6 4.2z"></path></svg></span></button>
+                  </div>
+                  <div style="font-size: 15px; font-weight: 700; color: var(--text); margin-top: var(--s2);" class="clip">{{ rec.name }}</div>
+                  <div style="font-size: 12px; color: var(--muted); margin-top: 2px;" class="clip">{{ rec.meta }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ noRecs }}" hint-placeholder-val="{{ false }}">
+            <div class="emptyNote">{{ t.noRecsNote }}</div>
+          </sc-if>
+        </div>
+
+        <div class="section">
+          <div class="secHead">
+            <div class="sec">{{ t.recentlySaved }}</div>
+            <button class="link" onClick="{{ goMap }}">{{ savedLink }}</button>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: var(--s2);">
+            <sc-for list="{{ places }}" as="place" hint-placeholder-count="3">
+              <div class="row">
+                <div class="stripe4" style="width: 44px; height: 44px; border-radius: 9px; flex-shrink: 0;"></div>
+                <button style="flex: 1; min-width: 0; background: none; border: none; padding: 0; text-align: start; cursor: pointer; font-family: inherit;" onClick="{{ place.open }}">
+                  <div class="rowName">{{ place.name }}</div>
+                  <div style="display: flex; align-items: center; gap: 5px; margin-top: 3px;">
+                    <div style="width: 7px; height: 7px; border-radius: 50%; background: {{ place.pinColor }}; flex-shrink: 0;"></div>
+                    <div class="mut clip">{{ place.meta }}</div>
+                  </div>
+                </button>
+                <button class="beenHere {{ place.visitCls }}" aria-label="{{ t.beenHere }}" aria-pressed="{{ place.pressed }}" onClick="{{ place.toggle }}"><span><sc-if value="{{ place.visited }}" hint-placeholder-val="{{ true }}"><svg class="{{ place.drawCls }}" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4.5 4.5L19 7"></path></svg></sc-if><sc-if value="{{ place.notVisited }}" hint-placeholder-val="{{ false }}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z"></path><circle cx="12" cy="10" r="2.3"></circle></svg></sc-if></span></button>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div class="section">
+          <div class="secHead">
+            <div class="sec">{{ t.yourSpaces }}</div>
+            <button class="link" onClick="{{ goSpaces }}">{{ spacesLink }}</button>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s3);">
+            <sc-for list="{{ homeSpaces }}" as="sp" hint-placeholder-count="3">
+              <button style="background: none; border: none; padding: 0; text-align: start; cursor: pointer; font-family: inherit;" onClick="{{ sp.open }}">
+                <div class="stripeSpace" style="height: 100px; border-radius: 12px;"></div>
+                <div style="font-size: 13px; font-weight: 700; color: var(--text); margin-top: var(--s2);" class="clip">{{ sp.name }}</div>
+                <div style="display: inline-block; font-size: 11px; font-weight: 600; color: #fff; background: var(--a2Fill); border-radius: 10px; padding: 2px 8px; margin-top: var(--s1);">{{ sp.membersLabel }}</div>
+              </button>
+            </sc-for>
+            <button style="height: 100px; border-radius: 12px; border: 1.5px dashed var(--border); background: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; cursor: pointer; font-family: inherit;" onClick="{{ openNewSpace }}">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+              <div style="font-size: 11.5px; font-weight: 600; color: var(--muted);">{{ t.newSpace }}</div>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </sc-if>
+
+    <!-- ============ MAP ============ -->
+    <sc-if value="{{ isMap }}" hint-placeholder-val="{{ false }}">
+      <div style="position: absolute; inset: 0; display: flex; flex-direction: column;">
+        <div style="position: relative; height: 430px; flex-shrink: 0;">
+          <svg width="390" height="430" viewBox="0 0 390 430" style="position: absolute; inset: 0;">
+            <rect width="390" height="430" fill="var(--land)"></rect>
+            <path d="M-10 292 Q120 280 210 308 T400 292 L400 430 L-10 430 Z" fill="var(--water)"></path>
+            <circle cx="308" cy="188" r="50" fill="var(--park)"></circle>
+            <path d="M-10 116 L400 62 M-10 228 L400 194 M88 -10 L136 448 M268 -10 L246 448" stroke="var(--road)" stroke-width="13" fill="none"></path>
+            <path d="M-10 172 L400 144" stroke="var(--road)" stroke-width="21" fill="none"></path>
+          </svg>
+          <div style="position: absolute; top: 44px; left: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px; background: var(--pageBg); border: 1px solid var(--border); border-radius: 999px; padding: 12px 14px; box-shadow: 0 4px 14px rgba(0,0,0,0.10);">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="color: var(--text);"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+              <div style="font-size: 13.5px; font-weight: 600; color: var(--muted);">{{ t.searchPlaces }}</div>
+            </div>
+            <div style="display: flex; gap: 7px; overflow-x: auto; padding-bottom: 2px;">
+              <sc-for list="{{ filters }}" as="f" hint-placeholder-count="4">
+                <button class="chip {{ f.cls }}" style="box-shadow: 0 3px 10px rgba(0,0,0,0.10); flex-shrink: 0;" onClick="{{ f.toggle }}"><span style="color: {{ f.dot }};">●</span> {{ f.name }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <sc-for list="{{ pins }}" as="pin" hint-placeholder-count="4">
+            <div style="position: absolute; left: {{ pin.x }}; top: {{ pin.y }}; display: flex; flex-direction: column; align-items: center;">
+              <div style="width: {{ pin.size }}; height: {{ pin.size }}; border-radius: 50%; background: var(--pageBg); border: 3px solid {{ pin.color }}; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; color: {{ pin.color }}; box-shadow: 0 3px 10px rgba(0,0,0,0.18);">{{ pin.badge }}</div>
+              <div style="width: 2px; height: 8px; background: {{ pin.color }};"></div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="flex-grow: 1; margin-top: -22px; background: var(--pageBg); border-radius: 22px 22px 0 0; box-shadow: 0 -6px 24px rgba(0,0,0,0.12); display: flex; flex-direction: column; overflow: hidden; z-index: 5;">
+          <div class="grab" style="margin: 10px auto 12px;"></div>
+          <div style="padding: 0 20px 12px;">
+            <div class="segw">
+              <button class="seg {{ mapSegNearby }}" onClick="{{ setMapNearby }}">{{ t.nearby }}</button>
+              <button class="seg {{ mapSegAll }}" onClick="{{ setMapAll }}">{{ t.allSaved }}</button>
+            </div>
+          </div>
+          <div style="padding: 0 20px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto;">
+            <sc-for list="{{ mapPlaces }}" as="place" hint-placeholder-count="3">
+              <div class="row">
+                <div class="stripe4" style="width: 40px; height: 40px; border-radius: 9px; flex-shrink: 0;"></div>
+                <button style="flex: 1; min-width: 0; background: none; border: none; padding: 0; text-align: start; cursor: pointer; font-family: inherit;" onClick="{{ place.open }}">
+                  <div class="rowName">{{ place.name }}</div>
+                  <div style="display: flex; align-items: center; gap: 5px; margin-top: 3px;">
+                    <div style="width: 7px; height: 7px; border-radius: 50%; background: {{ place.pinColor }}; flex-shrink: 0;"></div>
+                    <div class="mut">{{ place.spaceName }}</div>
+                  </div>
+                </button>
+                <div class="mut" style="font-weight: 700;">{{ place.dist }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="flex-grow: 1;"></div>
+        </div>
+        <button style="position: absolute; inset-inline-end: 20px; bottom: 108px; width: 54px; height: 54px; border-radius: 50%; background: var(--a1Fill); border: none; color: #fff; cursor: pointer; z-index: 10; box-shadow: 0 8px 20px oklch(20% 0.02 250 / 26%); font-family: inherit; display: flex; align-items: center; justify-content: center;" onClick="{{ openAdd }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></button>
+      </div>
+    </sc-if>
+
+    <!-- ============ SPACES TAB ============ -->
+    <sc-if value="{{ isSpaces }}" hint-placeholder-val="{{ false }}">
+      <div class="scroll">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+          <div class="h1">{{ t.spaces }}</div>
+          <button class="iconBtn" aria-label="{{ t.newSpaceAria }}" onClick="{{ openNewSpace }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></button>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;">
+          <sc-for list="{{ spaces }}" as="sp" hint-placeholder-count="3">
+            <button style="background: none; border: none; padding: 0; text-align: start; cursor: pointer; font-family: inherit;" onClick="{{ sp.open }}">
+              <div class="stripeSpace" style="height: 118px; border-radius: 12px;"></div>
+              <div style="font-size: 13px; font-weight: 600; color: var(--text); margin-top: 6px;">{{ sp.name }}</div>
+              <div class="mut" style="margin-top: 2px;">{{ sp.statLine }}</div>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ============ PROFILE ============ -->
+    <sc-if value="{{ isProfile }}" hint-placeholder-val="{{ false }}">
+      <div class="scroll">
+        <div class="h1" style="margin-bottom: 20px;">{{ t.profile }}</div>
+        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 24px;">
+          <div class="stripe4" style="width: 64px; height: 64px; border-radius: 50%;"></div>
+          <div>
+            <div style="font-size: 17px; font-weight: 700; color: var(--text);">Youssef</div>
+            <div class="mut" style="margin-top: 2px;">@youssef</div>
+          </div>
+        </div>
+
+        <button class="row" style="margin-bottom: var(--s2);" onClick="{{ openSettings }}">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--a1Text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-inline: 4px 8px;"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg>
+          <div style="flex: 1; min-width: 0;">
+            <div class="rowName">{{ t.settings }}</div>
+            <div class="mut" style="margin-top: 2px;">{{ settingsSummary }}</div>
+          </div>
+          <svg class="mirror" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M9 6l6 6-6 6"></path></svg>
+        </button>
+
+        <button class="row" style="margin-bottom: var(--s2);" aria-expanded="{{ pointsOpen }}" onClick="{{ togglePoints }}">
+          <div style="width: 16px; height: 16px; border-radius: 50% 50% 50% 0; background: var(--a1); transform: rotate(-45deg); flex-shrink: 0; margin-inline: 6px 10px;"></div>
+          <div style="flex: 1; min-width: 0;">
+            <div class="rowName">{{ t.savedAddresses }}</div>
+            <div class="mut" style="margin-top: 2px;">{{ pointsSummary }}</div>
+          </div>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; transform: rotate({{ pointsCaret }}); transition: transform 160ms ease;"><path d="M6 9l6 6 6-6"></path></svg>
+        </button>
+        <sc-if value="{{ pointsOpen }}" hint-placeholder-val="{{ true }}">
+          <div class="reveal" style="padding-inline-start: var(--s3); margin-bottom: 20px;">
+            <div class="mut" style="margin-bottom: var(--s3); line-height: 1.45;">{{ t.pointsSub }}</div>
+            <sc-if value="{{ hasPoints }}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; flex-direction: column; gap: var(--s2); margin-bottom: var(--s3);">
+                <sc-for list="{{ points }}" as="pt" hint-placeholder-count="2">
+                  <div class="row" style="cursor: default;">
+                    <div style="width: 16px; height: 16px; border-radius: 50% 50% 50% 0; background: var(--a1); transform: rotate(-45deg); flex-shrink: 0; margin-inline: 6px 10px;"></div>
+                    <div style="flex: 1; min-width: 0;">
+                      <div class="rowName">{{ pt.label }}</div>
+                      <div class="mut clip">{{ pt.address }}</div>
+                    </div>
+                    <button class="visit" aria-label="{{ t.removeAddress }}" onClick="{{ pt.remove }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ noPoints }}" hint-placeholder-val="{{ false }}">
+              <div class="emptyNote" style="margin-bottom: var(--s3);">{{ t.noPointsNote }}</div>
+            </sc-if>
+            <button class="btnG" style="padding: 12px; font-size: 13.5px;" onClick="{{ openAddPoint }}">{{ t.addPoint }}</button>
+          </div>
+        </sc-if>
+
+        <div class="lab">{{ t.account }}</div>
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px;">
+          <div class="row" style="cursor: default;"><div style="flex: 1;"><div class="mut">{{ t.displayName }}</div><div class="rowName" style="margin-top: 2px;">Youssef</div></div><div style="font-size: 12px; font-weight: 700; color: var(--a1);">{{ t.edit }}</div></div>
+          <div class="row" style="cursor: default;"><div style="flex: 1;"><div class="mut">{{ t.email }}</div><div class="rowName" style="margin-top: 2px;">youssef@email.com</div></div></div>
+          <div class="row" style="cursor: default;"><div style="flex: 1;"><div class="mut">{{ t.visitedPlaces }}</div><div class="rowName" style="margin-top: 2px;">{{ visitedCount }}</div></div></div>
+          <button class="row" onClick="{{ openPassword }}"><div style="flex: 1;"><div class="rowName">{{ t.changePassword }}</div><div class="mut" style="margin-top: 2px;">{{ passwordAge }}</div></div><svg class="mirror" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2.5" stroke-linecap="round"><path d="M9 6l6 6-6 6"></path></svg></button>
+        </div>
+        <button class="btnG" style="color: oklch(58% 0.19 25);" onClick="{{ doLogout }}">{{ t.logOut }}</button>
+      </div>
+    </sc-if>
+
+    <!-- ============ SPACE DETAIL ============ -->
+    <sc-if value="{{ isSpaceDetail }}" hint-placeholder-val="{{ false }}">
+      <div class="scroll screenIn" style="padding: 40px 20px 100px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <button class="back" aria-label="{{ t.back }}" onClick="{{ pop }}"><svg class="mirror backIcon" width="10" height="16" viewBox="0 0 10 16" fill="none"><path d="M8 1L2 8l6 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+            <div>
+              <div style="font-size: 17px; font-weight: 800; color: var(--text);">{{ space.name }}</div>
+              <div style="font-size: 11px; color: var(--muted);">{{ space.subLine }}</div>
+            </div>
+          </div>
+          <div class="stripe4" style="width: 28px; height: 28px; border-radius: 50%;"></div>
+        </div>
+
+        <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--a1Text); margin-bottom: 8px;">{{ t.closestToYou }}</div>
+        <button class="stripe8" style="position: relative; display: block; width: 100%; border: none; padding: 0; border-radius: 18px; overflow: hidden; margin-bottom: 22px; height: 170px; cursor: pointer; font-family: inherit;" onClick="{{ hero.open }}">
+          <div style="position: absolute; inset: 0; background: linear-gradient(to top, oklch(20% 0.02 250 / 78%), oklch(20% 0.02 250 / 0%) 60%);"></div>
+          <div style="position: absolute; inset-inline: 14px; bottom: 12px; display: flex; align-items: flex-end; justify-content: space-between; gap: 10px;">
+            <div style="text-align: start; min-width: 0;">
+              <div class="clip" style="font-size: 17px; font-weight: 800; color: #fff;">{{ hero.name }}</div>
+              <div style="font-size: 12px; color: oklch(92% 0.006 250 / 90%); margin-top: 2px;">{{ hero.meta }}</div>
+            </div>
+            <div style="font-size: 12px; font-weight: 700; color: #fff; background: var(--a1Fill); border-radius: 20px; padding: 7px 14px; flex-shrink: 0;">{{ t.directions }}</div>
+          </div>
+        </button>
+
+        <div style="display: flex; gap: 8px; overflow-x: auto; margin: 0 -20px 18px; padding: 0 20px 4px;">
+          <sc-for list="{{ spaceFilters }}" as="f" hint-placeholder-count="5">
+            <button class="chip {{ f.cls }}" style="flex-shrink: 0; font-size: 12.5px; padding: 7px 14px;" onClick="{{ f.select }}">{{ f.label }}</button>
+          </sc-for>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 26px;">
+          <sc-for list="{{ spacePlaces }}" as="place" hint-placeholder-count="4">
+            <div class="row">
+              <div class="stripe4" style="width: 44px; height: 44px; border-radius: 9px; flex-shrink: 0;"></div>
+              <button style="flex: 1; min-width: 0; background: none; border: none; padding: 0; text-align: start; cursor: pointer; font-family: inherit;" onClick="{{ place.open }}">
+                <div class="rowName">{{ place.name }}</div>
+                <div style="display: flex; align-items: center; gap: 5px; margin-top: 3px;">
+                  <div style="width: 7px; height: 7px; border-radius: 50%; background: {{ place.pinColor }}; flex-shrink: 0;"></div>
+                  <div class="mut">{{ place.travelLine }}</div>
+                </div>
+              </button>
+              <button class="beenHere {{ place.visitCls }}" aria-label="{{ t.beenHere }}" aria-pressed="{{ place.pressed }}" onClick="{{ place.toggle }}"><span><sc-if value="{{ place.visited }}" hint-placeholder-val="{{ true }}"><svg class="{{ place.drawCls }}" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4.5 4.5L19 7"></path></svg></sc-if><sc-if value="{{ place.notVisited }}" hint-placeholder-val="{{ false }}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z"></path><circle cx="12" cy="10" r="2.3"></circle></svg></sc-if></span></button>
+            </div>
+          </sc-for>
+          <sc-if value="{{ noPlaceResults }}" hint-placeholder-val="{{ false }}">
+            <div style="text-align: center; font-size: 12.5px; color: var(--muted); padding: 20px 0;">{{ t.noPlacesMatch }}</div>
+          </sc-if>
+        </div>
+
+        <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px;">
+          <div class="sec" style="margin: 0;">{{ t.memories }}</div>
+          <button style="display: flex; align-items: center; gap: 5px; background: none; border: none; padding: 0; cursor: pointer; font-family: inherit;" onClick="{{ openMemFilters }}">
+            <div style="width: 14px; height: 10px; display: flex; flex-direction: column; gap: 2px;">
+              <div style="width: 14px; height: 2px; background: var(--a1Text); border-radius: 1px;"></div>
+              <div style="width: 10px; height: 2px; background: var(--a1Text); border-radius: 1px; margin-inline-start: 2px;"></div>
+              <div style="width: 6px; height: 2px; background: var(--a1Text); border-radius: 1px; margin-inline-start: 4px;"></div>
+            </div>
+            <div style="font-size: 11.5px; font-weight: 600; color: var(--a1Text);">{{ memFilterLabel }}</div>
+          </button>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+          <sc-for list="{{ visibleMemories }}" as="mem" hint-placeholder-count="3">
+            <div style="background: var(--rowBg); border-radius: 14px; padding: 10px;">
+              <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 6px; margin-bottom: 8px;">
+                <div class="clip" style="font-size: 13.5px; font-weight: 700; color: var(--text); min-width: 0;">{{ mem.place }}</div>
+                <div style="display: flex; gap: 5px; flex-wrap: wrap; justify-content: flex-end;">
+                  <div class="mtag">{{ mem.cuisine }}</div>
+                  <sc-for list="{{ mem.tags }}" as="tag" hint-placeholder-count="2">
+                    <div class="mtag">{{ tag }}</div>
+                  </sc-for>
+                </div>
+              </div>
+              <div style="display: flex; gap: 7px; overflow-x: auto; margin-bottom: 10px;">
+                <sc-for list="{{ mem.photos }}" as="photo" hint-placeholder-count="2">
+                  <div class="stripe8" style="width: 72px; height: 72px; flex-shrink: 0; border-radius: 9px;"></div>
+                </sc-for>
+                <button style="width: 72px; height: 72px; flex-shrink: 0; border-radius: 9px; border: 1.5px dashed var(--border); background: none; color: var(--muted); cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center;" onClick="{{ openMemory }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></button>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <sc-for list="{{ mem.dishes }}" as="dish" hint-placeholder-count="2">
+                  <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px; background: var(--pageBg); border-radius: 10px; padding: 8px 10px;">
+                    <div style="min-width: 0;">
+                      <div style="font-size: 12.5px; font-weight: 600; color: var(--text);">{{ dish.name }}</div>
+                      <div style="font-size: 11px; color: var(--muted); margin-top: 1px;">{{ dish.quote }}</div>
+                    </div>
+                    <div style="font-size: 11.5px; color: var(--a1Text); letter-spacing: 1px; flex-shrink: 0;">{{ dish.stars }}</div>
+                  </div>
+                </sc-for>
+                <button class="link" style="text-align: start;" onClick="{{ noop }}">{{ t.addDish }}</button>
+              </div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ noMemories }}" hint-placeholder-val="{{ false }}">
+            <div style="text-align: center; font-size: 12.5px; color: var(--muted); padding: 20px 0;">{{ t.noMemoriesMatch }}</div>
+          </sc-if>
+        </div>
+      </div>
+
+      <sc-if value="{{ showMemFilters }}" hint-placeholder-val="{{ false }}">
+        <div class="sheetWrap">
+          <div class="sheet" style="max-height: 80%;">
+            <div class="grab"></div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+              <div class="sheetT" style="margin: 0;">{{ t.filterMemories }}</div>
+              <button class="link" onClick="{{ clearMemFilters }}">{{ t.clear }}</button>
+            </div>
+            <sc-for list="{{ memFilterGroups }}" as="g" hint-placeholder-count="4">
+              <div style="margin-bottom: 18px;">
+                <div style="font-size: 11.5px; font-weight: 700; color: var(--muted); margin-bottom: 8px;">{{ g.title }}</div>
+                <div style="display: flex; gap: 7px; flex-wrap: wrap;">
+                  <sc-for list="{{ g.chips }}" as="c" hint-placeholder-count="3">
+                    <button class="chip {{ c.cls }}" style="font-size: 12px; padding: 6px 12px;" onClick="{{ c.select }}">{{ c.label }}</button>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+            <button class="btnP" style="padding: 13px; font-size: 13.5px;" onClick="{{ closeMemFilters }}">{{ t.showResults }}</button>
+          </div>
+        </div>
+      </sc-if>
+    </sc-if>
+
+    <!-- ============ ADD PLACE (full screen) ============ -->
+    <sc-if value="{{ isAdd }}" hint-placeholder-val="{{ false }}">
+      <div class="screenIn" style="position: absolute; inset: 0; background: var(--pageBg); display: flex; flex-direction: column; z-index: 30;">
+
+        <sc-if value="{{ addForm }}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; align-items: center; padding: 44px 16px 10px; flex-shrink: 0;">
+            <button class="back" aria-label="{{ t.back }}" onClick="{{ closeAdd }}"><svg class="mirror backIcon" width="10" height="16" viewBox="0 0 10 16" fill="none"><path d="M8 1L2 8l6 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+            <div style="flex: 1; text-align: center; font-size: 16px; font-weight: 800; color: var(--text);">{{ t.addPlaceTitle }}</div>
+            <div style="width: 34px;"></div>
+          </div>
+
+          <div style="padding: 0 16px 10px; position: relative; z-index: 12; flex-shrink: 0;">
+            <button style="width: 100%; box-sizing: border-box; display: flex; align-items: center; gap: 10px; background: var(--rowBg); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; cursor: pointer; font-family: inherit; text-align: start;" onClick="{{ toggleResults }}">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="color: var(--muted); flex-shrink: 0;"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+              <div style="font-size: 14px; color: {{ searchFg }}; flex: 1; min-width: 0;">{{ searchText }}</div>
+            </button>
+            <sc-if value="{{ showResults }}" hint-placeholder-val="{{ false }}">
+              <div style="position: absolute; inset-inline: 16px; top: 52px; background: var(--pageBg); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: 0 10px 26px rgba(0,0,0,0.18);">
+                <sc-for list="{{ searchResults }}" as="r" hint-placeholder-count="3">
+                  <button style="width: 100%; box-sizing: border-box; display: block; text-align: start; background: none; border: none; border-bottom: 1px solid var(--border); padding: 11px 14px; cursor: pointer; font-family: inherit;" onClick="{{ r.pick }}">
+                    <div style="font-size: 13.5px; font-weight: 600; color: var(--text);">{{ r.name }}</div>
+                    <div class="mut" style="margin-top: 2px;">{{ r.address }}</div>
+                  </button>
+                </sc-for>
+                <div style="padding: 8px 14px; font-size: 10px; color: var(--muted);">{{ t.poweredBy }}</div>
+              </div>
+            </sc-if>
+          </div>
+
+          <div style="position: relative; height: 264px; flex-shrink: 0; overflow: hidden;">
+            <svg width="390" height="264" viewBox="0 0 390 264" style="position: absolute; inset: 0;">
+              <rect width="390" height="264" fill="var(--land)"></rect>
+              <path d="M-10 196 Q120 184 210 212 T400 196 L400 264 L-10 264 Z" fill="var(--water)"></path>
+              <circle cx="316" cy="86" r="42" fill="var(--park)"></circle>
+              <path d="M-10 62 L400 24 M-10 156 L400 128 M96 -10 L134 280 M266 -10 L250 280" stroke="var(--road)" stroke-width="12" fill="none"></path>
+            </svg>
+            <div style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -100%); display: flex; flex-direction: column; align-items: center; margin-top: {{ pinLift }};">
+              <svg width="28" height="34" viewBox="0 0 24 30" fill="none"><path d="M12 1c5 0 9 4 9 9 0 6.5-9 19-9 19S3 16.5 3 10c0-5 4-9 9-9z" fill="var(--a1)"></path><circle cx="12" cy="10" r="3.4" fill="#fff"></circle></svg>
+            </div>
+            <div style="position: absolute; left: 50%; top: 50%; transform: translateX(-50%); width: 14px; height: 4px; border-radius: 50%; background: oklch(20% 0.02 250 / 28%);"></div>
+            <sc-if value="{{ locating }}" hint-placeholder-val="{{ false }}">
+              <div style="position: absolute; left: 50%; transform: translateX(-50%); bottom: 46px; display: flex; align-items: center; gap: 8px; background: var(--pageBg); border-radius: 999px; padding: 7px 14px; box-shadow: 0 4px 14px rgba(0,0,0,0.18);">
+                <div class="spin" role="status" aria-label="Locating" style="width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--border); border-top-color: var(--a1Text);"></div>
+                <div style="font-size: 12px; font-weight: 700; color: var(--text);">{{ t.locating }}</div>
+              </div>
+            </sc-if>
+            <button style="position: absolute; inset-inline-end: 12px; bottom: 12px; background: var(--pageBg); border: 1px solid var(--border); border-radius: 999px; padding: 8px 13px; font-size: 11.5px; font-weight: 700; color: var(--text); cursor: pointer; font-family: inherit; box-shadow: 0 3px 10px rgba(0,0,0,0.14);" onClick="{{ dropPin }}">{{ t.dragMap }}</button>
+          </div>
+
+          <div class="scroll" style="position: relative; inset: auto; flex: 1; padding: 14px 16px 20px;">
+            <sc-if value="{{ hasLocation }}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; align-items: center; gap: 8px; background: color-mix(in oklab, var(--a1) 10%, transparent); border-radius: 999px; padding: 9px 14px; margin-bottom: 14px;">
+                <div style="width: 12px; height: 12px; border-radius: 50% 50% 50% 0; background: var(--a1); transform: rotate(-45deg); flex-shrink: 0;"></div>
+                <div style="font-size: 12px; font-weight: 600; color: var(--text); min-width: 0;">{{ pickedAddress }}</div>
+              </div>
+            </sc-if>
+
+            <div class="card" style="margin-bottom: 12px;">
+              <div class="lab" style="margin-bottom: 8px;">{{ t.placeName }}</div>
+              <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px;">
+                <div style="font-size: 15px; color: {{ nameFg }}; min-width: 0;">{{ nameText }}</div>
+                <div class="mut" style="flex-shrink: 0;">{{ nameCount }}</div>
+              </div>
+            </div>
+
+            <div class="card" style="margin-bottom: 12px;">
+              <div style="display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px;">
+                <div class="lab" style="margin: 0;">{{ t.tags }}</div>
+                <div class="mut">{{ t.tagsHint }}</div>
+              </div>
+              <sc-if value="{{ hasTags }}" hint-placeholder-val="{{ true }}">
+                <div style="display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 12px;">
+                  <sc-for list="{{ chosenTags }}" as="tg" hint-placeholder-count="2">
+                    <button class="chip chipOn" style="display: flex; align-items: center; gap: 7px; font-size: 12px;" onClick="{{ tg.remove }}">{{ tg.label }} <svg class="pop" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" style="opacity: 0.8;"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <div style="display: flex; align-items: center; gap: 8px; background: var(--pageBg); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-bottom: 14px;">
+                <div style="flex: 1; font-size: 13px; color: var(--muted);">{{ t.customTagPh }}</div>
+                <div style="font-size: 11.5px; font-weight: 700; color: var(--muted);">{{ t.add }}</div>
+              </div>
+              <sc-if value="{{ hasSpaceTags }}" hint-placeholder-val="{{ false }}">
+                <div>
+                  <div class="lab" style="margin-bottom: 8px;">{{ t.usedInSpace }}</div>
+                  <div style="display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 12px;">
+                    <sc-for list="{{ spaceTagSuggestions }}" as="tg" hint-placeholder-count="2">
+                      <button class="chip" style="font-size: 12px; border-color: var(--a1); color: var(--a1);" onClick="{{ tg.add }}">{{ tg.label }}</button>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-if>
+              <div class="lab" style="margin-bottom: 8px;">{{ t.popular }}</div>
+              <div style="display: flex; flex-wrap: wrap; gap: 7px;">
+                <sc-for list="{{ tagSuggestions }}" as="tg" hint-placeholder-count="8">
+                  <button class="chip" style="font-size: 12px;" onClick="{{ tg.add }}">{{ tg.label }}</button>
+                </sc-for>
+              </div>
+            </div>
+
+            <button style="width: 100%; box-sizing: border-box; display: flex; align-items: center; gap: 12px; background: var(--rowBg); border: 1px dashed var(--border); border-radius: 14px; padding: 12px 14px; cursor: pointer; font-family: inherit; text-align: start;" onClick="{{ analyseLink }}">
+              <div style="width: 30px; height: 30px; border-radius: 9px; background: var(--a2); flex-shrink: 0;"></div>
+              <div style="flex: 1;">
+                <div style="font-size: 13px; font-weight: 700; color: var(--text);">{{ t.pasteLink }}</div>
+                <div class="mut" style="margin-top: 1px;">{{ t.pasteLinkSub }}</div>
+              </div>
+            </button>
+          </div>
+
+          <div style="flex-shrink: 0; padding: 12px 16px 28px; background: var(--pageBg); border-top: 1px solid var(--border);">
+            <sc-if value="{{ noLocation }}" hint-placeholder-val="{{ false }}">
+              <div class="mut" style="text-align: center; margin-bottom: 10px;">{{ t.pickLocationHint }}</div>
+            </sc-if>
+            <button class="btnP" data-disabled="{{ nextDisabled }}" onClick="{{ goDestinations }}">{{ nextLabel }}</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ addSuccess }}" hint-placeholder-val="{{ false }}">
+          <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 28px; text-align: center;">
+            <div style="width: 64px; height: 64px; border-radius: 50%; background: var(--okFill); color: #fff; display: flex; align-items: center; justify-content: center;"><svg class="pop" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4.5 4.5L19 7"></path></svg></div>
+            <div class="h1" style="margin-top: 20px;">{{ t.placeSaved }}</div>
+            <div class="mut" style="margin-top: 8px; line-height: 1.5;">{{ successSub }}</div>
+            <div class="card" style="width: 100%; box-sizing: border-box; display: flex; align-items: center; gap: 12px; text-align: start; margin-top: 24px;">
+              <div style="width: 52px; height: 52px; border-radius: 13px; background: var(--pageBg); display: flex; align-items: center; justify-content: center; font-size: 26px; flex-shrink: 0;">{{ successEmoji }}</div>
+              <div style="flex: 1; min-width: 0;">
+                <div class="rowName" style="font-size: 15px;">{{ nameText }}</div>
+                <div class="mut" style="margin-top: 3px;">{{ pickedAddress }}</div>
+                <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;">
+                  <sc-for list="{{ chosenTags }}" as="tg" hint-placeholder-count="2">
+                    <div class="mtag">{{ tg.label }}</div>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+            <button class="btnP" style="margin-top: 26px;" onClick="{{ closeAdd }}">{{ t.done }}</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ analysing }}" hint-placeholder-val="{{ false }}">
+          <div style="position: absolute; inset: 0; background: var(--pageBg); display: flex; flex-direction: column; justify-content: center; padding: 0 32px; z-index: 50;" role="status" aria-live="polite">
+            <div class="stripe8" style="width: 88px; height: 88px; border-radius: 22px; margin-bottom: 26px;"></div>
+            <div style="font-size: 20px; font-weight: 800; color: var(--text); letter-spacing: -0.01em;">{{ t.analysing }}</div>
+            <div class="track" style="margin: 22px 0 20px;"><div class="trackFill" style="width: {{ analyseProgress }};"></div></div>
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+              <sc-for list="{{ analyseStages }}" as="st" hint-placeholder-count="3">
+                <div class="stage {{ st.cls }}">
+                  <div class="stageDot"><sc-if value="{{ st.done }}" hint-placeholder-val="{{ true }}"><svg class="pop" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4.5 4.5L19 7"></path></svg></sc-if></div>
+                  <div>{{ st.label }}</div>
+                </div>
+              </sc-for>
+            </div>
+            <div class="mut" style="margin-top: 26px; line-height: 1.5;">{{ t.analyseNote }}</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ showCandidates }}" hint-placeholder-val="{{ false }}">
+          <div class="sheetWrap" style="z-index: 60;">
+            <div class="sheet">
+              <div class="grab"></div>
+              <div class="sheetT" style="margin-bottom: 6px;">{{ t.whichPlace }}</div>
+              <div class="mut" style="margin-bottom: 16px; line-height: 1.5;">{{ t.evidence }}</div>
+              <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
+                <sc-for list="{{ candidates }}" as="c" hint-placeholder-count="3">
+                  <button class="row" style="flex-direction: column; align-items: flex-start; gap: 3px; padding: 13px 14px;" onClick="{{ c.pick }}">
+                    <div class="rowName">{{ c.name }}</div>
+                    <div class="mut">{{ c.address }}</div>
+                  </button>
+                </sc-for>
+              </div>
+              <button class="btnG" onClick="{{ dismissCandidates }}">{{ t.noneOfThese }}</button>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ addDestinations }}" hint-placeholder-val="{{ false }}">
+          <div class="sheetWrap" style="z-index: 60;">
+            <div class="sheet">
+              <div class="grab"></div>
+              <div class="sheetT">{{ t.addThisTo }}</div>
+              <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px;">
+                <sc-for list="{{ destinations }}" as="d" hint-placeholder-count="4">
+                  <button class="row" onClick="{{ d.toggle }}">
+                    <div style="width: 22px; height: 22px; border-radius: 6px; border: 2px solid {{ d.boxBorder }}; background: {{ d.boxBg }}; color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><sc-if value="{{ d.on }}" hint-placeholder-val="{{ true }}"><svg class="pop" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4.5 4.5L19 7"></path></svg></sc-if></div>
+                    <div style="font-size: 17px; flex-shrink: 0;">{{ d.emoji }}</div>
+                    <div class="rowName" style="flex: 1;">{{ d.label }}</div>
+                  </button>
+                </sc-for>
+              </div>
+              <button class="btnP" data-disabled="{{ destDisabled }}" style="margin-bottom: 10px;" onClick="{{ saveWithDestinations }}">{{ destCta }}</button>
+              <button class="btnG" onClick="{{ backToForm }}">{{ t.cancel }}</button>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <!-- ============ PLACE DETAIL ============ -->
+    <sc-if value="{{ isPlaceDetail }}" hint-placeholder-val="{{ false }}">
+      <div class="scroll screenIn" style="padding: 40px 20px 100px;">
+        <button class="back" aria-label="{{ t.back }}" onClick="{{ pop }}"><svg class="mirror backIcon" width="10" height="16" viewBox="0 0 10 16" fill="none"><path d="M8 1L2 8l6 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+        <div class="stripe8" style="height: 168px; border-radius: 16px; margin: 16px 0 16px;"></div>
+        <div class="h1">{{ place.name }}</div>
+        <div style="display: flex; align-items: center; gap: 6px; margin-top: 8px;">
+          <div style="width: 8px; height: 8px; border-radius: 50%; background: {{ place.pinColor }};"></div>
+          <div class="mut">{{ place.meta }}</div>
+        </div>
+        <div style="display: flex; gap: 8px; margin-top: 14px;">
+          <div class="chip" style="cursor: default;">{{ place.category }}</div>
+          <div class="chip" style="cursor: default;">{{ place.area }}</div>
+        </div>
+        <button style="width: 100%; box-sizing: border-box; display: flex; align-items: center; gap: 12px; margin-top: 20px; background: {{ place.visitBg }}; border: 1.5px solid {{ place.ringColor }}; border-radius: 14px; padding: 14px; cursor: pointer; font-family: inherit;" onClick="{{ place.toggle }}">
+          <div style="width: 28px; height: 28px; border-radius: 50%; border: 2px solid {{ place.ringColor }}; background: {{ place.fillColor }}; color: {{ place.iconFg }}; display: flex; align-items: center; justify-content: center; transition: background 200ms ease, border-color 200ms ease;"><sc-if value="{{ place.visited }}" hint-placeholder-val="{{ true }}"><svg class="{{ place.drawCls }}" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4.5 4.5L19 7"></path></svg></sc-if><sc-if value="{{ place.notVisited }}" hint-placeholder-val="{{ false }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z"></path><circle cx="12" cy="10" r="2.3"></circle></svg></sc-if></div>
+          <div style="font-size: 14px; font-weight: 700; color: var(--text);">{{ place.visitLabel }}</div>
+        </button>
+        <div class="sec" style="margin: 26px 0 10px;">{{ t.memoriesHere }}</div>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;">
+          <button style="height: 128px; border-radius: 14px; border: 1.5px dashed var(--border); background: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; cursor: pointer; font-family: inherit;" onClick="{{ openMemory }}">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+            <div style="font-size: 11.5px; font-weight: 600; color: var(--muted);">{{ t.addMemory }}</div>
+          </button>
+          <div class="stripe8" style="height: 128px; border-radius: 14px;"></div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ============ TAB BAR ============ -->
+    <sc-if value="{{ showTabs }}" hint-placeholder-val="{{ true }}">
+      <div class="tabbar">
+        <button class="tabb" style="color: {{ tabHome.fg }};" onClick="{{ tabHome.select }}">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="{{ tabHome.sw }}" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"></path><path d="M5.5 9.5V20h13V9.5"></path><path d="M9.5 20v-5h5v5"></path></svg>
+          <div class="tabl">{{ tabHome.label }}</div>
+        </button>
+        <button class="tabb" style="color: {{ tabMap.fg }};" onClick="{{ tabMap.select }}">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="{{ tabMap.sw }}" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6.5v13L9 17l6 2.5 6-2.5v-13L15 6.5 9 4z"></path><path d="M9 4v13M15 6.5v13"></path></svg>
+          <div class="tabl">{{ tabMap.label }}</div>
+        </button>
+        <button class="tabb" style="color: {{ tabSpaces.fg }};" onClick="{{ tabSpaces.select }}">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="{{ tabSpaces.sw }}" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8.5" r="3.2"></circle><path d="M3.5 19.5c0-3 2.5-4.8 5.5-4.8s5.5 1.8 5.5 4.8"></path><path d="M16 5.6a3.2 3.2 0 0 1 0 5.8M17.5 14.9c2 .5 3.5 2.1 3.5 4.6"></path></svg>
+          <div class="tabl">{{ tabSpaces.label }}</div>
+        </button>
+        <button class="tabb" style="color: {{ tabProfile.fg }};" onClick="{{ tabProfile.select }}">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="{{ tabProfile.sw }}" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"></circle><path d="M4.5 20c0-3.6 3.2-5.8 7.5-5.8s7.5 2.2 7.5 5.8"></path></svg>
+          <div class="tabl">{{ tabProfile.label }}</div>
+        </button>
+      </div>
+    </sc-if>
+
+    <!-- ============ SHEETS ============ -->
+    <sc-if value="{{ sheetLocation }}" hint-placeholder-val="{{ false }}">
+      <div class="sheetWrap">
+        <div class="sheet">
+          <div class="grab"></div>
+          <div class="sheetT">{{ t.setLocation }}</div>
+          <button class="row" style="margin-bottom: 10px;" onClick="{{ useCurrent }}">
+            <div style="width: 16px; height: 16px; border-radius: 50% 50% 50% 0; background: var(--a1); transform: rotate(-45deg); flex-shrink: 0;"></div>
+            <div style="flex: 1;"><div class="rowName">{{ t.useCurrent }}</div><div class="mut" style="margin-top: 2px;">{{ t.useCurrentSub }}</div></div>
+          </button>
+          <button class="row" style="margin-bottom: 16px;" onClick="{{ useCustom }}">
+            <div style="width: 16px; height: 16px; border-radius: 4px; background: var(--a2); flex-shrink: 0;"></div>
+            <div style="flex: 1;"><div class="rowName">{{ t.useCustom }}</div><div class="mut" style="margin-top: 2px;">{{ t.useCustomSub }}</div></div>
+          </button>
+          <sc-if value="{{ hasPoints }}" hint-placeholder-val="{{ true }}">
+            <div>
+              <div class="lab">{{ t.savedAddresses }}</div>
+              <div style="display: flex; flex-direction: column; gap: var(--s2); margin-bottom: 16px;">
+                <sc-for list="{{ points }}" as="pt" hint-placeholder-count="2">
+                  <button class="row" onClick="{{ pt.use }}">
+                    <div style="width: 16px; height: 16px; border-radius: 50% 50% 50% 0; background: var(--a1); transform: rotate(-45deg); flex-shrink: 0; margin-inline: 6px 10px;"></div>
+                    <div style="flex: 1; min-width: 0;"><div class="rowName">{{ pt.label }}</div><div class="mut clip">{{ pt.address }}</div></div>
+                  </button>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+          <button class="btnG" onClick="{{ closeSheet }}">{{ t.cancel }}</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ sheetPassword }}" hint-placeholder-val="{{ false }}">
+      <div class="sheetWrap">
+        <div class="sheet">
+          <div class="grab"></div>
+          <div class="sheetT">{{ t.changePassword }}</div>
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div>
+              <div class="lab">{{ t.currentPw }}</div>
+              <div class="field"><span class="fieldPh">{{ t.currentPwPh }}</span></div>
+            </div>
+            <div>
+              <div class="lab">{{ t.newPw }}</div>
+              <div class="field"><span class="fieldPh">{{ t.newPwPh }}</span></div>
+              <div style="display: flex; gap: 5px; margin-top: 8px;">
+                <div style="flex: 1; height: 4px; border-radius: 2px; background: var(--okFill);"></div>
+                <div style="flex: 1; height: 4px; border-radius: 2px; background: var(--okFill);"></div>
+                <div style="flex: 1; height: 4px; border-radius: 2px; background: var(--border);"></div>
+              </div>
+              <div class="mut" style="margin-top: 6px;">{{ t.strengthGood }}</div>
+            </div>
+            <div>
+              <div class="lab">{{ t.confirmNewPw }}</div>
+              <div class="field"><span class="fieldPh">{{ t.confirmNewPwPh }}</span></div>
+            </div>
+          </div>
+          <div class="mut" style="margin: 16px 0 20px; line-height: 1.5;">{{ t.pwNote }}</div>
+          <button class="btnP" style="margin-bottom: 10px;" onClick="{{ closeSheet }}">{{ t.updatePassword }}</button>
+          <button class="btnG" onClick="{{ closeSheet }}">{{ t.cancel }}</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ sheetSettings }}" hint-placeholder-val="{{ false }}">
+      <div class="sheetWrap">
+        <div class="sheet">
+          <div class="grab"></div>
+          <div class="sheetT">{{ t.settings }}</div>
+          <div class="lab">{{ t.appearance }}</div>
+          <div class="segw" style="background: var(--pageBg); margin-bottom: 20px;">
+            <button class="seg {{ segLight }}" onClick="{{ setLight }}">{{ t.light }}</button>
+            <button class="seg {{ segDark }}" onClick="{{ setDark }}">{{ t.dark }}</button>
+          </div>
+          <div class="lab">{{ t.language }}</div>
+          <div class="segw" style="background: var(--pageBg); margin-bottom: 24px;">
+            <button class="seg {{ segEn }}" onClick="{{ setEn }}">English</button>
+            <button class="seg {{ segAr }}" onClick="{{ setAr }}" lang="ar">العربية</button>
+          </div>
+          <button class="btnG" onClick="{{ closeSheet }}">{{ t.done }}</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ sheetReview }}" hint-placeholder-val="{{ false }}">
+      <div class="sheetWrap">
+        <div class="sheet">
+          <div class="grab"></div>
+          <div style="display: flex; align-items: center; gap: 8px; color: var(--okFill); font-size: 12px; font-weight: 700; margin-bottom: 6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4.5 4.5L19 7"></path></svg><span>{{ reviewPlace }}</span></div>
+          <div class="sheetT" style="margin-bottom: 4px;">{{ t.howWasIt }}</div>
+          <div class="mut" style="margin-bottom: 8px;">{{ t.reviewSub }}</div>
+          <div class="stars" role="radiogroup" aria-label="{{ t.yourRating }}">
+            <sc-for list="{{ reviewStars }}" as="st" hint-placeholder-count="5">
+              <button class="star {{ st.cls }}" role="radio" aria-checked="{{ st.checked }}" aria-label="{{ st.label }}" onClick="{{ st.pick }}"><svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.8l2.8 5.8 6.3.8-4.6 4.4 1.2 6.3L12 17l-5.7 3.1 1.2-6.3L2.9 9.4l6.3-.8z"></path></svg></button>
+            </sc-for>
+          </div>
+          <div class="lab">{{ t.whatStoodOut }}</div>
+          <button class="field" style="display: block; inline-size: 100%; box-sizing: border-box; min-height: 76px; text-align: start; cursor: text; font-family: inherit; margin-bottom: 16px; line-height: 1.45; color: {{ reviewNoteFg }};" onClick="{{ reviewFillNote }}">{{ reviewNoteText }}</button>
+          <div class="lab">{{ t.addPhotos }}</div>
+          <div style="display: flex; gap: 8px; margin-bottom: 22px;">
+            <sc-for list="{{ reviewPhotoList }}" as="ph" hint-placeholder-count="1">
+              <div class="stripe8 pop" style="inline-size: 64px; block-size: 64px; border-radius: 12px;"></div>
+            </sc-for>
+            <button class="photoAdd" aria-label="{{ t.addPhotos }}" onClick="{{ reviewAddPhoto }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></button>
+          </div>
+          <button class="btnP" style="margin-bottom: 10px;" data-disabled="{{ reviewDisabled }}" onClick="{{ reviewSave }}">{{ t.saveReview }}</button>
+          <button class="btnG" onClick="{{ closeSheet }}">{{ t.skipReview }}</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ sheetPoint }}" hint-placeholder-val="{{ false }}">
+      <div class="sheetWrap">
+        <div class="sheet">
+          <div class="grab"></div>
+          <div class="sheetT">{{ t.addPoint }}</div>
+          <div class="lab">{{ t.label }}</div>
+          <div class="field" style="margin-bottom: 6px;"><span class="fieldPh">{{ t.pointLabelPh }}</span></div>
+          <div class="mut" style="margin-bottom: 20px;">{{ t.pointLabelHint }}</div>
+          <button class="btnP" style="margin-bottom: 10px;" onClick="{{ closeSheet }}">{{ t.chooseOnMap }}</button>
+          <button class="btnG" onClick="{{ closeSheet }}">{{ t.cancel }}</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ============ CREATE SPACE ============ -->
+    <sc-if value="{{ csConfig }}" hint-placeholder-val="{{ false }}">
+      <div class="screenIn" style="position: absolute; inset: 0; background: var(--pageBg); display: flex; flex-direction: column; z-index: 30;">
+        <div style="display: flex; align-items: center; padding: 44px 16px 10px; flex-shrink: 0;">
+          <button class="back" aria-label="{{ t.back }}" onClick="{{ csClose }}"><svg class="mirror backIcon" width="10" height="16" viewBox="0 0 10 16" fill="none"><path d="M8 1L2 8l6 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+          <div style="flex: 1; text-align: center; font-size: 16px; font-weight: 800; color: var(--text);">{{ t.newSpace }}</div>
+          <div style="width: 44px;"></div>
+        </div>
+        <div class="scroll" style="position: relative; inset: auto; flex: 1; padding: 6px 20px 20px;">
+
+            <button class="csBanner {{ csBannerCls }}" onClick="{{ csPickPhoto }}">
+              <sc-if value="{{ csNoPhoto }}" hint-placeholder-val="{{ true }}">
+                <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;">
+                  <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="15" rx="3"></rect><circle cx="9" cy="10" r="1.8"></circle><path d="M21 16l-5-5-8.5 8.5"></path></svg>
+                  <div style="font-size: 14px; font-weight: 700; color: var(--text);">{{ t.csAddBanner }}</div>
+                  <div style="font-size: 12px; font-weight: 700; color: var(--onA1); background: var(--a1Fill); border-radius: 999px; padding: 8px 14px;">{{ t.csChooseLibrary }}</div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ csHasPhoto }}" hint-placeholder-val="{{ false }}">
+                <div class="stripe8" style="position: absolute; inset: 0;"></div>
+                <div style="position: absolute; inset: 0; background: linear-gradient(to top, oklch(20% 0.02 250 / 55%), oklch(20% 0.02 250 / 0%) 55%);"></div>
+                <div style="position: absolute; top: 12px; inset-inline-end: 12px; font-size: 11.5px; font-weight: 700; color: #fff; background: oklch(20% 0.02 250 / 55%); border-radius: 999px; padding: 6px 11px;">{{ t.csChangePhoto }}</div>
+                <div style="position: absolute; bottom: 12px; inset-inline-start: 12px; width: 44px; height: 44px; border-radius: 13px; background: {{ csAccent }}; display: flex; align-items: center; justify-content: center; font-size: 22px;">{{ csIcon }}</div>
+              </sc-if>
+            </button>
+
+          <div class="lab" style="margin-top: 20px;">{{ t.spaceName }}</div>
+          <button class="field" style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px; inline-size: 100%; box-sizing: border-box; cursor: text; font-family: inherit; text-align: start;" onClick="{{ csFillName }}">
+            <span style="color: {{ csNameFg }}; min-width: 0;" class="clip">{{ csNameText }}</span>
+            <span class="mut" style="flex-shrink: 0;">{{ csNameCount }}</span>
+          </button>
+
+          <div class="lab" style="margin-top: 20px;">{{ csGridLabel }}</div>
+          <div class="csGrid">
+            <sc-for list="{{ csEmojis }}" as="em" hint-placeholder-count="14">
+              <button class="csEmoji {{ em.cls }}" aria-label="{{ em.emoji }}" onClick="{{ em.pick }}">{{ em.emoji }}</button>
+            </sc-for>
+          </div>
+        </div>
+        <div style="flex-shrink: 0; padding: 12px 20px 28px; background: var(--chrome); border-top: 1px solid var(--border);">
+          <sc-if value="{{ csHasHint }}" hint-placeholder-val="{{ true }}">
+            <div class="mut" style="text-align: center; margin-bottom: 10px;">{{ csHint }}</div>
+          </sc-if>
+          <button class="btnP" data-disabled="{{ csDisabled }}" style="display: flex; align-items: center; justify-content: center; gap: 8px;" onClick="{{ csCreate }}">
+            <sc-if value="{{ csBusy }}" hint-placeholder-val="{{ false }}"><span class="spin" style="width: 14px; height: 14px; border-radius: 50%; border: 2px solid oklch(100% 0 0 / 40%); border-top-color: #fff; display: inline-block;"></span></sc-if>
+            <span>{{ csBtnLabel }}</span>
+          </button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ csDone }}" hint-placeholder-val="{{ false }}">
+      <div class="screenIn" style="position: absolute; inset: 0; background: var(--pageBg); display: flex; flex-direction: column; z-index: 30;">
+        <div class="scroll" style="position: relative; inset: auto; flex: 1; padding: 52px 20px 20px;">
+          <div style="text-align: center; font-size: 16px; font-weight: 800; color: var(--text); margin-bottom: 18px;">{{ t.csCreated }}</div>
+          <sc-if value="{{ csDonePhoto }}" hint-placeholder-val="{{ true }}">
+            <div class="stripe8" style="position: relative; height: 150px; border-radius: 18px; overflow: hidden;">
+              <div style="position: absolute; bottom: 12px; inset-inline-start: 12px; width: 48px; height: 48px; border-radius: 14px; background: {{ csAccent }}; display: flex; align-items: center; justify-content: center; font-size: 24px;">{{ csIcon }}</div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ csDoneEmoji }}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; justify-content: center;"><div class="pop" style="width: 112px; height: 112px; border-radius: 30px; background: {{ csAccentSoft }}; display: flex; align-items: center; justify-content: center; font-size: 54px;">{{ csIcon }}</div></div>
+          </sc-if>
+          <div class="h1" style="text-align: center; margin-top: 16px;">{{ csNameText }}</div>
+          <div class="mut" style="text-align: center; margin-top: 4px;">{{ t.csOnlyMember }}</div>
+
+          <div class="card" style="margin-top: 22px; background: var(--rowBg); border: 1px solid var(--border);">
+            <div class="lab">{{ t.csInvite }}</div>
+            <button class="linkPill" onClick="{{ csCopy }}">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--a1Text)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1"></path><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"></path></svg>
+              <span class="clip" style="flex: 1; min-width: 0; font-size: 13px; font-weight: 600; color: var(--text); direction: ltr; text-align: start;">{{ csLink }}</span>
+              <span style="font-size: 11.5px; font-weight: 700; color: {{ csCopyFg }}; flex-shrink: 0;">{{ csCopyHint }}</span>
+            </button>
+            <div style="display: flex; gap: 10px; margin-top: 12px;">
+              <button class="btnG" style="padding: 12px; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 7px;" onClick="{{ csCopy }}">
+                <sc-if value="{{ csCopied }}" hint-placeholder-val="{{ false }}"><svg class="pop" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--okFill)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4.5 4.5L19 7"></path></svg></sc-if>
+                <span>{{ csCopyLabel }}</span>
+              </button>
+              <button class="btnP" style="padding: 12px; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 7px;" onClick="{{ noop }}">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 8l5-5 5 5"></path><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"></path></svg>
+                <span>{{ t.csShare }}</span>
+              </button>
+            </div>
+            <div class="mut" style="margin-top: 12px; line-height: 1.5;">{{ t.csInviteHint }}</div>
+          </div>
+        </div>
+        <div style="flex-shrink: 0; padding: 12px 20px 28px;">
+          <button class="btnG" onClick="{{ csFinish }}">{{ t.done }}</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ sheetMemory }}" hint-placeholder-val="{{ false }}">
+      <div class="sheetWrap">
+        <div class="sheet">
+          <div class="grab"></div>
+          <div class="sheetT">{{ t.addMemory }}</div>
+          <div style="display: flex; gap: 10px; margin-bottom: 18px;">
+            <button class="btnG" style="padding: 22px 12px; font-size: 13.5px;" onClick="{{ noop }}">{{ t.camera }}</button>
+            <button class="btnG" style="padding: 22px 12px; font-size: 13.5px;" onClick="{{ noop }}">{{ t.gallery }}</button>
+          </div>
+          <div class="lab">{{ t.caption }}</div>
+          <div class="field" style="min-height: 72px; margin-bottom: 6px;"><span class="fieldPh">{{ t.captionPh }}</span></div>
+          <div class="mut" style="text-align: right; margin-bottom: 20px;">0/200</div>
+          <button class="btnP" style="margin-bottom: 10px;" onClick="{{ closeSheet }}">{{ t.upload }}</button>
+          <button class="btnG" onClick="{{ closeSheet }}">{{ t.cancel }}</button>
+        </div>
+      </div>
+    </sc-if>
+
+  </div>
+  <!--CAPTION-->
+</div>

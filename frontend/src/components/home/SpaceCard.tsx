@@ -8,7 +8,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import {colors, fonts, radius, spacing} from '../../theme';
+import {colors, fonts, radius} from '../../theme';
 
 export interface MemberPreviewItem {
   userId: number;
@@ -30,21 +30,20 @@ export interface SpaceItem {
 interface Props {
   item: SpaceItem;
   onPress: (id: number) => void;
-  /** Override the carousel sizing (e.g. to lay cards out in a grid). */
   style?: StyleProp<ViewStyle>;
+  /** Spaces tab: taller tile and a plain stat line instead of the member pill. */
+  tall?: boolean;
 }
 
 function plural(n: number, word: string) {
   return `${n} ${word}${n === 1 ? '' : 's'}`;
 }
 
-export function SpaceCard({item, onPress, style}: Props) {
+// Space tiles wear the violet secondary: violet = people and spaces.
+export function SpaceCard({item, onPress, style, tall}: Props) {
   return (
-    <TouchableOpacity
-      style={[styles.wrap, style]}
-      activeOpacity={0.85}
-      onPress={() => onPress(item.id)}>
-      <View style={[styles.tile, {backgroundColor: item.accentColor}]}>
+    <TouchableOpacity style={style} activeOpacity={0.85} onPress={() => onPress(item.id)}>
+      <View style={[styles.tile, tall && styles.tileTall]}>
         {item.bannerUrl ? (
           <Image source={{uri: item.bannerUrl}} style={styles.banner} />
         ) : (
@@ -54,49 +53,68 @@ export function SpaceCard({item, onPress, style}: Props) {
       <Text style={styles.name} numberOfLines={1}>
         {item.name}
       </Text>
-      <Text style={styles.meta} numberOfLines={1}>
-        {plural(item.memberCount, 'member')} · {plural(item.placeCount, 'place')}
-      </Text>
+      {tall ? (
+        <Text style={styles.meta} numberOfLines={1}>
+          {plural(item.memberCount, 'member')} · {plural(item.placeCount, 'place')}
+        </Text>
+      ) : (
+        <View style={styles.pill}>
+          <Text style={styles.pillText}>{plural(item.memberCount, 'member')}</Text>
+        </View>
+      )}
     </TouchableOpacity>
   );
 }
 
-export function NewSpaceCard({onPress}: {onPress: () => void}) {
+export function NewSpaceCard({
+  onPress,
+  style,
+  tall,
+}: {
+  onPress: () => void;
+  style?: StyleProp<ViewStyle>;
+  tall?: boolean;
+}) {
   return (
-    <TouchableOpacity style={styles.wrap} activeOpacity={0.85} onPress={onPress}>
-      <View style={[styles.tile, styles.tileNew]}>
+    <TouchableOpacity style={style} activeOpacity={0.85} onPress={onPress}>
+      <View style={[styles.tile, styles.tileNew, tall && styles.tileTall]}>
         <Text style={styles.newPlus}>＋</Text>
+        <Text style={styles.newLabel}>New space</Text>
       </View>
-      <Text style={styles.name}>New space</Text>
-      <Text style={styles.meta}>Start a shared list</Text>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: {width: 168, marginRight: spacing.md},
   tile: {
-    height: 118,
-    borderRadius: radius.lg,
+    height: 100,
+    borderRadius: radius.md,
+    backgroundColor: colors.accentSoft,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
-    marginBottom: 10,
   },
+  tileTall: {height: 118},
   tileNew: {
     backgroundColor: 'transparent',
     borderWidth: 1.5,
     borderColor: colors.border,
     borderStyle: 'dashed',
+    gap: 4,
   },
   banner: {...StyleSheet.absoluteFillObject, resizeMode: 'cover'},
-  emoji: {fontSize: 40},
-  newPlus: {fontSize: 28, color: colors.textMuted},
-  name: {fontFamily: fonts.semibold, fontSize: 16, color: colors.text},
-  meta: {
-    fontFamily: fonts.regular,
-    fontSize: 13,
-    color: colors.textSecondary,
-    marginTop: 3,
+  emoji: {fontSize: 34},
+  newPlus: {fontSize: 20, color: colors.textSecondary},
+  newLabel: {fontFamily: fonts.semibold, fontSize: 11.5, color: colors.textSecondary},
+  name: {fontFamily: fonts.bold, fontSize: 13, color: colors.text, marginTop: 8},
+  meta: {fontFamily: fonts.regular, fontSize: 11.5, color: colors.textSecondary, marginTop: 2},
+  pill: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.accent,
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginTop: 4,
   },
+  pillText: {fontFamily: fonts.semibold, fontSize: 11, color: colors.white},
 });

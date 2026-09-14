@@ -6,13 +6,7 @@
  *  2. Call uploadToR2() → PUT the image file directly to R2 (zero backend egress)
  *  3. Call create()    → POST /places/{id}/memories with the key + caption
  *
- * Image picking is handled by the caller using react-native-image-picker.
- * Install before use:
- *   npm install react-native-image-picker
- *   cd ios && pod install
- *   Add to ios/frontend/Info.plist:
- *     <key>NSCameraUsageDescription</key><string>Take a photo for this memory</string>
- *     <key>NSPhotoLibraryUsageDescription</key><string>Choose a photo for this memory</string>
+ * Image picking (and cropping to a frame) is handled by the caller via utils/pickImage.
  */
 
 import api from './api';
@@ -23,11 +17,25 @@ export interface PresignResult {
   key: string;
 }
 
+/** A dish eaten on a memory, rated 1-5. */
+export interface ApiDish {
+  id: number;
+  name: string;
+  rating: number;
+}
+
+/** A dish before it is saved — no id yet. */
+export interface DishDraft {
+  name: string;
+  rating: number;
+}
+
 export interface ApiMemory {
   id: number;
   place_id: number;
   image_url: string;
   caption: string | null;
+  dishes: ApiDish[];
   created_at: string;
 }
 
@@ -74,11 +82,13 @@ const memoryService = {
     imageKey: string,
     caption?: string,
     spaceId?: number,
+    dishes?: DishDraft[],
   ): Promise<ApiMemory> => {
     const res = await api.post<{data: ApiMemory}>(`/places/${placeId}/memories`, {
       image_key: imageKey,
       caption: caption?.trim() || undefined,
       space_id: spaceId ?? undefined,
+      dishes: dishes?.length ? dishes : undefined,
     });
     return res.data.data;
   },

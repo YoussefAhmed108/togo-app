@@ -63,7 +63,7 @@ func TestListPlaces_Success(t *testing.T) {
 
 func TestCreatePlace_Success(t *testing.T) {
 	store := &mockPlaceStore{
-		createPlace: func(_ context.Context, _ uint64, _ string, _ *string, _, _ float64) (uint64, error) {
+		createPlace: func(_ context.Context, _ uint64, _ string, _ *string, _, _ float64, _ bool) (uint64, error) {
 			return 10, nil
 		},
 		upsertTag:     func(_ context.Context, _ string) (uint64, error) { return 1, nil },
@@ -89,12 +89,23 @@ func TestCreatePlace_MissingName(t *testing.T) {
 	}
 }
 
+func TestCreatePlace_RejectsNonHTTPSourceURL(t *testing.T) {
+	rr, req := placeRequest(t, http.MethodPost, "/places", map[string]any{
+		"name": "Cafe", "lat": 40.7, "lng": -74.0, "source_url": "javascript:alert(1)",
+	}, 1, nil)
+	handlers.NewPlaceHandler(&mockPlaceStore{}, &mockSpaceStore{}, noopStorage()).CreatePlace(rr, req)
+	if rr.Code != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", rr.Code)
+	}
+}
+
 // --- Get Place ---
 
 func TestGetPlace_Success(t *testing.T) {
 	store := &mockPlaceStore{
-		getPlace:     func(_ context.Context, id uint64) (*models.Place, error) { return stubPlace(id), nil },
-		listMemories: func(_ context.Context, _ uint64) ([]*models.Memory, error) { return nil, nil },
+		getPlace:       func(_ context.Context, id uint64) (*models.Place, error) { return stubPlace(id), nil },
+		listMemories:   func(_ context.Context, _, _ uint64) ([]*models.Memory, error) { return nil, nil },
+		hasPlaceAccess: func(_ context.Context, _, _ uint64) (bool, error) { return true, nil },
 	}
 	rr, req := placeRequest(t, http.MethodGet, "/places/1", nil, 1, map[string]string{"id": "1"})
 	handlers.NewPlaceHandler(store, &mockSpaceStore{}, noopStorage()).GetPlace(rr, req)
@@ -121,7 +132,8 @@ func TestGetPlace_Forbidden(t *testing.T) {
 			p.OwnerID = 999 // different owner
 			return p, nil
 		},
-		listMemories: func(_ context.Context, _ uint64) ([]*models.Memory, error) { return nil, nil },
+		listMemories:   func(_ context.Context, _, _ uint64) ([]*models.Memory, error) { return nil, nil },
+		hasPlaceAccess: func(_ context.Context, _, _ uint64) (bool, error) { return false, nil },
 	}
 	rr, req := placeRequest(t, http.MethodGet, "/places/1", nil, 1, map[string]string{"id": "1"})
 	handlers.NewPlaceHandler(store, &mockSpaceStore{}, noopStorage()).GetPlace(rr, req)
@@ -178,7 +190,7 @@ func TestAddTags_Success(t *testing.T) {
 func TestAddMemory_Success(t *testing.T) {
 	store := &mockPlaceStore{
 		isPlaceOwner: func(_ context.Context, _, _ uint64) (bool, error) { return true, nil },
-		createMemory: func(_ context.Context, _, _ uint64, _ string, _ *string) (uint64, error) { return 5, nil },
+		createMemory: func(_ context.Context, _, _ uint64, _ string, _ *string, _ *uint64) (uint64, error) { return 5, nil },
 		getMemory: func(_ context.Context, id uint64) (*models.Memory, error) {
 			return &models.Memory{ID: id, PlaceID: 1, UploaderID: 1, ImageKey: "memory/1/abc", CreatedAt: time.Now()}, nil
 		},
@@ -200,5 +212,63 @@ func TestAddMemory_MissingKey(t *testing.T) {
 	handlers.NewPlaceHandler(store, &mockSpaceStore{}, noopStorage()).AddMemory(rr, req)
 	if rr.Code != http.StatusBadRequest {
 		t.Errorf("expected 400, got %d", rr.Code)
+	}
+}
+
+// Dishes ride along with the memory; a rating outside 1-5 must not reach the DB.
+func TestAddMemory_Dishes(t *testing.T) {
+	var saved []models.Dish
+	newStore := func() *mockPlaceStore {
+		return &mockPlaceStore{
+			isPlaceOwner: func(_ context.Context, _, _ uint64) (bool, error) { return true, nil },
+			createMemory: func(_ context.Context, _, _ uint64, _ string, _ *string, _ *uint64) (uint64, error) {
+				return 5, nil
+			},
+			addDishes: func(_ uint64, d []models.Dish) error { saved = d; return nil },
+			getMemory: func(_ context.Context, id uint64) (*models.Memory, error) {
+				return &models.Memory{ID: id, PlaceID: 1, UploaderID: 1, ImageKey: "memory/1/abc",
+					Dishes: saved, CreatedAt: time.Now()}, nil
+			},
+		}
+	}
+
+	rr, req := placeRequest(t, http.MethodPost, "/places/1/memories", map[string]any{
+		"image_key": "memory/1/abc",
+		"dishes": []map[string]any{
+			{"name": " Koshary ", "rating": 5},
+			{"name": "Molokhia", "rating": 3},
+		},
+	}, 1, map[string]string{"id": "1"})
+	handlers.NewPlaceHandler(newStore(), &mockSpaceStore{}, noopStorage()).AddMemory(rr, req)
+	if rr.Code != http.StatusCreated {
+		t.Fatalf("expected 201, got %d — %s", rr.Code, rr.Body.String())
+	}
+	if len(saved) != 2 || saved[0].Name != "Koshary" || saved[0].Rating != 5 {
+		t.Fatalf("dishes not stored as expected: %+v", saved)
+	}
+
+	for _, bad := range []any{0, 6} {
+		saved = nil
+		rr, req = placeRequest(t, http.MethodPost, "/places/1/memories", map[string]any{
+			"image_key": "memory/1/abc",
+			"dishes":    []map[string]any{{"name": "Fool", "rating": bad}},
+		}, 1, map[string]string{"id": "1"})
+		handlers.NewPlaceHandler(newStore(), &mockSpaceStore{}, noopStorage()).AddMemory(rr, req)
+		if rr.Code != http.StatusBadRequest {
+			t.Fatalf("rating %v: expected 400, got %d", bad, rr.Code)
+		}
+		if saved != nil {
+			t.Fatalf("rating %v: dishes were stored anyway", bad)
+		}
+	}
+
+	// Blank name is rejected too.
+	rr, req = placeRequest(t, http.MethodPost, "/places/1/memories", map[string]any{
+		"image_key": "memory/1/abc",
+		"dishes":    []map[string]any{{"name": "  ", "rating": 4}},
+	}, 1, map[string]string{"id": "1"})
+	handlers.NewPlaceHandler(newStore(), &mockSpaceStore{}, noopStorage()).AddMemory(rr, req)
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("blank name: expected 400, got %d", rr.Code)
 	}
 }

@@ -1,0 +1,61 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap">
+  <style>
+    body { margin: 0; font-family: 'Figtree', 'Avenir Next', 'Helvetica Neue', sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #006873; } a:hover { color: #00838E; }
+  </style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; overflow: hidden; background: #00828E; color: #1C1C25;">
+
+  <!-- A route between three stops, drawn into the teal -->
+  <svg width="390" height="380" viewBox="0 0 390 380" style="position: absolute; top: 0; left: 0;">
+    <path d="M-20 300 C60 250 90 180 170 190 S300 250 330 150 S360 60 420 40" stroke="#FFFFFF" stroke-opacity="0.28" stroke-width="2.5" stroke-dasharray="2 8" stroke-linecap="round" fill="none"></path>
+    <circle cx="170" cy="190" r="7" fill="#FFFFFF" fill-opacity="0.9"></circle>
+    <circle cx="330" cy="150" r="7" fill="#FFFFFF" fill-opacity="0.9"></circle>
+    <circle cx="330" cy="150" r="16" fill="#FFFFFF" fill-opacity="0.16"></circle>
+    <circle cx="62" cy="262" r="5" fill="#FFFFFF" fill-opacity="0.6"></circle>
+  </svg>
+
+  <!-- Brand + promise, in white on the band -->
+  <div style="position: absolute; left: 24px; right: 24px; top: 72px; display: flex; flex-direction: column;">
+    <div style="display: flex; align-items: center; gap: 9px;">
+      <div style="position: relative; width: 30px; height: 30px; border-radius: 9px; background: #009FAA; box-shadow: 0 0 0 2px rgba(255,255,255,0.85);">
+        <div style="position: absolute; right: -4px; bottom: -4px; width: 16px; height: 16px; border-radius: 50%; background: #6F6FE2; border: 2px solid #00828E;"></div>
+      </div>
+      <div style="font-size: 19px; font-weight: 800; color: #FFFFFF; letter-spacing: -0.01em;">Waypoint</div>
+    </div>
+    <div style="font-size: 34px; font-weight: 800; color: #FFFFFF; letter-spacing: -0.03em; line-height: 1.04; margin-top: 44px; max-width: 300px; text-wrap: balance;">Every place from your feed, in one list.</div>
+  </div>
+
+  <!-- The page rises over the band, as on Home -->
+  <div style="position: absolute; left: 0; right: 0; top: 330px; bottom: 0; background: #F0F0F3; border-radius: 26px 26px 0 0; padding: 30px 24px 0; box-sizing: border-box; display: flex; flex-direction: column;">
+    <div style="font-size: 22px; font-weight: 800; letter-spacing: -0.02em;">Welcome back</div>
+    <div style="font-size: 13px; color: #5C5C69; margin-top: 4px;">Sign in to your account</div>
+    <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 22px;">
+      <div style="height: 50px; box-sizing: border-box; background: #FDFDFF; border: 1px solid #DCDCE0; border-radius: 12px; padding: 0 14px; display: flex; align-items: center; gap: 10px; font-size: 14px; color: #5C5C69;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5C5C69" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"></rect><path d="M4 7l8 6 8-6"></path></svg>
+        <span>you@email.com</span>
+      </div>
+      <div style="height: 50px; box-sizing: border-box; background: #FDFDFF; border: 1px solid #DCDCE0; border-radius: 12px; padding: 0 14px; display: flex; align-items: center; gap: 10px; font-size: 14px; color: #5C5C69;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5C5C69" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2.5"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
+        <span style="flex-grow: 1;">Password</span>
+        <span style="font-size: 13px; font-weight: 700; color: #006873;">Show</span>
+      </div>
+    </div>
+    <div style="margin-top: 18px; min-height: 48px; border-radius: 14px; background: #00838E; color: #FFFFFF; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center;">Sign in</div>
+    <div style="display: flex; justify-content: center; gap: 5px; margin-top: 20px; font-size: 13px; color: #5C5C69;">
+      <span>Don't have an account?</span><span style="font-weight: 700; color: #00838E;">Create one</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

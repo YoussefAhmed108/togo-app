@@ -4,17 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 )
 
 // GooglePlace is a single result from the Google Places Nearby Search API.
 type GooglePlace struct {
-	Name    string  `json:"name"`
-	Vicinity string `json:"vicinity"`
-	PlaceID string  `json:"place_id"`
-	Lat     float64 `json:"lat"`
-	Lng     float64 `json:"lng"`
+	Name     string  `json:"name"`
+	Vicinity string  `json:"vicinity"`
+	PlaceID  string  `json:"place_id"`
+	Lat      float64 `json:"lat"`
+	Lng      float64 `json:"lng"`
 }
 
 type nearbySearchResponse struct {
@@ -57,6 +58,9 @@ func NearbySearch(ctx context.Context, apiKey string, lat, lng float64, radiusM 
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
+		if ue, ok := err.(*url.Error); ok {
+			ue.URL = "(redacted)" // the URL carries the API key and this error is logged
+		}
 		return nil, fmt.Errorf("nearbysearch http: %w", err)
 	}
 	defer resp.Body.Close()
@@ -70,6 +74,9 @@ func NearbySearch(ctx context.Context, apiKey string, lat, lng float64, radiusM 
 		return nil, nil
 	}
 	if body.Status != "OK" {
+		// REQUEST_DENIED (bad key / API not enabled) and OVER_QUERY_LIMIT both
+		// arrive as HTTP 200, so the status string is the only signal there is.
+		log.Printf("recs: nearby HTTP %d, google status %q", resp.StatusCode, body.Status)
 		return nil, fmt.Errorf("google places status: %s", body.Status)
 	}
 

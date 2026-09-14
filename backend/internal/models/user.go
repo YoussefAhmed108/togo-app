@@ -14,3 +14,12 @@ type User struct {
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 }
+
+// SavedLocation is a named starting point the user can pick instead of GPS.
+type SavedLocation struct {
+	ID      uint64
+	Label   string
+	Address string
+	Lat     float64
+	Lng     float64
+}

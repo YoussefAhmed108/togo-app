@@ -8,7 +8,7 @@ import React, {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {authService, isProfileComplete} from '../services/authService';
 import {recommendationService} from '../services/recommendationService';
-import {STORAGE_KEYS} from '../services/api';
+import {STORAGE_KEYS, onSessionExpired} from '../services/api';
 import {AuthState, User} from '../types/auth';
 
 interface AuthContextValue extends AuthState {
@@ -159,6 +159,9 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
       isLoading: false,
     });
   }, []);
+
+  // A refresh that fails anywhere in the app ends the session here too.
+  useEffect(() => onSessionExpired(() => void signOut()), [signOut]);
 
   const value = useMemo<AuthContextValue>(
     () => ({...state, signUp, signIn, completeProfile, updateDisplayName, signOut, saveInterests, needsInterestSetup}),

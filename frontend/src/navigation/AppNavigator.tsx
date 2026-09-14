@@ -2,13 +2,12 @@ import React, {useEffect} from 'react';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {useNavigation} from '@react-navigation/native';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
-import HomeScreen from '../screens/HomeScreen';
+import {TabNavigator} from './TabNavigator';
 import CreateSpaceScreen from '../screens/app/CreateSpaceScreen';
 import CreatePlaceScreen from '../screens/app/CreatePlaceScreen';
+import ReviewPlacesScreen from '../screens/app/ReviewPlacesScreen';
 import SpaceScreen from '../screens/app/SpaceScreen';
-import SettingsScreen from '../screens/app/SettingsScreen';
 import PlaceScreen from '../screens/app/PlaceScreen';
-import SeeAllScreen from '../screens/app/SeeAllScreen';
 import {AppStackParamList} from '../types/navigation';
 import {colors, fonts} from '../theme';
 import {useAppSettings} from '../hooks/useAppSettings';
@@ -56,13 +55,8 @@ function AppStack({themeName}: {themeName: string}) {
         headerTintColor: colors.primary,
       }}>
       <Stack.Screen
-        name="Home"
-        component={HomeScreen}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name="Settings"
-        component={SettingsScreen}
+        name="Tabs"
+        component={TabNavigator}
         options={{headerShown: false}}
       />
       <Stack.Screen
@@ -76,8 +70,8 @@ function AppStack({themeName}: {themeName: string}) {
         options={{headerShown: false}}
       />
       <Stack.Screen
-        name="SeeAll"
-        component={SeeAllScreen}
+        name="ReviewPlaces"
+        component={ReviewPlacesScreen}
         options={{headerShown: false}}
       />
       <Stack.Screen

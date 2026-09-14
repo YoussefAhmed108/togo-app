@@ -1,0 +1,15 @@
+{
+  "artboards": [
+    {"file": "Main.dc.html", "x": 0, "y": 0, "w": 440, "h": 1170, "title": "Scheme 1 · Nightfall"},
+    {"file": "Scheme2.dc.html", "x": 540, "y": 0, "w": 440, "h": 1170, "title": "Scheme 2 · Daylight"},
+    {"file": "Scheme3.dc.html", "x": 1080, "y": 0, "w": 440, "h": 1170, "title": "Scheme 3 · Electric"},
+    {"file": "MultiA.dc.html", "x": 1700, "y": 0, "w": 440, "h": 1090, "title": "Many spaces · switcher"},
+    {"file": "MultiB.dc.html", "x": 2240, "y": 0, "w": 440, "h": 1090, "title": "Many spaces · 3 on the map"},
+    {"file": "MultiC.dc.html", "x": 2780, "y": 0, "w": 440, "h": 1090, "title": "Many spaces · focused"}
+  ],
+  "annotations": [
+    {"id": "note-color", "x": 0, "y": -250, "w": 700, "text": "COLOUR — Layout 1 in three map-aware schemes.\nOn a map screen the brand colour cannot be a background: the map owns 55% of the pixels. So primary lives only in pins, the FAB and suggestions; each space gets its own accent from a fixed six-hue set.\nType is held constant (Bricolage Grotesque + Manrope) so you are judging colour only — the pairing is still open."},
+    {"id": "note-spaces", "x": 1700, "y": -250, "w": 960, "text": "MANY SPACES — the chip row is a shortcut, not the control.\nThree frames answer it: a switcher sheet that scales to any number, several spaces on the map at once with colour-coded clusters, and single-space focus that absorbs the old Space Detail screen."}
+  ],
+  "launch": {"view": "canvas"}
+}

@@ -1,0 +1,2269 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400..800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: var(--a1Text); } a:hover { color: var(--a1Fill); }
+
+    .app {
+      /* Surfaces: a quiet neutral ground with white cards on it (option B). */
+      --pageBg: oklch(95.5% 0.004 285); --text: oklch(23% 0.018 285); --muted: oklch(48% 0.02 285);
+      --rowBg: oklch(99.5% 0.003 285); --border: oklch(89.5% 0.006 285);
+      --chrome: oklch(99.5% 0.003 285); --sunken: oklch(95.5% 0.004 285);
+      --stripeA: oklch(89% 0.008 285); --stripeB: oklch(93% 0.006 285);
+      --ringIdle: oklch(79% 0.01 285);
+      --land: oklch(93% 0.008 285); --road: oklch(99% 0.004 285); --water: oklch(87.5% 0.038 250); --park: oklch(92% 0.042 150);
+      --disabledBg: oklch(89% 0.006 285); --disabledFg: oklch(45% 0.015 285);
+      /* Home header (B1): the page rises over a teal block. Value chosen in the canvas. */
+      --bandBg: #00828E; --headInk: #fff;
+      /* Violet owns people and spaces: these are the space-tile grounds. */
+      --a2Soft: oklch(90.5% 0.062 285); --a2SoftB: oklch(94% 0.042 285);
+
+      /* Brand. --a1 is the identity hue and is only ever a non-text fill
+         (pins, dots, rules). Text and filled controls use the two variants
+         below, which are the same hue solved to 4.5:1. */
+      --a1: oklch(62% 0.15 200);
+      --a1Text: oklch(44% 0.15 200);
+      --a1Fill: oklch(53% 0.15 200);
+      --a2: oklch(60% 0.17 280);
+      --a2Fill: oklch(58% 0.17 280);
+      --ok: oklch(60% 0.14 155);
+      --okFill: oklch(55% 0.14 155);
+      --onA1: #fff;
+      --scrim: oklch(20% 0.01 250 / 45%);
+      --focus: oklch(44% 0.15 200);
+
+      /* 4-base spacing scale: tight inside a group, generous between topics. */
+      --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px;
+
+      font-family: 'Inter', Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app.dark {
+      --pageBg: oklch(18% 0.012 255); --text: oklch(94% 0.006 250); --muted: oklch(65% 0.01 255);
+      --rowBg: oklch(24% 0.014 255); --border: oklch(28% 0.014 255);
+      --chrome: oklch(18% 0.012 255); --sunken: oklch(24% 0.014 255);
+      --headInk: var(--text);
+      --stripeA: oklch(24% 0.014 255); --stripeB: oklch(28% 0.014 255);
+      --ringIdle: oklch(45% 0.01 255);
+      --land: oklch(24% 0.012 255); --road: oklch(30% 0.014 255); --water: oklch(22% 0.03 250); --park: oklch(26% 0.03 160);
+      --disabledBg: oklch(30% 0.012 255); --disabledFg: oklch(62% 0.012 255);
+      --a2Soft: oklch(30% 0.045 285); --a2SoftB: oklch(26% 0.030 285);
+      --a1Text: oklch(72% 0.13 200);
+      --scrim: oklch(8% 0.01 250 / 62%);
+      --focus: oklch(78% 0.12 200);
+    }
+    .app[dir="rtl"] { font-family: 'IBM Plex Sans Arabic', 'Inter', Helvetica, Arial, sans-serif; }
+
+    /* Browser surfaces the design still owns. */
+    .app ::selection { background: color-mix(in oklab, var(--a1) 26%, transparent); color: var(--text); }
+    .app :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
+    .app :focus:not(:focus-visible) { outline: none; }
+    .app button { caret-color: var(--a1Text); }
+
+    .phone {
+      width: 390px; height: 844px; border-radius: 44px; overflow: hidden; position: relative;
+      background: var(--pageBg); box-shadow: 0 18px 44px oklch(20% 0.02 250 / 20%), 0 3px 10px oklch(20% 0.02 250 / 10%);
+    }
+    .scroll {
+      position: absolute; inset: 0; z-index: 1; padding: 40px 20px 100px;
+      overflow-y: auto; overflow-x: hidden; box-sizing: border-box;
+      scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+    }
+    .scroll::-webkit-scrollbar { width: 4px; }
+    .scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .scroll::-webkit-scrollbar-track { background: transparent; }
+
+    /* Small controls are 44px boxes that draw something smaller inside, so the
+       touch target is real without a pseudo-element reaching over a neighbour. */
+    .visit { inline-size: 44px; block-size: 44px; flex-shrink: 0; border: none; background: none; padding: 0; margin-inline-end: -9px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: inherit; border-radius: 50%; transition: background 140ms ease; }
+    .visit:hover { background: color-mix(in oklab, var(--text) 7%, transparent); }
+    .visit > span { inline-size: 26px; block-size: 26px; border-radius: 50%; border: 2px solid var(--ringIdle); color: #fff; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+    /* Visited toggle: icon only. A 30px mark inside a 44px target — a quiet
+       pin ring when not visited, a green disc when you have been. */
+    .beenHere { inline-size: 44px; min-height: 44px; flex-shrink: 0; border: none; background: none; padding: 0; margin-inline-end: -8px; cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; }
+    .beenHere > span { inline-size: 30px; block-size: 30px; border-radius: 50%; border: 1.5px solid var(--border); color: var(--muted); display: flex; align-items: center; justify-content: center; transition: background 200ms cubic-bezier(0.16, 1, 0.3, 1), border-color 200ms ease, color 200ms ease; }
+    .beenHere:hover > span { border-color: var(--okFill); color: var(--okFill); }
+    .beenHere.on > span { background: var(--okFill); border-color: var(--okFill); color: #fff; }
+    /* The check draws itself in, only on the row just tapped. */
+    @keyframes draw { from { stroke-dashoffset: 22; } to { stroke-dashoffset: 0; } }
+    .draw path { stroke-dasharray: 22; animation: draw 300ms cubic-bezier(0.16, 1, 0.3, 1); }
+
+    .iconBtn { inline-size: 44px; block-size: 44px; margin-inline-end: -5px; border-radius: 50%; background: var(--a1Fill); border: none; color: #fff; cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 140ms ease; }
+    .iconBtn:hover { background: color-mix(in oklab, var(--a1Fill) 88%, black); }
+
+    .h1 { font-size: 24px; font-weight: 800; color: var(--text); letter-spacing: -0.02em; }
+    /* One section-label style: peer sections must not look ranked. */
+    .secHead { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s3); margin-bottom: var(--s3); }
+    .sec { font-size: 13.5px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+    .secCount { font-size: 12px; font-weight: 600; color: var(--muted); }
+    .section + .section { margin-top: var(--s6); }
+
+    /* Context and capture are one group: what you are adding, and where you are. */
+    .capture { background: var(--rowBg); border-radius: 16px; overflow: hidden; }
+    .captureRow { display: flex; align-items: center; gap: var(--s3); inline-size: 100%; box-sizing: border-box; background: none; border: none; padding: 13px 14px; text-align: start; cursor: pointer; font-family: inherit; color: inherit; min-height: 56px; transition: background 140ms ease; }
+    .captureRow:hover { background: color-mix(in oklab, var(--rowBg) 88%, var(--text)); }
+    .captureRow + .captureRow { border-top: 1px solid var(--border); }
+    .captureScope { min-height: 48px; padding-block: 10px; }
+    .emptyNote { font-size: 12.5px; line-height: 1.45; color: var(--muted); background: var(--rowBg); border-radius: 12px; padding: 14px; }
+    .mut { font-size: 11.5px; color: var(--muted); }
+    .clip { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .row {
+      display: flex; align-items: center; gap: 10px; background: var(--rowBg); border-radius: 12px;
+      padding: 10px 12px; border: none; inline-size: 100%; box-sizing: border-box; text-align: start;
+      cursor: pointer; font-family: inherit; color: inherit; transition: background 140ms ease;
+    }
+    .row:hover { background: color-mix(in oklab, var(--rowBg) 88%, var(--text)); }
+    .rowName { font-size: 13.5px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .mtag { font-size: 11px; font-weight: 600; color: var(--muted); background: var(--pageBg); border: 1px solid var(--border); border-radius: 8px; padding: 2px 7px; }
+    .stripe4 { background: repeating-linear-gradient(45deg, var(--stripeA), var(--stripeA) 4px, var(--stripeB) 4px, var(--stripeB) 8px); }
+    .stripe6 { background: repeating-linear-gradient(45deg, var(--stripeA), var(--stripeA) 6px, var(--stripeB) 6px, var(--stripeB) 12px); }
+    /* Space tiles wear the secondary, so "violet = people and spaces" is a rule. */
+    .stripeSpace { background: repeating-linear-gradient(45deg, var(--a2Soft), var(--a2Soft) 6px, var(--a2SoftB) 6px, var(--a2SoftB) 12px); }
+    .stripe8 { background: repeating-linear-gradient(45deg, var(--stripeA), var(--stripeA) 8px, var(--stripeB) 8px, var(--stripeB) 16px); }
+
+    .tabbar { position: absolute; inset-inline: 0; bottom: 0; background: var(--chrome); border-top: 1px solid var(--border); display: flex; padding: 6px 6px 26px; z-index: 20; }
+    .tabb { flex: 1; background: none; border: none; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 0; cursor: pointer; font-family: inherit; color: var(--muted); min-height: 48px; }
+    .tabb:hover { color: var(--a1Text); }
+    .tabl { font-size: 11px; font-weight: 600; }
+
+    .btnP { inline-size: 100%; box-sizing: border-box; background: var(--a1Fill); color: var(--onA1); border: none; border-radius: 14px; padding: 15px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; min-height: 48px; transition: background 140ms ease; }
+    .btnP:hover { background: color-mix(in oklab, var(--a1Fill) 88%, black); }
+    .btnP[data-disabled="true"] { background: var(--disabledBg); color: var(--disabledFg); cursor: default; }
+    .btnG { inline-size: 100%; box-sizing: border-box; background: var(--rowBg); color: var(--text); border: none; border-radius: 14px; padding: 15px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; min-height: 48px; transition: background 140ms ease; }
+    .btnG:hover { background: color-mix(in oklab, var(--rowBg) 88%, var(--text)); }
+
+    .field { background: var(--sunken); border: 1px solid var(--border); border-radius: 12px; padding: 13px 14px; font-size: 14px; color: var(--text); }
+    .fieldPh { color: var(--muted); }
+    .lab { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 7px; }
+    .chip { font-size: 12px; font-weight: 600; color: var(--text); background: var(--rowBg); border: 1px solid var(--border); border-radius: 999px; padding: 0 13px; cursor: pointer; font-family: inherit; white-space: nowrap; min-height: 36px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; transition: background 140ms ease, border-color 140ms ease; }
+    .chip:hover { border-color: var(--a1Text); }
+    .chipOn { color: var(--onA1); background: var(--a1Fill); border-color: var(--a1Fill); }
+    .chipOn:hover { background: color-mix(in oklab, var(--a1Fill) 88%, black); border-color: transparent; }
+
+    .sheetWrap { position: absolute; inset: 0; background: var(--scrim); display: flex; align-items: flex-end; z-index: 40; }
+    .sheet { inline-size: 100%; background: var(--chrome); border-radius: 20px 20px 0 0; padding: 22px 20px 34px; box-sizing: border-box; max-height: 88%; overflow-y: auto; }
+    .grab { inline-size: 36px; block-size: 4px; border-radius: 4px; background: var(--border); margin: 0 auto 18px; }
+    .recSave { position: absolute; top: 2px; inset-inline-end: 2px; inline-size: 44px; block-size: 44px; border: none; background: none; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .recSave > span { inline-size: 34px; block-size: 34px; border-radius: 50%; background: var(--rowBg); color: var(--a1Text); display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px oklch(20% 0.02 250 / 22%); transition: background 180ms ease, color 180ms ease, transform 160ms cubic-bezier(0.16,1,0.3,1); }
+    .recSave:active > span { transform: scale(0.9); }
+    .recSave.on > span { background: var(--a1Fill); color: #fff; }
+    .stars { display: flex; justify-content: center; margin: 4px 0 18px; }
+    .star { inline-size: 48px; block-size: 48px; border: none; background: none; padding: 0; cursor: pointer; color: var(--border); display: flex; align-items: center; justify-content: center; transition: color 140ms ease, transform 160ms cubic-bezier(0.16,1,0.3,1); }
+    .star.on { color: oklch(76% 0.16 75); }
+    .star:active { transform: scale(0.88); }
+    .photoAdd { inline-size: 64px; block-size: 64px; flex-shrink: 0; border-radius: 12px; border: 1.5px dashed var(--border); background: none; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .sheetT { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 14px; }
+    .back { inline-size: 44px; block-size: 44px; margin-inline-start: -5px; border-radius: 50%; background: none; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: background 140ms ease; }
+    .back:hover { background: var(--rowBg); }
+    .backIcon { color: var(--text); }
+
+    .segw { display: flex; gap: 4px; background: var(--sunken); border-radius: 12px; padding: 4px; }
+    .seg { flex: 1; text-align: center; font-size: 13px; font-weight: 700; color: var(--muted); padding: 11px 0; border-radius: 9px; border: none; background: none; cursor: pointer; font-family: inherit; min-height: 44px; transition: background 140ms ease, color 140ms ease; }
+    .seg:hover { color: var(--text); }
+    .segOn { background: var(--chrome); color: var(--text); box-shadow: 0 1px 3px oklch(20% 0.02 250 / 16%); }
+    /* Home header block (light only): a flat block, with the page ground rising
+       over it on rounded top corners so the capture card straddles the seam. */
+    .band, .bandSheet { display: none; }
+    .app:not(.dark) .band { display: block; position: absolute; top: 0; inset-inline: 0; height: 200px; background: var(--bandBg); z-index: -2; }
+    .app:not(.dark) .bandSheet { display: block; position: absolute; top: 158px; inset-inline: 0; bottom: 0; background: var(--pageBg); border-radius: 26px 26px 0 0; z-index: -1; }
+
+    /* On the teal header the teal logo square needs a ring to stay visible. */
+    .app:not(.dark) .logoMark { box-shadow: 0 0 0 2px oklch(100% 0 0 / 0.85); }
+
+    /* Create space */
+    .csBanner { position: relative; display: block; inline-size: 100%; block-size: 176px; border-radius: 16px; overflow: hidden; cursor: pointer; font-family: inherit; padding: 0; border: 1.5px dashed var(--border); background: var(--rowBg); }
+    .csBannerFilled { border: none; }
+    .csGrid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+    .csEmoji { block-size: 46px; border-radius: 12px; border: 2px solid transparent; background: none; font-size: 22px; cursor: pointer; font-family: inherit; transition: background 140ms ease, border-color 140ms ease; }
+    .csEmoji:hover { background: var(--sunken); }
+    .csEmojiOn { border-color: var(--a1Fill); background: var(--sunken); }
+    .linkPill { display: flex; align-items: center; gap: 10px; inline-size: 100%; box-sizing: border-box; background: var(--sunken); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; cursor: pointer; font-family: inherit; text-align: start; min-height: 48px; }
+    .card { background: var(--rowBg); border-radius: 14px; padding: 14px; }
+
+    .mchip { font-size: 11.5px; font-weight: 700; color: var(--muted); background: none; border: none; padding: 8px 10px; border-radius: 999px; cursor: pointer; font-family: inherit; min-height: 36px; }
+    .mchip:hover { color: var(--text); }
+    .mchipOn { background: var(--rowBg); color: var(--text); }
+    .link { background: none; border: none; padding: 6px 2px; font-family: inherit; font-size: 12px; font-weight: 700; color: var(--a1Text); cursor: pointer; }
+    .link:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+    /* Motion. One authored moment — the capture wait — and small feedback
+       everywhere else. Confident deceleration, never bounce; exits are faster
+       than entrances. Transform and opacity only. */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spin { animation: spin 900ms linear infinite; }
+
+    @keyframes scrimIn { from { opacity: 0; } }
+    /* Entrances move but never start invisible: if an animation stalls, the
+       content is simply there, just without the motion. */
+    @keyframes sheetIn { from { transform: translateY(14px); } }
+    .sheetWrap { animation: scrimIn 220ms ease; }
+    .sheet { animation: sheetIn 320ms cubic-bezier(0.16, 1, 0.3, 1); }
+
+    /* A pushed screen arrives from the leading edge, mirrored in RTL. */
+    @keyframes screenIn { from { transform: translateX(18px); } }
+    @keyframes screenInRtl { from { transform: translateX(-18px); } }
+    .screenIn { animation: screenIn 260ms cubic-bezier(0.16, 1, 0.3, 1); }
+    .app[dir="rtl"] .screenIn { animation-name: screenInRtl; }
+
+    @keyframes revealIn { from { transform: translateY(-6px); } }
+    .reveal { animation: revealIn 220ms cubic-bezier(0.16, 1, 0.3, 1); }
+
+    /* The check lands rather than appears. */
+    @keyframes pop { from { transform: scale(0.4); } }
+    .pop { animation: pop 260ms cubic-bezier(0.16, 1, 0.3, 1); }
+
+    /* Capture wait: the stage list advances, the bar tracks it. */
+    .stage { display: flex; align-items: center; gap: 10px; font-size: 13.5px; color: var(--muted); transition: color 220ms ease; }
+    .stageOn { color: var(--text); font-weight: 700; }
+    .stageDot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--border); flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #fff; transition: background 220ms ease, border-color 220ms ease; }
+    .stageDone .stageDot { background: var(--okFill); border-color: var(--okFill); }
+    .stageBusy .stageDot { border-color: var(--a1Text); border-top-color: transparent; animation: spin 700ms linear infinite; }
+    .track { height: 4px; border-radius: 2px; background: var(--border); overflow: hidden; }
+    .trackFill { height: 100%; border-radius: 2px; background: var(--a1Fill); transition: width 520ms cubic-bezier(0.16, 1, 0.3, 1); }
+
+    /* Reduced motion removes travel, not meaning: colour and state feedback
+       stay, spatial entrances and loops stop. */
+    @media (prefers-reduced-motion: reduce) {
+      .sheetWrap, .sheet, .screenIn, .reveal, .pop, .draw path { animation: none; }
+      .spin, .stageBusy .stageDot { animation: none; }
+      .trackFill { transition-duration: 0ms; }
+    }
+
+    /* RTL: layout is mirrored by logical properties; only glyphs that point
+       need explicit flipping, and Arabic never takes Latin tracking. */
+    .app[dir="rtl"] .mirror { transform: scaleX(-1); }
+    .app[dir="rtl"] .lab, .app[dir="rtl"] .eyebrow { letter-spacing: normal; text-transform: none; }
+    .app[dir="rtl"] .h1 { letter-spacing: 0; }
+
+    .cap { max-inline-size: 390px; }
+    .cap .num { font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
+    .cap .h { font-size: 21px; font-weight: 700; color: var(--text); margin-top: 3px; }
+    .cap .p { font-size: 13px; line-height: 1.5; color: var(--muted); margin-top: 7px; }
+  </style>
+</helmet>
+<div class="app {{ themeClass }}" dir="{{ dir }}" style="width: 430px; box-sizing: border-box; padding: 20px; background: {{ boardBg }}; display: flex; flex-direction: column; gap: 16px;">
+  <div class="phone">
+
+    <!-- ============ AUTH ============ -->
+    <sc-if value="{{ isLogin }}" hint-placeholder-val="{{ false }}">
+      <div class="scroll" style="padding: 92px 24px 40px; display: flex; flex-direction: column;">
+        <div style="display: flex; align-items: center; gap: 9px;">
+          <div style="position: relative; width: 34px; height: 34px; border-radius: 10px; background: var(--a1);">
+            <div style="position: absolute; inset-inline-end: -4px; bottom: -4px; width: 17px; height: 17px; border-radius: 50%; background: var(--a2); border: 2px solid var(--pageBg);"></div>
+          </div>
+          <div style="font-size: 21px; font-weight: 800; color: var(--text); letter-spacing: -0.01em;">Waypoint</div>
+        </div>
+        <div style="font-size: 13px; color: var(--muted); margin-top: 8px;">{{ t.tagline }}</div>
+        <div class="h1" style="margin-top: 44px;">{{ t.welcomeBack }}</div>
+        <div class="mut" style="margin-top: 6px;">{{ t.signinSub }}</div>
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 26px;">
+          <div class="field"><span class="fieldPh">{{ t.emailPh }}</span></div>
+          <div class="field"><span class="fieldPh">{{ t.password }}</span></div>
+        </div>
+        <button class="btnP" style="margin-top: 20px;" onClick="{{ doLogin }}">{{ t.signIn }}</button>
+        <div style="text-align: center; margin-top: 20px; font-size: 13px; color: var(--muted);">{{ t.noAccount }}
+          <button style="background: none; border: none; padding: 0 0 0 4px; font-family: inherit; font-size: 13px; font-weight: 700; color: var(--a1); cursor: pointer;" onClick="{{ goSignup }}">{{ t.createOne }}</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isSignup }}" hint-placeholder-val="{{ false }}">
+      <div class="scroll" style="padding: 72px 24px 40px;">
+        <button class="back" aria-label="{{ t.back }}" onClick="{{ goLogin }}"><svg class="mirror backIcon" width="10" height="16" viewBox="0 0 10 16" fill="none"><path d="M8 1L2 8l6 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+        <div class="h1" style="margin-top: 20px;">{{ t.createAccount }}</div>
+        <div class="mut" style="margin-top: 6px;">{{ t.createSub }}</div>
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 24px;">
+          <div class="field"><span class="fieldPh">{{ t.email }}</span></div>
+          <div class="field"><span class="fieldPh">{{ t.phone }}</span></div>
+          <div class="field"><span class="fieldPh">{{ t.password }}</span></div>
+          <div>
+            <div style="display: flex; gap: 5px;">
+              <div style="flex: 1; height: 4px; border-radius: 2px; background: var(--ok);"></div>
+              <div style="flex: 1; height: 4px; border-radius: 2px; background: var(--ok);"></div>
+              <div style="flex: 1; height: 4px; border-radius: 2px; background: var(--border);"></div>
+            </div>
+            <div class="mut" style="margin-top: 6px;">{{ t.strengthGood }}</div>
+          </div>
+          <div class="field"><span class="fieldPh">{{ t.confirmPw }}</span></div>
+        </div>
+        <button class="btnP" style="margin-top: 20px;" onClick="{{ goSetup }}">{{ t.createAccount }}</button>
+        <div class="mut" style="text-align: center; margin-top: 16px; line-height: 1.5;">{{ t.terms }}</div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isSetup }}" hint-placeholder-val="{{ false }}">
+      <div class="scroll" style="padding: 92px 24px 40px;">
+        <div style="font-size: 34px;">👋</div>
+        <div class="h1" style="margin-top: 14px;">{{ t.lastStep }}</div>
+        <div class="mut" style="margin-top: 6px;">{{ t.lastStepSub }}</div>
+        <div style="margin-top: 26px;">
+          <div class="lab">{{ t.displayName }}</div>
+          <div class="field"><span class="fieldPh">{{ t.displayNamePh }}</span></div>
+        </div>
+        <div style="margin-top: 16px;">
+          <div class="lab">{{ t.username }}</div>
+          <div class="field"><span class="fieldPh">{{ t.usernamePh }}</span></div>
+          <div class="mut" style="margin-top: 7px;">{{ t.usernameHint }}</div>
+        </div>
+        <button class="btnP" style="margin-top: 24px;" onClick="{{ goInterests }}">{{ t.continueLbl }}</button>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isInterests }}" hint-placeholder-val="{{ false }}">
+      <div class="scroll" style="padding: 72px 20px 116px;">
+        <div style="font-size: 30px;">✨</div>
+        <div class="h1" style="margin-top: 12px;">{{ t.interestsTitle }}</div>
+        <div class="mut" style="margin-top: 6px;">{{ t.interestsSub }}</div>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 22px;">
+          <sc-for list="{{ interests }}" as="it" hint-placeholder-count="8">
+            <button style="position: relative; text-align: start; background: {{ it.bg }}; border: 1.5px solid {{ it.border }}; border-radius: 14px; padding: 14px 12px; cursor: pointer; font-family: inherit;" onClick="{{ it.toggle }}">
+              <div style="font-size: 22px;">{{ it.emoji }}</div>
+              <div style="font-size: 13.5px; font-weight: 700; color: var(--text); margin-top: 8px;">{{ it.label }}</div>
+              <div class="mut" style="margin-top: 2px;">{{ it.hint }}</div>
+              <sc-if value="{{ it.on }}" hint-placeholder-val="{{ true }}">
+                <div style="position: absolute; top: 10px; inset-inline-end: 10px; width: 20px; height: 20px; border-radius: 50%; background: var(--a1Fill); color: #fff; display: flex; align-items: center; justify-content: center;"><svg class="pop" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4.5 4.5L19 7"></path></svg></div>
+              </sc-if>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+      <div style="position: absolute; inset-inline: 0; bottom: 0; padding: 14px 20px 30px; background: var(--pageBg); border-top: 1px solid var(--border);">
+        <button class="btnP" onClick="{{ finishOnboarding }}">{{ interestCta }}</button>
+        <button style="width: 100%; background: none; border: none; padding: 12px 0 0; font-family: inherit; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer;" onClick="{{ finishOnboarding }}">{{ t.skip }}</button>
+      </div>
+    </sc-if>
+
+    <!-- ============ HOME ============ -->
+    <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+      <div class="scroll">
+        <div class="band" aria-hidden="true"></div>
+        <div class="bandSheet" aria-hidden="true"></div>
+
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--s4);">
+          <div style="display: flex; align-items: center; gap: var(--s2);">
+            <div class="logoMark" style="position: relative; width: 30px; height: 30px; border-radius: 9px; background: var(--a1); flex-shrink: 0;">
+              <div style="position: absolute; inset-inline-end: -4px; bottom: -4px; width: 16px; height: 16px; border-radius: 50%; background: var(--a2); border: 2px solid var(--pageBg);"></div>
+            </div>
+            <div style="font-size: 19px; font-weight: 800; color: var(--headInk); letter-spacing: -0.01em;">Waypoint</div>
+          </div>
+          <button class="stripe4" aria-label="{{ t.profile }}" style="width: 44px; height: 44px; border-radius: 50%; border: none; cursor: pointer; flex-shrink: 0; margin-inline-end: -5px; background-clip: content-box; padding: 5px;" onClick="{{ goProfile }}"></button>
+        </div>
+
+        <div class="capture">
+          <button class="captureRow" onClick="{{ openAdd }}">
+            <div style="width: 38px; height: 38px; border-radius: 11px; background: var(--a1Fill); flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #fff;">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+            </div>
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-size: 14.5px; font-weight: 700; color: var(--text);">{{ t.addPlace }}</div>
+              <div class="mut" style="margin-top: 2px;">{{ t.addPlaceSub }}</div>
+            </div>
+            <svg class="mirror" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2.5" stroke-linecap="round" style="flex-shrink: 0;"><path d="M9 6l6 6-6 6"></path></svg>
+          </button>
+          <button class="captureRow captureScope" onClick="{{ openLocation }}">
+            <div style="width: 16px; height: 16px; border-radius: 50% 50% 50% 0; background: var(--a1); transform: rotate(-45deg); flex-shrink: 0; margin-inline-start: 11px;"></div>
+            <div style="flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;">
+              <div style="font-size: 13.5px; font-weight: 700; color: var(--text);">{{ locationLabel }}</div>
+              <div class="mut">{{ t.scopeNote }}</div>
+            </div>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"></path></svg>
+          </button>
+        </div>
+
+        <div class="section" style="margin-top: var(--s6);">
+          <div class="secHead">
+            <div class="sec">{{ t.trendingNow }}</div>
+          </div>
+          <sc-if value="{{ hasRecs }}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; gap: var(--s3); margin-inline: -20px; padding: 0 20px 6px; overflow-x: auto;">
+              <sc-for list="{{ recs }}" as="rec" hint-placeholder-count="3">
+                <div style="flex-shrink: 0; width: 196px;">
+                  <div class="stripe8" style="position: relative; width: 196px; height: 132px; border-radius: 14px; overflow: hidden;">
+                    <sc-if value="{{ rec.trending }}" hint-placeholder-val="{{ true }}">
+                      <div style="position: absolute; top: 8px; inset-inline-start: 8px; display: flex; align-items: center; gap: 5px; background: var(--a1Fill); color: #fff; font-size: 11px; font-weight: 700; border-radius: 999px; padding: 5px 9px;">
+                        <svg class="mirror" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"></path><path d="M15 7h6v6"></path></svg>
+                        <span>{{ rec.signal }}</span>
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{ rec.sponsored }}" hint-placeholder-val="{{ false }}">
+                      <div style="position: absolute; top: 8px; inset-inline-start: 8px; background: var(--rowBg); color: var(--text); font-size: 11px; font-weight: 700; border-radius: 999px; padding: 5px 10px; box-shadow: 0 1px 3px oklch(20% 0.02 250 / 20%);">{{ t.sponsored }}</div>
+                    </sc-if>
+                    <button class="recSave {{ rec.saveCls }}" aria-label="{{ rec.cta }}" aria-pressed="{{ rec.pressed }}" onClick="{{ rec.save }}"><span><svg width="16" height="16" viewBox="0 0 24 24" fill="{{ rec.iconFill }}" stroke="currentColor" stroke-width="2.3" stroke-linejoin="round"><path d="M6 3.5h12v17l-6-4.2-6 4.2z"></path></svg></span></button>
+                  </div>
+                  <div style="font-size: 15px; font-weight: 700; color: var(--text); margin-top: var(--s2);" class="clip">{{ rec.name }}</div>
+                  <div style="font-size: 12px; color: var(--muted); margin-top: 2px;" class="clip">{{ rec.meta }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ noRecs }}" hint-placeholder-val="{{ false }}">
+            <div class="emptyNote">{{ t.noRecsNote }}</div>
+          </sc-if>
+        </div>
+
+        <div class="section">
+          <div class="secHead">
+            <div class="sec">{{ t.recentlySaved }}</div>
+            <button class="link" onClick="{{ goMap }}">{{ savedLink }}</button>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: var(--s2);">
+            <sc-for list="{{ places }}" as="place" hint-placeholder-count="3">
+              <div class="row">
+                <div class="stripe4" style="width: 44px; height: 44px; border-radius: 9px; flex-shrink: 0;"></div>
+                <button style="flex: 1; min-width: 0; background: none; border: none; padding: 0; text-align: start; cursor: pointer; font-family: inherit;" onClick="{{ place.open }}">
+                  <div class="rowName">{{ place.name }}</div>
+                  <div style="display: flex; align-items: center; gap: 5px; margin-top: 3px;">
+                    <div style="width: 7px; height: 7px; border-radius: 50%; background: {{ place.pinColor }}; flex-shrink: 0;"></div>
+                    <div class="mut clip">{{ place.meta }}</div>
+                  </div>
+                </button>
+                <button class="beenHere {{ place.visitCls }}" aria-label="{{ t.beenHere }}" aria-pressed="{{ place.pressed }}" onClick="{{ place.toggle }}"><span><sc-if value="{{ place.visited }}" hint-placeholder-val="{{ true }}"><svg class="{{ place.drawCls }}" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4.5 4.5L19 7"></path></svg></sc-if><sc-if value="{{ place.notVisited }}" hint-placeholder-val="{{ false }}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z"></path><circle cx="12" cy="10" r="2.3"></circle></svg></sc-if></span></button>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div class="section">
+          <div class="secHead">
+            <div class="sec">{{ t.yourSpaces }}</div>
+            <button class="link" onClick="{{ goSpaces }}">{{ spacesLink }}</button>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s3);">
+            <sc-for list="{{ homeSpaces }}" as="sp" hint-placeholder-count="3">
+              <button style="background: none; border: none; padding: 0; text-align: start; cursor: pointer; font-family: inherit;" onClick="{{ sp.open }}">
+                <div class="stripeSpace" style="height: 100px; border-radius: 12px;"></div>
+                <div style="font-size: 13px; font-weight: 700; color: var(--text); margin-top: var(--s2);" class="clip">{{ sp.name }}</div>
+                <div style="display: inline-block; font-size: 11px; font-weight: 600; color: #fff; background: var(--a2Fill); border-radius: 10px; padding: 2px 8px; margin-top: var(--s1);">{{ sp.membersLabel }}</div>
+              </button>
+            </sc-for>
+            <button style="height: 100px; border-radius: 12px; border: 1.5px dashed var(--border); background: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; cursor: pointer; font-family: inherit;" onClick="{{ openNewSpace }}">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+              <div style="font-size: 11.5px; font-weight: 600; color: var(--muted);">{{ t.newSpace }}</div>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </sc-if>
+
+    <!-- ============ MAP ============ -->
+    <sc-if value="{{ isMap }}" hint-placeholder-val="{{ false }}">
+      <div style="position: absolute; inset: 0; display: flex; flex-direction: column;">
+        <div style="position: relative; height: 430px; flex-shrink: 0;">
+          <svg width="390" height="430" viewBox="0 0 390 430" style="position: absolute; inset: 0;">
+            <rect width="390" height="430" fill="var(--land)"></rect>
+            <path d="M-10 292 Q120 280 210 308 T400 292 L400 430 L-10 430 Z" fill="var(--water)"></path>
+            <circle cx="308" cy="188" r="50" fill="var(--park)"></circle>
+            <path d="M-10 116 L400 62 M-10 228 L400 194 M88 -10 L136 448 M268 -10 L246 448" stroke="var(--road)" stroke-width="13" fill="none"></path>
+            <path d="M-10 172 L400 144" stroke="var(--road)" stroke-width="21" fill="none"></path>
+          </svg>
+          <div style="position: absolute; top: 44px; left: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px; background: var(--pageBg); border: 1px solid var(--border); border-radius: 999px; padding: 12px 14px; box-shadow: 0 4px 14px rgba(0,0,0,0.10);">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="color: var(--text);"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+              <div style="font-size: 13.5px; font-weight: 600; color: var(--muted);">{{ t.searchPlaces }}</div>
+            </div>
+            <div style="display: flex; gap: 7px; overflow-x: auto; padding-bottom: 2px;">
+              <sc-for list="{{ filters }}" as="f" hint-placeholder-count="4">
+                <button class="chip {{ f.cls }}" style="box-shadow: 0 3px 10px rgba(0,0,0,0.10); flex-shrink: 0;" onClick="{{ f.toggle }}"><span style="color: {{ f.dot }};">●</span> {{ f.name }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <sc-for list="{{ pins }}" as="pin" hint-placeholder-count="4">
+            <div style="position: absolute; left: {{ pin.x }}; top: {{ pin.y }}; display: flex; flex-direction: column; align-items: center;">
+              <div style="width: {{ pin.size }}; height: {{ pin.size }}; border-radius: 50%; background: var(--pageBg); border: 3px solid {{ pin.color }}; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; color: {{ pin.color }}; box-shadow: 0 3px 10px rgba(0,0,0,0.18);">{{ pin.badge }}</div>
+              <div style="width: 2px; height: 8px; background: {{ pin.color }};"></div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="flex-grow: 1; margin-top: -22px; background: var(--pageBg); border-radius: 22px 22px 0 0; box-shadow: 0 -6px 24px rgba(0,0,0,0.12); display: flex; flex-direction: column; overflow: hidden; z-index: 5;">
+          <div class="grab" style="margin: 10px auto 12px;"></div>
+          <div style="padding: 0 20px 12px;">
+            <div class="segw">
+              <button class="seg {{ mapSegNearby }}" onClick="{{ setMapNearby }}">{{ t.nearby }}</button>
+              <button class="seg {{ mapSegAll }}" onClick="{{ setMapAll }}">{{ t.allSaved }}</button>
+            </div>
+          </div>
+          <div style="padding: 0 20px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto;">
+            <sc-for list="{{ mapPlaces }}" as="place" hint-placeholder-count="3">
+              <div class="row">
+                <div class="stripe4" style="width: 40px; height: 40px; border-radius: 9px; flex-shrink: 0;"></div>
+                <button style="flex: 1; min-width: 0; background: none; border: none; padding: 0; text-align: start; cursor: pointer; font-family: inherit;" onClick="{{ place.open }}">
+                  <div class="rowName">{{ place.name }}</div>
+                  <div style="display: flex; align-items: center; gap: 5px; margin-top: 3px;">
+                    <div style="width: 7px; height: 7px; border-radius: 50%; background: {{ place.pinColor }}; flex-shrink: 0;"></div>
+                    <div class="mut">{{ place.spaceName }}</div>
+                  </div>
+                </button>
+                <div class="mut" style="font-weight: 700;">{{ place.dist }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="flex-grow: 1;"></div>
+        </div>
+        <button style="position: absolute; inset-inline-end: 20px; bottom: 108px; width: 54px; height: 54px; border-radius: 50%; background: var(--a1Fill); border: none; color: #fff; cursor: pointer; z-index: 10; box-shadow: 0 8px 20px oklch(20% 0.02 250 / 26%); font-family: inherit; display: flex; align-items: center; justify-content: center;" onClick="{{ openAdd }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></button>
+      </div>
+    </sc-if>
+
+    <!-- ============ SPACES TAB ============ -->
+    <sc-if value="{{ isSpaces }}" hint-placeholder-val="{{ false }}">
+      <div class="scroll">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+          <div class="h1">{{ t.spaces }}</div>
+          <button class="iconBtn" aria-label="{{ t.newSpaceAria }}" onClick="{{ openNewSpace }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></button>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;">
+          <sc-for list="{{ spaces }}" as="sp" hint-placeholder-count="3">
+            <button style="background: none; border: none; padding: 0; text-align: start; cursor: pointer; font-family: inherit;" onClick="{{ sp.open }}">
+              <div class="stripeSpace" style="height: 118px; border-radius: 12px;"></div>
+              <div style="font-size: 13px; font-weight: 600; color: var(--text); margin-top: 6px;">{{ sp.name }}</div>
+              <div class="mut" style="margin-top: 2px;">{{ sp.statLine }}</div>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ============ PROFILE ============ -->
+    <sc-if value="{{ isProfile }}" hint-placeholder-val="{{ false }}">
+      <div class="scroll">
+        <div class="h1" style="margin-bottom: 20px;">{{ t.profile }}</div>
+        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 24px;">
+          <div class="stripe4" style="width: 64px; height: 64px; border-radius: 50%;"></div>
+          <div>
+            <div style="font-size: 17px; font-weight: 700; color: var(--text);">Youssef</div>
+            <div class="mut" style="margin-top: 2px;">@youssef</div>
+          </div>
+        </div>
+
+        <button class="row" style="margin-bottom: var(--s2);" onClick="{{ openSettings }}">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--a1Text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-inline: 4px 8px;"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg>
+          <div style="flex: 1; min-width: 0;">
+            <div class="rowName">{{ t.settings }}</div>
+            <div class="mut" style="margin-top: 2px;">{{ settingsSummary }}</div>
+          </div>
+          <svg class="mirror" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M9 6l6 6-6 6"></path></svg>
+        </button>
+
+        <button class="row" style="margin-bottom: var(--s2);" aria-expanded="{{ pointsOpen }}" onClick="{{ togglePoints }}">
+          <div style="width: 16px; height: 16px; border-radius: 50% 50% 50% 0; background: var(--a1); transform: rotate(-45deg); flex-shrink: 0; margin-inline: 6px 10px;"></div>
+          <div style="flex: 1; min-width: 0;">
+            <div class="rowName">{{ t.savedAddresses }}</div>
+            <div class="mut" style="margin-top: 2px;">{{ pointsSummary }}</div>
+          </div>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; transform: rotate({{ pointsCaret }}); transition: transform 160ms ease;"><path d="M6 9l6 6 6-6"></path></svg>
+        </button>
+        <sc-if value="{{ pointsOpen }}" hint-placeholder-val="{{ true }}">
+          <div class="reveal" style="padding-inline-start: var(--s3); margin-bottom: 20px;">
+            <div class="mut" style="margin-bottom: var(--s3); line-height: 1.45;">{{ t.pointsSub }}</div>
+            <sc-if value="{{ hasPoints }}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; flex-direction: column; gap: var(--s2); margin-bottom: var(--s3);">
+                <sc-for list="{{ points }}" as="pt" hint-placeholder-count="2">
+                  <div class="row" style="cursor: default;">
+                    <div style="width: 16px; height: 16px; border-radius: 50% 50% 50% 0; background: var(--a1); transform: rotate(-45deg); flex-shrink: 0; margin-inline: 6px 10px;"></div>
+                    <div style="flex: 1; min-width: 0;">
+                      <div class="rowName">{{ pt.label }}</div>
+                      <div class="mut clip">{{ pt.address }}</div>
+                    </div>
+                    <button class="visit" aria-label="{{ t.removeAddress }}" onClick="{{ pt.remove }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ noPoints }}" hint-placeholder-val="{{ false }}">
+              <div class="emptyNote" style="margin-bottom: var(--s3);">{{ t.noPointsNote }}</div>
+            </sc-if>
+            <button class="btnG" style="padding: 12px; font-size: 13.5px;" onClick="{{ openAddPoint }}">{{ t.addPoint }}</button>
+          </div>
+        </sc-if>
+
+        <div class="lab">{{ t.account }}</div>
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px;">
+          <div class="row" style="cursor: default;"><div style="flex: 1;"><div class="mut">{{ t.displayName }}</div><div class="rowName" style="margin-top: 2px;">Youssef</div></div><div style="font-size: 12px; font-weight: 700; color: var(--a1);">{{ t.edit }}</div></div>
+          <div class="row" style="cursor: default;"><div style="flex: 1;"><div class="mut">{{ t.email }}</div><div class="rowName" style="margin-top: 2px;">youssef@email.com</div></div></div>
+          <div class="row" style="cursor: default;"><div style="flex: 1;"><div class="mut">{{ t.visitedPlaces }}</div><div class="rowName" style="margin-top: 2px;">{{ visitedCount }}</div></div></div>
+          <button class="row" onClick="{{ openPassword }}"><div style="flex: 1;"><div class="rowName">{{ t.changePassword }}</div><div class="mut" style="margin-top: 2px;">{{ passwordAge }}</div></div><svg class="mirror" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2.5" stroke-linecap="round"><path d="M9 6l6 6-6 6"></path></svg></button>
+        </div>
+        <button class="btnG" style="color: oklch(58% 0.19 25);" onClick="{{ doLogout }}">{{ t.logOut }}</button>
+      </div>
+    </sc-if>
+
+    <!-- ============ SPACE DETAIL ============ -->
+    <sc-if value="{{ isSpaceDetail }}" hint-placeholder-val="{{ false }}">
+      <div class="scroll screenIn" style="padding: 40px 20px 100px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <button class="back" aria-label="{{ t.back }}" onClick="{{ pop }}"><svg class="mirror backIcon" width="10" height="16" viewBox="0 0 10 16" fill="none"><path d="M8 1L2 8l6 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+            <div>
+              <div style="font-size: 17px; font-weight: 800; color: var(--text);">{{ space.name }}</div>
+              <div style="font-size: 11px; color: var(--muted);">{{ space.subLine }}</div>
+            </div>
+          </div>
+          <div class="stripe4" style="width: 28px; height: 28px; border-radius: 50%;"></div>
+        </div>
+
+        <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--a1Text); margin-bottom: 8px;">{{ t.closestToYou }}</div>
+        <button class="stripe8" style="position: relative; display: block; width: 100%; border: none; padding: 0; border-radius: 18px; overflow: hidden; margin-bottom: 22px; height: 170px; cursor: pointer; font-family: inherit;" onClick="{{ hero.open }}">
+          <div style="position: absolute; inset: 0; background: linear-gradient(to top, oklch(20% 0.02 250 / 78%), oklch(20% 0.02 250 / 0%) 60%);"></div>
+          <div style="position: absolute; inset-inline: 14px; bottom: 12px; display: flex; align-items: flex-end; justify-content: space-between; gap: 10px;">
+            <div style="text-align: start; min-width: 0;">
+              <div class="clip" style="font-size: 17px; font-weight: 800; color: #fff;">{{ hero.name }}</div>
+              <div style="font-size: 12px; color: oklch(92% 0.006 250 / 90%); margin-top: 2px;">{{ hero.meta }}</div>
+            </div>
+            <div style="font-size: 12px; font-weight: 700; color: #fff; background: var(--a1Fill); border-radius: 20px; padding: 7px 14px; flex-shrink: 0;">{{ t.directions }}</div>
+          </div>
+        </button>
+
+        <div style="display: flex; gap: 8px; overflow-x: auto; margin: 0 -20px 18px; padding: 0 20px 4px;">
+          <sc-for list="{{ spaceFilters }}" as="f" hint-placeholder-count="5">
+            <button class="chip {{ f.cls }}" style="flex-shrink: 0; font-size: 12.5px; padding: 7px 14px;" onClick="{{ f.select }}">{{ f.label }}</button>
+          </sc-for>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 26px;">
+          <sc-for list="{{ spacePlaces }}" as="place" hint-placeholder-count="4">
+            <div class="row">
+              <div class="stripe4" style="width: 44px; height: 44px; border-radius: 9px; flex-shrink: 0;"></div>
+              <button style="flex: 1; min-width: 0; background: none; border: none; padding: 0; text-align: start; cursor: pointer; font-family: inherit;" onClick="{{ place.open }}">
+                <div class="rowName">{{ place.name }}</div>
+                <div style="display: flex; align-items: center; gap: 5px; margin-top: 3px;">
+                  <div style="width: 7px; height: 7px; border-radius: 50%; background: {{ place.pinColor }}; flex-shrink: 0;"></div>
+                  <div class="mut">{{ place.travelLine }}</div>
+                </div>
+              </button>
+              <button class="beenHere {{ place.visitCls }}" aria-label="{{ t.beenHere }}" aria-pressed="{{ place.pressed }}" onClick="{{ place.toggle }}"><span><sc-if value="{{ place.visited }}" hint-placeholder-val="{{ true }}"><svg class="{{ place.drawCls }}" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4.5 4.5L19 7"></path></svg></sc-if><sc-if value="{{ place.notVisited }}" hint-placeholder-val="{{ false }}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z"></path><circle cx="12" cy="10" r="2.3"></circle></svg></sc-if></span></button>
+            </div>
+          </sc-for>
+          <sc-if value="{{ noPlaceResults }}" hint-placeholder-val="{{ false }}">
+            <div style="text-align: center; font-size: 12.5px; color: var(--muted); padding: 20px 0;">{{ t.noPlacesMatch }}</div>
+          </sc-if>
+        </div>
+
+        <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px;">
+          <div class="sec" style="margin: 0;">{{ t.memories }}</div>
+          <button style="display: flex; align-items: center; gap: 5px; background: none; border: none; padding: 0; cursor: pointer; font-family: inherit;" onClick="{{ openMemFilters }}">
+            <div style="width: 14px; height: 10px; display: flex; flex-direction: column; gap: 2px;">
+              <div style="width: 14px; height: 2px; background: var(--a1Text); border-radius: 1px;"></div>
+              <div style="width: 10px; height: 2px; background: var(--a1Text); border-radius: 1px; margin-inline-start: 2px;"></div>
+              <div style="width: 6px; height: 2px; background: var(--a1Text); border-radius: 1px; margin-inline-start: 4px;"></div>
+            </div>
+            <div style="font-size: 11.5px; font-weight: 600; color: var(--a1Text);">{{ memFilterLabel }}</div>
+          </button>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+          <sc-for list="{{ visibleMemories }}" as="mem" hint-placeholder-count="3">
+            <div style="background: var(--rowBg); border-radius: 14px; padding: 10px;">
+              <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 6px; margin-bottom: 8px;">
+                <div class="clip" style="font-size: 13.5px; font-weight: 700; color: var(--text); min-width: 0;">{{ mem.place }}</div>
+                <div style="display: flex; gap: 5px; flex-wrap: wrap; justify-content: flex-end;">
+                  <div class="mtag">{{ mem.cuisine }}</div>
+                  <sc-for list="{{ mem.tags }}" as="tag" hint-placeholder-count="2">
+                    <div class="mtag">{{ tag }}</div>
+                  </sc-for>
+                </div>
+              </div>
+              <div style="display: flex; gap: 7px; overflow-x: auto; margin-bottom: 10px;">
+                <sc-for list="{{ mem.photos }}" as="photo" hint-placeholder-count="2">
+                  <div class="stripe8" style="width: 72px; height: 72px; flex-shrink: 0; border-radius: 9px;"></div>
+                </sc-for>
+                <button style="width: 72px; height: 72px; flex-shrink: 0; border-radius: 9px; border: 1.5px dashed var(--border); background: none; color: var(--muted); cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center;" onClick="{{ openMemory }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></button>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <sc-for list="{{ mem.dishes }}" as="dish" hint-placeholder-count="2">
+                  <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px; background: var(--pageBg); border-radius: 10px; padding: 8px 10px;">
+                    <div style="min-width: 0;">
+                      <div style="font-size: 12.5px; font-weight: 600; color: var(--text);">{{ dish.name }}</div>
+                      <div style="font-size: 11px; color: var(--muted); margin-top: 1px;">{{ dish.quote }}</div>
+                    </div>
+                    <div style="font-size: 11.5px; color: var(--a1Text); letter-spacing: 1px; flex-shrink: 0;">{{ dish.stars }}</div>
+                  </div>
+                </sc-for>
+                <button class="link" style="text-align: start;" onClick="{{ noop }}">{{ t.addDish }}</button>
+              </div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ noMemories }}" hint-placeholder-val="{{ false }}">
+            <div style="text-align: center; font-size: 12.5px; color: var(--muted); padding: 20px 0;">{{ t.noMemoriesMatch }}</div>
+          </sc-if>
+        </div>
+      </div>
+
+      <sc-if value="{{ showMemFilters }}" hint-placeholder-val="{{ false }}">
+        <div class="sheetWrap">
+          <div class="sheet" style="max-height: 80%;">
+            <div class="grab"></div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+              <div class="sheetT" style="margin: 0;">{{ t.filterMemories }}</div>
+              <button class="link" onClick="{{ clearMemFilters }}">{{ t.clear }}</button>
+            </div>
+            <sc-for list="{{ memFilterGroups }}" as="g" hint-placeholder-count="4">
+              <div style="margin-bottom: 18px;">
+                <div style="font-size: 11.5px; font-weight: 700; color: var(--muted); margin-bottom: 8px;">{{ g.title }}</div>
+                <div style="display: flex; gap: 7px; flex-wrap: wrap;">
+                  <sc-for list="{{ g.chips }}" as="c" hint-placeholder-count="3">
+                    <button class="chip {{ c.cls }}" style="font-size: 12px; padding: 6px 12px;" onClick="{{ c.select }}">{{ c.label }}</button>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+            <button class="btnP" style="padding: 13px; font-size: 13.5px;" onClick="{{ closeMemFilters }}">{{ t.showResults }}</button>
+          </div>
+        </div>
+      </sc-if>
+    </sc-if>
+
+    <!-- ============ ADD PLACE (full screen) ============ -->
+    <sc-if value="{{ isAdd }}" hint-placeholder-val="{{ false }}">
+      <div class="screenIn" style="position: absolute; inset: 0; background: var(--pageBg); display: flex; flex-direction: column; z-index: 30;">
+
+        <sc-if value="{{ addForm }}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; align-items: center; padding: 44px 16px 10px; flex-shrink: 0;">
+            <button class="back" aria-label="{{ t.back }}" onClick="{{ closeAdd }}"><svg class="mirror backIcon" width="10" height="16" viewBox="0 0 10 16" fill="none"><path d="M8 1L2 8l6 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+            <div style="flex: 1; text-align: center; font-size: 16px; font-weight: 800; color: var(--text);">{{ t.addPlaceTitle }}</div>
+            <div style="width: 34px;"></div>
+          </div>
+
+          <div style="padding: 0 16px 10px; position: relative; z-index: 12; flex-shrink: 0;">
+            <button style="width: 100%; box-sizing: border-box; display: flex; align-items: center; gap: 10px; background: var(--rowBg); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; cursor: pointer; font-family: inherit; text-align: start;" onClick="{{ toggleResults }}">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="color: var(--muted); flex-shrink: 0;"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+              <div style="font-size: 14px; color: {{ searchFg }}; flex: 1; min-width: 0;">{{ searchText }}</div>
+            </button>
+            <sc-if value="{{ showResults }}" hint-placeholder-val="{{ false }}">
+              <div style="position: absolute; inset-inline: 16px; top: 52px; background: var(--pageBg); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: 0 10px 26px rgba(0,0,0,0.18);">
+                <sc-for list="{{ searchResults }}" as="r" hint-placeholder-count="3">
+                  <button style="width: 100%; box-sizing: border-box; display: block; text-align: start; background: none; border: none; border-bottom: 1px solid var(--border); padding: 11px 14px; cursor: pointer; font-family: inherit;" onClick="{{ r.pick }}">
+                    <div style="font-size: 13.5px; font-weight: 600; color: var(--text);">{{ r.name }}</div>
+                    <div class="mut" style="margin-top: 2px;">{{ r.address }}</div>
+                  </button>
+                </sc-for>
+                <div style="padding: 8px 14px; font-size: 10px; color: var(--muted);">{{ t.poweredBy }}</div>
+              </div>
+            </sc-if>
+          </div>
+
+          <div style="position: relative; height: 264px; flex-shrink: 0; overflow: hidden;">
+            <svg width="390" height="264" viewBox="0 0 390 264" style="position: absolute; inset: 0;">
+              <rect width="390" height="264" fill="var(--land)"></rect>
+              <path d="M-10 196 Q120 184 210 212 T400 196 L400 264 L-10 264 Z" fill="var(--water)"></path>
+              <circle cx="316" cy="86" r="42" fill="var(--park)"></circle>
+              <path d="M-10 62 L400 24 M-10 156 L400 128 M96 -10 L134 280 M266 -10 L250 280" stroke="var(--road)" stroke-width="12" fill="none"></path>
+            </svg>
+            <div style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -100%); display: flex; flex-direction: column; align-items: center; margin-top: {{ pinLift }};">
+              <svg width="28" height="34" viewBox="0 0 24 30" fill="none"><path d="M12 1c5 0 9 4 9 9 0 6.5-9 19-9 19S3 16.5 3 10c0-5 4-9 9-9z" fill="var(--a1)"></path><circle cx="12" cy="10" r="3.4" fill="#fff"></circle></svg>
+            </div>
+            <div style="position: absolute; left: 50%; top: 50%; transform: translateX(-50%); width: 14px; height: 4px; border-radius: 50%; background: oklch(20% 0.02 250 / 28%);"></div>
+            <sc-if value="{{ locating }}" hint-placeholder-val="{{ false }}">
+              <div style="position: absolute; left: 50%; transform: translateX(-50%); bottom: 46px; display: flex; align-items: center; gap: 8px; background: var(--pageBg); border-radius: 999px; padding: 7px 14px; box-shadow: 0 4px 14px rgba(0,0,0,0.18);">
+                <div class="spin" role="status" aria-label="Locating" style="width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--border); border-top-color: var(--a1Text);"></div>
+                <div style="font-size: 12px; font-weight: 700; color: var(--text);">{{ t.locating }}</div>
+              </div>
+            </sc-if>
+            <button style="position: absolute; inset-inline-end: 12px; bottom: 12px; background: var(--pageBg); border: 1px solid var(--border); border-radius: 999px; padding: 8px 13px; font-size: 11.5px; font-weight: 700; color: var(--text); cursor: pointer; font-family: inherit; box-shadow: 0 3px 10px rgba(0,0,0,0.14);" onClick="{{ dropPin }}">{{ t.dragMap }}</button>
+          </div>
+
+          <div class="scroll" style="position: relative; inset: auto; flex: 1; padding: 14px 16px 20px;">
+            <sc-if value="{{ hasLocation }}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; align-items: center; gap: 8px; background: color-mix(in oklab, var(--a1) 10%, transparent); border-radius: 999px; padding: 9px 14px; margin-bottom: 14px;">
+                <div style="width: 12px; height: 12px; border-radius: 50% 50% 50% 0; background: var(--a1); transform: rotate(-45deg); flex-shrink: 0;"></div>
+                <div style="font-size: 12px; font-weight: 600; color: var(--text); min-width: 0;">{{ pickedAddress }}</div>
+              </div>
+            </sc-if>
+
+            <div class="card" style="margin-bottom: 12px;">
+              <div class="lab" style="margin-bottom: 8px;">{{ t.placeName }}</div>
+              <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px;">
+                <div style="font-size: 15px; color: {{ nameFg }}; min-width: 0;">{{ nameText }}</div>
+                <div class="mut" style="flex-shrink: 0;">{{ nameCount }}</div>
+              </div>
+            </div>
+
+            <div class="card" style="margin-bottom: 12px;">
+              <div style="display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px;">
+                <div class="lab" style="margin: 0;">{{ t.tags }}</div>
+                <div class="mut">{{ t.tagsHint }}</div>
+              </div>
+              <sc-if value="{{ hasTags }}" hint-placeholder-val="{{ true }}">
+                <div style="display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 12px;">
+                  <sc-for list="{{ chosenTags }}" as="tg" hint-placeholder-count="2">
+                    <button class="chip chipOn" style="display: flex; align-items: center; gap: 7px; font-size: 12px;" onClick="{{ tg.remove }}">{{ tg.label }} <svg class="pop" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" style="opacity: 0.8;"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <div style="display: flex; align-items: center; gap: 8px; background: var(--pageBg); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-bottom: 14px;">
+                <div style="flex: 1; font-size: 13px; color: var(--muted);">{{ t.customTagPh }}</div>
+                <div style="font-size: 11.5px; font-weight: 700; color: var(--muted);">{{ t.add }}</div>
+              </div>
+              <sc-if value="{{ hasSpaceTags }}" hint-placeholder-val="{{ false }}">
+                <div>
+                  <div class="lab" style="margin-bottom: 8px;">{{ t.usedInSpace }}</div>
+                  <div style="display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 12px;">
+                    <sc-for list="{{ spaceTagSuggestions }}" as="tg" hint-placeholder-count="2">
+                      <button class="chip" style="font-size: 12px; border-color: var(--a1); color: var(--a1);" onClick="{{ tg.add }}">{{ tg.label }}</button>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-if>
+              <div class="lab" style="margin-bottom: 8px;">{{ t.popular }}</div>
+              <div style="display: flex; flex-wrap: wrap; gap: 7px;">
+                <sc-for list="{{ tagSuggestions }}" as="tg" hint-placeholder-count="8">
+                  <button class="chip" style="font-size: 12px;" onClick="{{ tg.add }}">{{ tg.label }}</button>
+                </sc-for>
+              </div>
+            </div>
+
+            <button style="width: 100%; box-sizing: border-box; display: flex; align-items: center; gap: 12px; background: var(--rowBg); border: 1px dashed var(--border); border-radius: 14px; padding: 12px 14px; cursor: pointer; font-family: inherit; text-align: start;" onClick="{{ analyseLink }}">
+              <div style="width: 30px; height: 30px; border-radius: 9px; background: var(--a2); flex-shrink: 0;"></div>
+              <div style="flex: 1;">
+                <div style="font-size: 13px; font-weight: 700; color: var(--text);">{{ t.pasteLink }}</div>
+                <div class="mut" style="margin-top: 1px;">{{ t.pasteLinkSub }}</div>
+              </div>
+            </button>
+          </div>
+
+          <div style="flex-shrink: 0; padding: 12px 16px 28px; background: var(--pageBg); border-top: 1px solid var(--border);">
+            <sc-if value="{{ noLocation }}" hint-placeholder-val="{{ false }}">
+              <div class="mut" style="text-align: center; margin-bottom: 10px;">{{ t.pickLocationHint }}</div>
+            </sc-if>
+            <button class="btnP" data-disabled="{{ nextDisabled }}" onClick="{{ goDestinations }}">{{ nextLabel }}</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ addSuccess }}" hint-placeholder-val="{{ false }}">
+          <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 28px; text-align: center;">
+            <div style="width: 64px; height: 64px; border-radius: 50%; background: var(--okFill); color: #fff; display: flex; align-items: center; justify-content: center;"><svg class="pop" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4.5 4.5L19 7"></path></svg></div>
+            <div class="h1" style="margin-top: 20px;">{{ t.placeSaved }}</div>
+            <div class="mut" style="margin-top: 8px; line-height: 1.5;">{{ successSub }}</div>
+            <div class="card" style="width: 100%; box-sizing: border-box; display: flex; align-items: center; gap: 12px; text-align: start; margin-top: 24px;">
+              <div style="width: 52px; height: 52px; border-radius: 13px; background: var(--pageBg); display: flex; align-items: center; justify-content: center; font-size: 26px; flex-shrink: 0;">{{ successEmoji }}</div>
+              <div style="flex: 1; min-width: 0;">
+                <div class="rowName" style="font-size: 15px;">{{ nameText }}</div>
+                <div class="mut" style="margin-top: 3px;">{{ pickedAddress }}</div>
+                <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;">
+                  <sc-for list="{{ chosenTags }}" as="tg" hint-placeholder-count="2">
+                    <div class="mtag">{{ tg.label }}</div>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+            <button class="btnP" style="margin-top: 26px;" onClick="{{ closeAdd }}">{{ t.done }}</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ analysing }}" hint-placeholder-val="{{ false }}">
+          <div style="position: absolute; inset: 0; background: var(--pageBg); display: flex; flex-direction: column; justify-content: center; padding: 0 32px; z-index: 50;" role="status" aria-live="polite">
+            <div class="stripe8" style="width: 88px; height: 88px; border-radius: 22px; margin-bottom: 26px;"></div>
+            <div style="font-size: 20px; font-weight: 800; color: var(--text); letter-spacing: -0.01em;">{{ t.analysing }}</div>
+            <div class="track" style="margin: 22px 0 20px;"><div class="trackFill" style="width: {{ analyseProgress }};"></div></div>
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+              <sc-for list="{{ analyseStages }}" as="st" hint-placeholder-count="3">
+                <div class="stage {{ st.cls }}">
+                  <div class="stageDot"><sc-if value="{{ st.done }}" hint-placeholder-val="{{ true }}"><svg class="pop" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4.5 4.5L19 7"></path></svg></sc-if></div>
+                  <div>{{ st.label }}</div>
+                </div>
+              </sc-for>
+            </div>
+            <div class="mut" style="margin-top: 26px; line-height: 1.5;">{{ t.analyseNote }}</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ showCandidates }}" hint-placeholder-val="{{ false }}">
+          <div class="sheetWrap" style="z-index: 60;">
+            <div class="sheet">
+              <div class="grab"></div>
+              <div class="sheetT" style="margin-bottom: 6px;">{{ t.whichPlace }}</div>
+              <div class="mut" style="margin-bottom: 16px; line-height: 1.5;">{{ t.evidence }}</div>
+              <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
+                <sc-for list="{{ candidates }}" as="c" hint-placeholder-count="3">
+                  <button class="row" style="flex-direction: column; align-items: flex-start; gap: 3px; padding: 13px 14px;" onClick="{{ c.pick }}">
+                    <div class="rowName">{{ c.name }}</div>
+                    <div class="mut">{{ c.address }}</div>
+                  </button>
+                </sc-for>
+              </div>
+              <button class="btnG" onClick="{{ dismissCandidates }}">{{ t.noneOfThese }}</button>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ addDestinations }}" hint-placeholder-val="{{ false }}">
+          <div class="sheetWrap" style="z-index: 60;">
+            <div class="sheet">
+              <div class="grab"></div>
+              <div class="sheetT">{{ t.addThisTo }}</div>
+              <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px;">
+                <sc-for list="{{ destinations }}" as="d" hint-placeholder-count="4">
+                  <button class="row" onClick="{{ d.toggle }}">
+                    <div style="width: 22px; height: 22px; border-radius: 6px; border: 2px solid {{ d.boxBorder }}; background: {{ d.boxBg }}; color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><sc-if value="{{ d.on }}" hint-placeholder-val="{{ true }}"><svg class="pop" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4.5 4.5L19 7"></path></svg></sc-if></div>
+                    <div style="font-size: 17px; flex-shrink: 0;">{{ d.emoji }}</div>
+                    <div class="rowName" style="flex: 1;">{{ d.label }}</div>
+                  </button>
+                </sc-for>
+              </div>
+              <button class="btnP" data-disabled="{{ destDisabled }}" style="margin-bottom: 10px;" onClick="{{ saveWithDestinations }}">{{ destCta }}</button>
+              <button class="btnG" onClick="{{ backToForm }}">{{ t.cancel }}</button>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <!-- ============ PLACE DETAIL ============ -->
+    <sc-if value="{{ isPlaceDetail }}" hint-placeholder-val="{{ false }}">
+      <div class="scroll screenIn" style="padding: 40px 20px 100px;">
+        <button class="back" aria-label="{{ t.back }}" onClick="{{ pop }}"><svg class="mirror backIcon" width="10" height="16" viewBox="0 0 10 16" fill="none"><path d="M8 1L2 8l6 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+        <div class="stripe8" style="height: 168px; border-radius: 16px; margin: 16px 0 16px;"></div>
+        <div class="h1">{{ place.name }}</div>
+        <div style="display: flex; align-items: center; gap: 6px; margin-top: 8px;">
+          <div style="width: 8px; height: 8px; border-radius: 50%; background: {{ place.pinColor }};"></div>
+          <div class="mut">{{ place.meta }}</div>
+        </div>
+        <div style="display: flex; gap: 8px; margin-top: 14px;">
+          <div class="chip" style="cursor: default;">{{ place.category }}</div>
+          <div class="chip" style="cursor: default;">{{ place.area }}</div>
+        </div>
+        <button style="width: 100%; box-sizing: border-box; display: flex; align-items: center; gap: 12px; margin-top: 20px; background: {{ place.visitBg }}; border: 1.5px solid {{ place.ringColor }}; border-radius: 14px; padding: 14px; cursor: pointer; font-family: inherit;" onClick="{{ place.toggle }}">
+          <div style="width: 28px; height: 28px; border-radius: 50%; border: 2px solid {{ place.ringColor }}; background: {{ place.fillColor }}; color: {{ place.iconFg }}; display: flex; align-items: center; justify-content: center; transition: background 200ms ease, border-color 200ms ease;"><sc-if value="{{ place.visited }}" hint-placeholder-val="{{ true }}"><svg class="{{ place.drawCls }}" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4.5 4.5L19 7"></path></svg></sc-if><sc-if value="{{ place.notVisited }}" hint-placeholder-val="{{ false }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z"></path><circle cx="12" cy="10" r="2.3"></circle></svg></sc-if></div>
+          <div style="font-size: 14px; font-weight: 700; color: var(--text);">{{ place.visitLabel }}</div>
+        </button>
+        <div class="sec" style="margin: 26px 0 10px;">{{ t.memoriesHere }}</div>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;">
+          <button style="height: 128px; border-radius: 14px; border: 1.5px dashed var(--border); background: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; cursor: pointer; font-family: inherit;" onClick="{{ openMemory }}">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+            <div style="font-size: 11.5px; font-weight: 600; color: var(--muted);">{{ t.addMemory }}</div>
+          </button>
+          <div class="stripe8" style="height: 128px; border-radius: 14px;"></div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ============ TAB BAR ============ -->
+    <sc-if value="{{ showTabs }}" hint-placeholder-val="{{ true }}">
+      <div class="tabbar">
+        <button class="tabb" style="color: {{ tabHome.fg }};" onClick="{{ tabHome.select }}">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="{{ tabHome.sw }}" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"></path><path d="M5.5 9.5V20h13V9.5"></path><path d="M9.5 20v-5h5v5"></path></svg>
+          <div class="tabl">{{ tabHome.label }}</div>
+        </button>
+        <button class="tabb" style="color: {{ tabMap.fg }};" onClick="{{ tabMap.select }}">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="{{ tabMap.sw }}" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6.5v13L9 17l6 2.5 6-2.5v-13L15 6.5 9 4z"></path><path d="M9 4v13M15 6.5v13"></path></svg>
+          <div class="tabl">{{ tabMap.label }}</div>
+        </button>
+        <button class="tabb" style="color: {{ tabSpaces.fg }};" onClick="{{ tabSpaces.select }}">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="{{ tabSpaces.sw }}" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8.5" r="3.2"></circle><path d="M3.5 19.5c0-3 2.5-4.8 5.5-4.8s5.5 1.8 5.5 4.8"></path><path d="M16 5.6a3.2 3.2 0 0 1 0 5.8M17.5 14.9c2 .5 3.5 2.1 3.5 4.6"></path></svg>
+          <div class="tabl">{{ tabSpaces.label }}</div>
+        </button>
+        <button class="tabb" style="color: {{ tabProfile.fg }};" onClick="{{ tabProfile.select }}">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="{{ tabProfile.sw }}" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"></circle><path d="M4.5 20c0-3.6 3.2-5.8 7.5-5.8s7.5 2.2 7.5 5.8"></path></svg>
+          <div class="tabl">{{ tabProfile.label }}</div>
+        </button>
+      </div>
+    </sc-if>
+
+    <!-- ============ SHEETS ============ -->
+    <sc-if value="{{ sheetLocation }}" hint-placeholder-val="{{ false }}">
+      <div class="sheetWrap">
+        <div class="sheet">
+          <div class="grab"></div>
+          <div class="sheetT">{{ t.setLocation }}</div>
+          <button class="row" style="margin-bottom: 10px;" onClick="{{ useCurrent }}">
+            <div style="width: 16px; height: 16px; border-radius: 50% 50% 50% 0; background: var(--a1); transform: rotate(-45deg); flex-shrink: 0;"></div>
+            <div style="flex: 1;"><div class="rowName">{{ t.useCurrent }}</div><div class="mut" style="margin-top: 2px;">{{ t.useCurrentSub }}</div></div>
+          </button>
+          <button class="row" style="margin-bottom: 16px;" onClick="{{ useCustom }}">
+            <div style="width: 16px; height: 16px; border-radius: 4px; background: var(--a2); flex-shrink: 0;"></div>
+            <div style="flex: 1;"><div class="rowName">{{ t.useCustom }}</div><div class="mut" style="margin-top: 2px;">{{ t.useCustomSub }}</div></div>
+          </button>
+          <sc-if value="{{ hasPoints }}" hint-placeholder-val="{{ true }}">
+            <div>
+              <div class="lab">{{ t.savedAddresses }}</div>
+              <div style="display: flex; flex-direction: column; gap: var(--s2); margin-bottom: 16px;">
+                <sc-for list="{{ points }}" as="pt" hint-placeholder-count="2">
+                  <button class="row" onClick="{{ pt.use }}">
+                    <div style="width: 16px; height: 16px; border-radius: 50% 50% 50% 0; background: var(--a1); transform: rotate(-45deg); flex-shrink: 0; margin-inline: 6px 10px;"></div>
+                    <div style="flex: 1; min-width: 0;"><div class="rowName">{{ pt.label }}</div><div class="mut clip">{{ pt.address }}</div></div>
+                  </button>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+          <button class="btnG" onClick="{{ closeSheet }}">{{ t.cancel }}</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ sheetPassword }}" hint-placeholder-val="{{ false }}">
+      <div class="sheetWrap">
+        <div class="sheet">
+          <div class="grab"></div>
+          <div class="sheetT">{{ t.changePassword }}</div>
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div>
+              <div class="lab">{{ t.currentPw }}</div>
+              <div class="field"><span class="fieldPh">{{ t.currentPwPh }}</span></div>
+            </div>
+            <div>
+              <div class="lab">{{ t.newPw }}</div>
+              <div class="field"><span class="fieldPh">{{ t.newPwPh }}</span></div>
+              <div style="display: flex; gap: 5px; margin-top: 8px;">
+                <div style="flex: 1; height: 4px; border-radius: 2px; background: var(--okFill);"></div>
+                <div style="flex: 1; height: 4px; border-radius: 2px; background: var(--okFill);"></div>
+                <div style="flex: 1; height: 4px; border-radius: 2px; background: var(--border);"></div>
+              </div>
+              <div class="mut" style="margin-top: 6px;">{{ t.strengthGood }}</div>
+            </div>
+            <div>
+              <div class="lab">{{ t.confirmNewPw }}</div>
+              <div class="field"><span class="fieldPh">{{ t.confirmNewPwPh }}</span></div>
+            </div>
+          </div>
+          <div class="mut" style="margin: 16px 0 20px; line-height: 1.5;">{{ t.pwNote }}</div>
+          <button class="btnP" style="margin-bottom: 10px;" onClick="{{ closeSheet }}">{{ t.updatePassword }}</button>
+          <button class="btnG" onClick="{{ closeSheet }}">{{ t.cancel }}</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ sheetSettings }}" hint-placeholder-val="{{ false }}">
+      <div class="sheetWrap">
+        <div class="sheet">
+          <div class="grab"></div>
+          <div class="sheetT">{{ t.settings }}</div>
+          <div class="lab">{{ t.appearance }}</div>
+          <div class="segw" style="background: var(--pageBg); margin-bottom: 20px;">
+            <button class="seg {{ segLight }}" onClick="{{ setLight }}">{{ t.light }}</button>
+            <button class="seg {{ segDark }}" onClick="{{ setDark }}">{{ t.dark }}</button>
+          </div>
+          <div class="lab">{{ t.language }}</div>
+          <div class="segw" style="background: var(--pageBg); margin-bottom: 24px;">
+            <button class="seg {{ segEn }}" onClick="{{ setEn }}">English</button>
+            <button class="seg {{ segAr }}" onClick="{{ setAr }}" lang="ar">العربية</button>
+          </div>
+          <button class="btnG" onClick="{{ closeSheet }}">{{ t.done }}</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ sheetReview }}" hint-placeholder-val="{{ false }}">
+      <div class="sheetWrap">
+        <div class="sheet">
+          <div class="grab"></div>
+          <div style="display: flex; align-items: center; gap: 8px; color: var(--okFill); font-size: 12px; font-weight: 700; margin-bottom: 6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4.5 4.5L19 7"></path></svg><span>{{ reviewPlace }}</span></div>
+          <div class="sheetT" style="margin-bottom: 4px;">{{ t.howWasIt }}</div>
+          <div class="mut" style="margin-bottom: 8px;">{{ t.reviewSub }}</div>
+          <div class="stars" role="radiogroup" aria-label="{{ t.yourRating }}">
+            <sc-for list="{{ reviewStars }}" as="st" hint-placeholder-count="5">
+              <button class="star {{ st.cls }}" role="radio" aria-checked="{{ st.checked }}" aria-label="{{ st.label }}" onClick="{{ st.pick }}"><svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.8l2.8 5.8 6.3.8-4.6 4.4 1.2 6.3L12 17l-5.7 3.1 1.2-6.3L2.9 9.4l6.3-.8z"></path></svg></button>
+            </sc-for>
+          </div>
+          <div class="lab">{{ t.whatStoodOut }}</div>
+          <button class="field" style="display: block; inline-size: 100%; box-sizing: border-box; min-height: 76px; text-align: start; cursor: text; font-family: inherit; margin-bottom: 16px; line-height: 1.45; color: {{ reviewNoteFg }};" onClick="{{ reviewFillNote }}">{{ reviewNoteText }}</button>
+          <div class="lab">{{ t.addPhotos }}</div>
+          <div style="display: flex; gap: 8px; margin-bottom: 22px;">
+            <sc-for list="{{ reviewPhotoList }}" as="ph" hint-placeholder-count="1">
+              <div class="stripe8 pop" style="inline-size: 64px; block-size: 64px; border-radius: 12px;"></div>
+            </sc-for>
+            <button class="photoAdd" aria-label="{{ t.addPhotos }}" onClick="{{ reviewAddPhoto }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></button>
+          </div>
+          <button class="btnP" style="margin-bottom: 10px;" data-disabled="{{ reviewDisabled }}" onClick="{{ reviewSave }}">{{ t.saveReview }}</button>
+          <button class="btnG" onClick="{{ closeSheet }}">{{ t.skipReview }}</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ sheetPoint }}" hint-placeholder-val="{{ false }}">
+      <div class="sheetWrap">
+        <div class="sheet">
+          <div class="grab"></div>
+          <div class="sheetT">{{ t.addPoint }}</div>
+          <div class="lab">{{ t.label }}</div>
+          <div class="field" style="margin-bottom: 6px;"><span class="fieldPh">{{ t.pointLabelPh }}</span></div>
+          <div class="mut" style="margin-bottom: 20px;">{{ t.pointLabelHint }}</div>
+          <button class="btnP" style="margin-bottom: 10px;" onClick="{{ closeSheet }}">{{ t.chooseOnMap }}</button>
+          <button class="btnG" onClick="{{ closeSheet }}">{{ t.cancel }}</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ============ CREATE SPACE ============ -->
+    <sc-if value="{{ csConfig }}" hint-placeholder-val="{{ false }}">
+      <div class="screenIn" style="position: absolute; inset: 0; background: var(--pageBg); display: flex; flex-direction: column; z-index: 30;">
+        <div style="display: flex; align-items: center; padding: 44px 16px 10px; flex-shrink: 0;">
+          <button class="back" aria-label="{{ t.back }}" onClick="{{ csClose }}"><svg class="mirror backIcon" width="10" height="16" viewBox="0 0 10 16" fill="none"><path d="M8 1L2 8l6 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+          <div style="flex: 1; text-align: center; font-size: 16px; font-weight: 800; color: var(--text);">{{ t.newSpace }}</div>
+          <div style="width: 44px;"></div>
+        </div>
+        <div class="scroll" style="position: relative; inset: auto; flex: 1; padding: 6px 20px 20px;">
+
+            <button class="csBanner {{ csBannerCls }}" onClick="{{ csPickPhoto }}">
+              <sc-if value="{{ csNoPhoto }}" hint-placeholder-val="{{ true }}">
+                <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;">
+                  <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="15" rx="3"></rect><circle cx="9" cy="10" r="1.8"></circle><path d="M21 16l-5-5-8.5 8.5"></path></svg>
+                  <div style="font-size: 14px; font-weight: 700; color: var(--text);">{{ t.csAddBanner }}</div>
+                  <div style="font-size: 12px; font-weight: 700; color: var(--onA1); background: var(--a1Fill); border-radius: 999px; padding: 8px 14px;">{{ t.csChooseLibrary }}</div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ csHasPhoto }}" hint-placeholder-val="{{ false }}">
+                <div class="stripe8" style="position: absolute; inset: 0;"></div>
+                <div style="position: absolute; inset: 0; background: linear-gradient(to top, oklch(20% 0.02 250 / 55%), oklch(20% 0.02 250 / 0%) 55%);"></div>
+                <div style="position: absolute; top: 12px; inset-inline-end: 12px; font-size: 11.5px; font-weight: 700; color: #fff; background: oklch(20% 0.02 250 / 55%); border-radius: 999px; padding: 6px 11px;">{{ t.csChangePhoto }}</div>
+                <div style="position: absolute; bottom: 12px; inset-inline-start: 12px; width: 44px; height: 44px; border-radius: 13px; background: {{ csAccent }}; display: flex; align-items: center; justify-content: center; font-size: 22px;">{{ csIcon }}</div>
+              </sc-if>
+            </button>
+
+          <div class="lab" style="margin-top: 20px;">{{ t.spaceName }}</div>
+          <button class="field" style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px; inline-size: 100%; box-sizing: border-box; cursor: text; font-family: inherit; text-align: start;" onClick="{{ csFillName }}">
+            <span style="color: {{ csNameFg }}; min-width: 0;" class="clip">{{ csNameText }}</span>
+            <span class="mut" style="flex-shrink: 0;">{{ csNameCount }}</span>
+          </button>
+
+          <div class="lab" style="margin-top: 20px;">{{ csGridLabel }}</div>
+          <div class="csGrid">
+            <sc-for list="{{ csEmojis }}" as="em" hint-placeholder-count="14">
+              <button class="csEmoji {{ em.cls }}" aria-label="{{ em.emoji }}" onClick="{{ em.pick }}">{{ em.emoji }}</button>
+            </sc-for>
+          </div>
+        </div>
+        <div style="flex-shrink: 0; padding: 12px 20px 28px; background: var(--chrome); border-top: 1px solid var(--border);">
+          <sc-if value="{{ csHasHint }}" hint-placeholder-val="{{ true }}">
+            <div class="mut" style="text-align: center; margin-bottom: 10px;">{{ csHint }}</div>
+          </sc-if>
+          <button class="btnP" data-disabled="{{ csDisabled }}" style="display: flex; align-items: center; justify-content: center; gap: 8px;" onClick="{{ csCreate }}">
+            <sc-if value="{{ csBusy }}" hint-placeholder-val="{{ false }}"><span class="spin" style="width: 14px; height: 14px; border-radius: 50%; border: 2px solid oklch(100% 0 0 / 40%); border-top-color: #fff; display: inline-block;"></span></sc-if>
+            <span>{{ csBtnLabel }}</span>
+          </button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ csDone }}" hint-placeholder-val="{{ false }}">
+      <div class="screenIn" style="position: absolute; inset: 0; background: var(--pageBg); display: flex; flex-direction: column; z-index: 30;">
+        <div class="scroll" style="position: relative; inset: auto; flex: 1; padding: 52px 20px 20px;">
+          <div style="text-align: center; font-size: 16px; font-weight: 800; color: var(--text); margin-bottom: 18px;">{{ t.csCreated }}</div>
+          <sc-if value="{{ csDonePhoto }}" hint-placeholder-val="{{ true }}">
+            <div class="stripe8" style="position: relative; height: 150px; border-radius: 18px; overflow: hidden;">
+              <div style="position: absolute; bottom: 12px; inset-inline-start: 12px; width: 48px; height: 48px; border-radius: 14px; background: {{ csAccent }}; display: flex; align-items: center; justify-content: center; font-size: 24px;">{{ csIcon }}</div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ csDoneEmoji }}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; justify-content: center;"><div class="pop" style="width: 112px; height: 112px; border-radius: 30px; background: {{ csAccentSoft }}; display: flex; align-items: center; justify-content: center; font-size: 54px;">{{ csIcon }}</div></div>
+          </sc-if>
+          <div class="h1" style="text-align: center; margin-top: 16px;">{{ csNameText }}</div>
+          <div class="mut" style="text-align: center; margin-top: 4px;">{{ t.csOnlyMember }}</div>
+
+          <div class="card" style="margin-top: 22px; background: var(--rowBg); border: 1px solid var(--border);">
+            <div class="lab">{{ t.csInvite }}</div>
+            <button class="linkPill" onClick="{{ csCopy }}">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--a1Text)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1"></path><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"></path></svg>
+              <span class="clip" style="flex: 1; min-width: 0; font-size: 13px; font-weight: 600; color: var(--text); direction: ltr; text-align: start;">{{ csLink }}</span>
+              <span style="font-size: 11.5px; font-weight: 700; color: {{ csCopyFg }}; flex-shrink: 0;">{{ csCopyHint }}</span>
+            </button>
+            <div style="display: flex; gap: 10px; margin-top: 12px;">
+              <button class="btnG" style="padding: 12px; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 7px;" onClick="{{ csCopy }}">
+                <sc-if value="{{ csCopied }}" hint-placeholder-val="{{ false }}"><svg class="pop" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--okFill)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4.5 4.5L19 7"></path></svg></sc-if>
+                <span>{{ csCopyLabel }}</span>
+              </button>
+              <button class="btnP" style="padding: 12px; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 7px;" onClick="{{ noop }}">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 8l5-5 5 5"></path><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"></path></svg>
+                <span>{{ t.csShare }}</span>
+              </button>
+            </div>
+            <div class="mut" style="margin-top: 12px; line-height: 1.5;">{{ t.csInviteHint }}</div>
+          </div>
+        </div>
+        <div style="flex-shrink: 0; padding: 12px 20px 28px;">
+          <button class="btnG" onClick="{{ csFinish }}">{{ t.done }}</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ sheetMemory }}" hint-placeholder-val="{{ false }}">
+      <div class="sheetWrap">
+        <div class="sheet">
+          <div class="grab"></div>
+          <div class="sheetT">{{ t.addMemory }}</div>
+          <div style="display: flex; gap: 10px; margin-bottom: 18px;">
+            <button class="btnG" style="padding: 22px 12px; font-size: 13.5px;" onClick="{{ noop }}">{{ t.camera }}</button>
+            <button class="btnG" style="padding: 22px 12px; font-size: 13.5px;" onClick="{{ noop }}">{{ t.gallery }}</button>
+          </div>
+          <div class="lab">{{ t.caption }}</div>
+          <div class="field" style="min-height: 72px; margin-bottom: 6px;"><span class="fieldPh">{{ t.captionPh }}</span></div>
+          <div class="mut" style="text-align: right; margin-bottom: 20px;">0/200</div>
+          <button class="btnP" style="margin-bottom: 10px;" onClick="{{ closeSheet }}">{{ t.upload }}</button>
+          <button class="btnG" onClick="{{ closeSheet }}">{{ t.cancel }}</button>
+        </div>
+      </div>
+    </sc-if>
+
+  </div>
+  <div class="cap">
+    <div class="num">Light · العربية</div>
+    <div class="h">Right to left</div>
+    <div class="p">The light theme in Arabic. Flip the dark chip above to see it in dark.</div>
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"dark":{"editor":"boolean","default":false,"section":"Theme"},"lang":{"editor":"enum","options":["en","ar"],"default":"ar","section":"Theme"},"$preview":{"width":430,"height":1010}}'>
+const STR = {
+ en: {
+  tagline: "Your places, your memories.",
+  welcomeBack: "Welcome back",
+  signinSub: "Sign in to your account",
+  emailPh: "you@email.com",
+  confirmPw: "Confirm password",
+  password: "Password",
+  signIn: "Sign in",
+  noAccount: "Don't have an account?",
+  createOne: "Create one",
+  createAccount: "Create account",
+  createSub: "It's free and takes 30 seconds.",
+  email: "Email",
+  phone: "Phone number",
+  strengthGood: "Strength: good",
+  terms: "By continuing you agree to our Terms of Service and Privacy Policy.",
+  lastStep: "One last step",
+  lastStepSub: "Tell people who you are.",
+  displayName: "Display name",
+  displayNamePh: "How you'll appear to others",
+  username: "Username",
+  usernamePh: "e.g. alice_wanders",
+  usernameHint: "Letters, numbers and underscores.",
+  continueLbl: "Continue",
+  interestsTitle: "What do you love?",
+  interestsSub: "We'll use this to recommend places.",
+  skip: "Skip for now",
+  addPlace: "Add a place",
+  addPlaceSub: "Paste a TikTok or Instagram link, or search",
+  scopeNote: "scopes what you see below",
+  nearYou: "Near you right now",
+  noRecsNote: "Nothing is trending near you yet. Check back soon.",
+  recentlySaved: "Recently saved",
+  yourSpaces: "Your spaces",
+  newSpace: "New space",
+  searchPlaces: "Search your places",
+  nearby: "Nearby",
+  allSaved: "All saved",
+  appearance: "Appearance",
+  appearanceSub: "Pick the mood of the app on this device.",
+  light: "Light",
+  dark: "Dark",
+  language: "Language",
+  savedAddresses: "Saved addresses",
+  pointsSub: "Named starting points you can pick instead of your live location.",
+  noPointsNote: "No saved addresses yet. Add one and it becomes a one-tap origin on the location sheet.",
+  addPoint: "Add a starting point",
+  pointLabelPh: "Home, Work, Mum's",
+  pointLabelHint: "Leave it blank and we'll use the first line of the address.",
+  chooseOnMap: "Choose on map",
+  label: "Label",
+  changePassword: "Change password",
+  currentPwPh: "Your current password",
+  currentPw: "Current password",
+  newPw: "New password",
+  newPwPh: "At least 8 characters",
+  confirmNewPw: "Confirm new password",
+  confirmNewPwPh: "Repeat the new password",
+  pwNote: "Signing in on your other devices will not be affected.",
+  updatePassword: "Update password",
+  account: "Account",
+  edit: "Edit",
+  visitedPlaces: "Visited places",
+  logOut: "Log out",
+  closestToYou: "Closest to you",
+  directions: "Directions",
+  noPlacesMatch: "No places match this filter.",
+  memoriesHere: "Memories here",
+  memories: "Memories",
+  addDish: "+ Add a dish",
+  noMemoriesMatch: "No memories match this filter.",
+  filterMemories: "Filter memories",
+  clear: "Clear",
+  showResults: "Show results",
+  addPlaceTitle: "Add Place",
+  poweredBy: "Powered by Google Places",
+  locating: "Locating…",
+  dragMap: "Drag map here",
+  placeName: "Place name",
+  tags: "Tags",
+  tagsHint: "optional · up to 10",
+  customTagPh: "Type a custom tag…",
+  add: "Add",
+  usedInSpace: "Used in this space",
+  popular: "Popular",
+  pasteLink: "Paste a TikTok or Instagram link",
+  pasteLinkSub: "We'll read the video and find the place",
+  pickLocationHint: "Search above or drag the map to pick a location",
+  placeSaved: "Place saved!",
+  done: "Done",
+  analysing: "Analysing TikTok…",
+  analysingSub: "Reading the video to find the place",
+  whichPlace: "Which place is it?",
+  noneOfThese: "None of these — search manually",
+  addThisTo: "Add this place to…",
+  cancel: "Cancel",
+  addMemory: "Add memory",
+  setLocation: "Set location",
+  useCurrent: "Use current location",
+  useCurrentSub: "Uses your device GPS",
+  useCustom: "Set a custom location",
+  useCustomSub: "Search or drop a pin on the map",
+  cover: "Cover",
+  spaceName: "Space name",
+  spaceNamePh: "e.g. Weekend in Lisbon",
+  createSpace: "Create space",
+  caption: "Caption",
+  captionPh: "What happened here?",
+  upload: "Upload",
+  home: "Home",
+  map: "Map",
+  spaces: "Spaces",
+  profile: "Profile",
+  save: "Save",
+  saved: "Saved",
+  seeAll: "See all",
+  all: "All",
+  allPins: "All pins",
+  visited: "Visited",
+  nearbyCount: "nearby",
+  members: "members",
+  places: "places",
+  morePlaces: "More places",
+  filters: "Filters",
+  minWalk: "min walk",
+  kmAway: "km away",
+  savedPlaces: "Saved Places",
+  pickAtLeastOne: "Pick at least one",
+  saveTo: "Save to",
+  destination: "destination",
+  destinations: "destinations",
+  nextChoose: "Next — choose destination",
+  pickLocationFirst: "Pick a location first",
+  continueWith: "Continue with",
+  selected: "selected",
+  of: "of",
+  place: "Place",
+  cuisine: "Cuisine",
+  status: "Status",
+  notVisited: "Not visited",
+  back: "Back",
+  toggleVisited: "Toggle visited",
+  removeAddress: "Remove address",
+  newSpaceAria: "New space",
+  passwordAge: "Last changed 3 months ago",
+  evidence: "“best bifanas in Lisbon, the one by the river” — 3 branches matched",
+  camera: "📸 Camera",
+  gallery: "🖼️ Gallery",
+  suggestedNear: "Suggested near this space",
+  becauseCoffee: "Because you like coffee",
+  youMightLike: "You might like",
+  topPick: "Top pick today",
+  orSearch: "Or search",
+  pasteALink: "Paste a link",
+  nameOrAddress: "Name or address",
+  weWillPull: "We'll pull the place out of the video for you.",
+  searchPlaceOrAddress: "Search for a place or address…",
+  savePlace: "Save place",
+  sample: "Sample data",
+  Food: "Food",
+  Nature: "Nature",
+  Culture: "Culture",
+  Shop: "Shop",
+  savedBy: "saved by",
+  km: "km",
+  min: "min",
+  i1: "Food & Dining",
+  i1h: "Restaurants, markets",
+  i2: "Coffee & Cafés",
+  i2h: "Roasters, brunch",
+  i3: "Outdoors",
+  i3h: "Parks, trails, views",
+  i4: "Arts & Culture",
+  i4h: "Museums, galleries",
+  i5: "Shopping",
+  i5h: "Markets, vintage",
+  i6: "Bars & Nightlife",
+  i6h: "Cocktails, rooftops",
+  i7: "Wellness",
+  i7h: "Spas, studios",
+  i8: "Entertainment",
+  i8h: "Cinema, live music",
+  reason1: "Popular near Lisbon",
+  reason2: "Matches your interests",
+  reason3: "Loved by your group",
+  nearbyLabel: "nearby",
+  allCount: "All",
+  noneYet: "None yet",
+  address1: "address",
+  addressN: "addresses",
+  stage1: "Reading the video",
+  stage2: "Finding the place",
+  stage3: "Matching it on the map",
+  analyseNote: "This usually takes about 20 seconds. You can leave the app — we'll finish.",
+  csPhoto: "Photo",
+  csEmoji: "Emoji",
+  csAddBanner: "Add a banner photo",
+  csChooseLibrary: "Choose from library",
+  csChangePhoto: "Tap to change photo",
+  csPickIconBelow: "Pick an icon below",
+  csBadgeIcon: "Badge icon",
+  csIconLbl: "Icon",
+  csNamePh: "e.g. Weekend Adventures",
+  csSampleName: "Weekend in Lisbon",
+  csNeedName: "Name your space to continue",
+  csNeedPhoto: "Add a photo, or switch to Emoji",
+  csCreating: "Creating…",
+  csCreated: "Space created",
+  csOnlyMember: "You're the only member so far.",
+  csInvite: "Invite friends",
+  csTapCopy: "Tap to copy",
+  csCopied: "Copied",
+  csCopyLink: "Copy link",
+  csShare: "Share",
+  csInviteHint: "Anyone with this link can join the space.",
+  trendingNow: "Trending right now",
+  settings: "Settings",
+  markVisited: "Mark as visited",
+  howWasIt: "How was it?",
+  reviewSub: "Rate it for your spaces. Everything here is optional.",
+  yourRating: "Your rating",
+  whatStoodOut: "What stood out?",
+  reviewNotePh: "The dishes, the vibe, who you went with…",
+  reviewSample: "Crispy fries, slow service, worth it for the view.",
+  addPhotos: "Photos",
+  saveReview: "Save review",
+  skipReview: "Skip for now",
+  savesThisWeek: "saves this week",
+  sponsored: "Sponsored",
+  beenHere: "Been here",
+ },
+ ar: {
+  tagline: "أماكنك، وذكرياتك.",
+  welcomeBack: "أهلاً بعودتك",
+  signinSub: "سجّل الدخول إلى حسابك",
+  emailPh: "you@email.com",
+  confirmPw: "تأكيد كلمة المرور",
+  password: "كلمة المرور",
+  signIn: "تسجيل الدخول",
+  noAccount: "ليس لديك حساب؟",
+  createOne: "أنشئ حساباً",
+  createAccount: "إنشاء حساب",
+  createSub: "مجاني ولا يستغرق سوى 30 ثانية.",
+  email: "البريد الإلكتروني",
+  phone: "رقم الهاتف",
+  strengthGood: "القوة: جيدة",
+  terms: "بالمتابعة فإنك توافق على شروط الخدمة وسياسة الخصوصية.",
+  lastStep: "خطوة أخيرة",
+  lastStepSub: "عرّف الآخرين بنفسك.",
+  displayName: "الاسم الظاهر",
+  displayNamePh: "كيف سيظهر اسمك للآخرين",
+  username: "اسم المستخدم",
+  usernamePh: "مثال: alice_wanders",
+  usernameHint: "حروف وأرقام وشرطة سفلية.",
+  continueLbl: "متابعة",
+  interestsTitle: "ما الذي تحبه؟",
+  interestsSub: "سنستخدم هذا لاقتراح أماكن تناسبك.",
+  skip: "تخطٍّ الآن",
+  addPlace: "أضف مكاناً",
+  addPlaceSub: "الصق رابط تيك توك أو إنستغرام، أو ابحث",
+  scopeNote: "يحدد ما تراه بالأسفل",
+  nearYou: "قريب منك الآن",
+  noRecsNote: "لا يوجد شيء رائج بالقرب منك بعد. عُد لاحقًا.",
+  recentlySaved: "المحفوظة مؤخراً",
+  yourSpaces: "مساحاتك",
+  newSpace: "مساحة جديدة",
+  searchPlaces: "ابحث في أماكنك",
+  nearby: "القريبة",
+  allSaved: "كل المحفوظات",
+  appearance: "المظهر",
+  appearanceSub: "اختر مظهر التطبيق على هذا الجهاز.",
+  light: "فاتح",
+  dark: "داكن",
+  language: "اللغة",
+  savedAddresses: "العناوين المحفوظة",
+  pointsSub: "نقاط انطلاق مسماة يمكنك اختيارها بدل موقعك المباشر.",
+  noPointsNote: "لا توجد عناوين محفوظة بعد. أضف واحداً ليصبح نقطة انطلاق بضغطة واحدة عند تحديد الموقع.",
+  addPoint: "أضف نقطة انطلاق",
+  pointLabelPh: "المنزل، العمل، بيت العائلة",
+  pointLabelHint: "اتركها فارغة وسنستخدم أول سطر من العنوان.",
+  chooseOnMap: "اختر على الخريطة",
+  label: "التسمية",
+  changePassword: "تغيير كلمة المرور",
+  currentPwPh: "كلمة المرور الحالية",
+  currentPw: "كلمة المرور الحالية",
+  newPw: "كلمة المرور الجديدة",
+  newPwPh: "8 أحرف على الأقل",
+  confirmNewPw: "تأكيد كلمة المرور الجديدة",
+  confirmNewPwPh: "أعد كتابة كلمة المرور الجديدة",
+  pwNote: "لن يتأثر تسجيل دخولك على أجهزتك الأخرى.",
+  updatePassword: "تحديث كلمة المرور",
+  account: "الحساب",
+  edit: "تعديل",
+  visitedPlaces: "الأماكن التي زرتها",
+  logOut: "تسجيل الخروج",
+  closestToYou: "الأقرب إليك",
+  directions: "الاتجاهات",
+  noPlacesMatch: "لا توجد أماكن مطابقة لهذه التصفية.",
+  memoriesHere: "الذكريات هنا",
+  memories: "الذكريات",
+  addDish: "أضف طبقاً",
+  noMemoriesMatch: "لا توجد ذكريات مطابقة لهذه التصفية.",
+  filterMemories: "تصفية الذكريات",
+  clear: "مسح",
+  showResults: "عرض النتائج",
+  addPlaceTitle: "إضافة مكان",
+  poweredBy: "بواسطة Google Places",
+  locating: "جارٍ تحديد الموقع…",
+  dragMap: "حرّك الخريطة هنا",
+  placeName: "اسم المكان",
+  tags: "الوسوم",
+  tagsHint: "اختياري · حتى 10",
+  customTagPh: "اكتب وسماً مخصصاً…",
+  add: "إضافة",
+  usedInSpace: "مستخدمة في هذه المساحة",
+  popular: "شائعة",
+  pasteLink: "الصق رابط تيك توك أو إنستغرام",
+  pasteLinkSub: "سنقرأ الفيديو ونجد المكان",
+  pickLocationHint: "ابحث بالأعلى أو حرّك الخريطة لاختيار موقع",
+  placeSaved: "تم حفظ المكان!",
+  done: "تم",
+  analysing: "جارٍ تحليل الفيديو…",
+  analysingSub: "نقرأ الفيديو للعثور على المكان",
+  whichPlace: "أي مكان تقصد؟",
+  noneOfThese: "لا شيء منها — ابحث يدوياً",
+  addThisTo: "أضف هذا المكان إلى…",
+  cancel: "إلغاء",
+  addMemory: "أضف ذكرى",
+  setLocation: "تحديد الموقع",
+  useCurrent: "استخدام موقعي الحالي",
+  useCurrentSub: "يستخدم نظام تحديد المواقع في جهازك",
+  useCustom: "تحديد موقع مخصص",
+  useCustomSub: "ابحث أو ضع دبوساً على الخريطة",
+  cover: "الغلاف",
+  spaceName: "اسم المساحة",
+  spaceNamePh: "مثال: عطلة في لشبونة",
+  createSpace: "إنشاء مساحة",
+  caption: "التعليق",
+  captionPh: "ماذا حدث هنا؟",
+  upload: "رفع",
+  home: "الرئيسية",
+  map: "الخريطة",
+  spaces: "المساحات",
+  profile: "حسابي",
+  save: "حفظ",
+  saved: "محفوظ",
+  seeAll: "عرض الكل",
+  all: "الكل",
+  allPins: "كل الدبابيس",
+  visited: "تمت زيارته",
+  nearbyCount: "بالقرب",
+  members: "أعضاء",
+  places: "أماكن",
+  morePlaces: "أماكن أخرى",
+  filters: "التصفية",
+  minWalk: "دقيقة سيراً",
+  kmAway: "كم",
+  savedPlaces: "الأماكن المحفوظة",
+  pickAtLeastOne: "اختر واحدة على الأقل",
+  saveTo: "احفظ في",
+  destination: "وجهة",
+  destinations: "وجهات",
+  nextChoose: "التالي — اختر الوجهة",
+  pickLocationFirst: "اختر موقعاً أولاً",
+  continueWith: "تابع مع",
+  selected: "مختارة",
+  of: "من",
+  place: "المكان",
+  cuisine: "المطبخ",
+  status: "الحالة",
+  notVisited: "لم تُزر",
+  back: "رجوع",
+  toggleVisited: "تبديل الزيارة",
+  removeAddress: "إزالة العنوان",
+  newSpaceAria: "مساحة جديدة",
+  passwordAge: "آخر تغيير قبل 3 أشهر",
+  evidence: "«أفضل بيفانا في لشبونة، تلك التي عند النهر» — 3 فروع مطابقة",
+  camera: "📸 الكاميرا",
+  gallery: "🖼️ المعرض",
+  suggestedNear: "مقترح قرب هذه المساحة",
+  becauseCoffee: "لأنك تحب القهوة",
+  youMightLike: "قد يعجبك",
+  topPick: "اختيار اليوم",
+  orSearch: "أو ابحث",
+  pasteALink: "الصق رابطاً",
+  nameOrAddress: "الاسم أو العنوان",
+  weWillPull: "سنستخرج المكان من الفيديو نيابةً عنك.",
+  searchPlaceOrAddress: "ابحث عن مكان أو عنوان…",
+  savePlace: "حفظ المكان",
+  sample: "بيانات تجريبية",
+  Food: "طعام",
+  Nature: "طبيعة",
+  Culture: "ثقافة",
+  Shop: "تسوّق",
+  savedBy: "حفظه",
+  km: "كم",
+  min: "دقيقة",
+  i1: "المطاعم والطعام",
+  i1h: "مطاعم وأسواق",
+  i2: "القهوة والمقاهي",
+  i2h: "محامص وفطور متأخر",
+  i3: "الأماكن المفتوحة",
+  i3h: "حدائق ومسارات وإطلالات",
+  i4: "الفنون والثقافة",
+  i4h: "متاحف ومعارض",
+  i5: "التسوّق",
+  i5h: "أسواق وقطع قديمة",
+  i6: "البارات والسهر",
+  i6h: "كوكتيلات وأسطح",
+  i7: "العافية",
+  i7h: "منتجعات واستوديوهات",
+  i8: "الترفيه",
+  i8h: "سينما وحفلات",
+  reason1: "شائع قرب لشبونة",
+  reason2: "يناسب اهتماماتك",
+  reason3: "محبوب لدى مجموعتك",
+  nearbyLabel: "أماكن قريبة",
+  allCount: "الكل",
+  noneYet: "لا شيء بعد",
+  address1: "عنوان",
+  addressN: "عناوين",
+  stage1: "نقرأ الفيديو",
+  stage2: "نبحث عن المكان",
+  stage3: "نطابقه على الخريطة",
+  analyseNote: "يستغرق هذا نحو 20 ثانية عادةً. يمكنك مغادرة التطبيق — سنكمل نحن.",
+  csPhoto: "صورة",
+  csEmoji: "إيموجي",
+  csAddBanner: "أضف صورة غلاف",
+  csChooseLibrary: "اختر من المعرض",
+  csChangePhoto: "اضغط لتغيير الصورة",
+  csPickIconBelow: "اختر أيقونة بالأسفل",
+  csBadgeIcon: "أيقونة الشارة",
+  csIconLbl: "الأيقونة",
+  csNamePh: "مثال: مغامرات عطلة الأسبوع",
+  csSampleName: "عطلة في لشبونة",
+  csNeedName: "سمِّ مساحتك للمتابعة",
+  csNeedPhoto: "أضف صورة، أو انتقل إلى الإيموجي",
+  csCreating: "جارٍ الإنشاء…",
+  csCreated: "تم إنشاء المساحة",
+  csOnlyMember: "أنت العضو الوحيد حتى الآن.",
+  csInvite: "ادعُ أصدقاءك",
+  csTapCopy: "اضغط للنسخ",
+  csCopied: "تم النسخ",
+  csCopyLink: "نسخ الرابط",
+  csShare: "مشاركة",
+  csInviteHint: "يمكن لأي شخص لديه هذا الرابط الانضمام إلى المساحة.",
+  trendingNow: "الرائج الآن",
+  settings: "الإعدادات",
+  markVisited: "حدّده كمكان زرته",
+  howWasIt: "كيف كانت التجربة؟",
+  reviewSub: "قيّمه لمساحاتك. كل شيء هنا اختياري.",
+  yourRating: "تقييمك",
+  whatStoodOut: "ما الذي لفت انتباهك؟",
+  reviewNotePh: "الأطباق، الأجواء، مع من ذهبت…",
+  reviewSample: "بطاطس مقرمشة وخدمة بطيئة، لكن الإطلالة تستحق.",
+  addPhotos: "الصور",
+  saveReview: "حفظ التقييم",
+  skipReview: "تخطَّ الآن",
+  savesThisWeek: "حفظًا هذا الأسبوع",
+  sponsored: "ممول",
+  beenHere: "زرته",
+ }
+};
+
+const A1 = 'oklch(62% 0.15 200)';
+const A2 = 'oklch(60% 0.17 280)';
+const OK = 'oklch(60% 0.14 155)';
+const PINCOL = {
+  Food: 'oklch(64% 0.19 40)',
+  Nature: 'oklch(62% 0.15 150)',
+  Culture: 'oklch(58% 0.17 290)',
+  Shop: 'oklch(64% 0.18 355)',
+};
+
+const SPACES = [
+  { id: 's1', name: 'Weekend in Lisbon', members: 4, places: 12, color: PINCOL.Food },
+  { id: 's2', name: 'Tokyo Bucket List', members: 6, places: 24, color: PINCOL.Culture },
+  { id: 's3', name: 'Hometown Faves', members: 2, places: 8, color: PINCOL.Nature },
+];
+
+const PLACES = [
+  { id: 'p1', name: 'Time Out Market', category: 'Food', area: 'Lisbon', savedBy: 'Mia', visited: true, space: 's1', km: 0.4, min: 6, x: '92px', y: '196px' },
+  { id: 'p5', name: 'Pensão Amor', category: 'Culture', area: 'Lisbon', savedBy: 'Mia', visited: false, space: 's1', km: 0.9, min: 12, x: '150px', y: '236px' },
+  { id: 'p6', name: 'Manteigaria', category: 'Food', area: 'Lisbon', savedBy: 'you', visited: false, space: 's1', km: 1.4, min: 18, x: '116px', y: '272px' },
+  { id: 'p4', name: 'Feira da Ladra', category: 'Shop', area: 'Lisbon', savedBy: 'Mia', visited: true, space: 's1', km: 2.8, min: 35, x: '132px', y: '318px' },
+  { id: 'p2', name: 'Jardim da Estrela', category: 'Nature', area: 'Lisbon', savedBy: 'you', visited: false, space: 's3', km: 1.2, min: 16, x: '286px', y: '168px' },
+  { id: 'p8', name: 'Cervejaria Ramiro', category: 'Food', area: 'Lisbon', savedBy: 'Dev', visited: false, space: 's3', km: 2.4, min: 30, x: '308px', y: '262px' },
+  { id: 'p3', name: 'LX Factory', category: 'Culture', area: 'Lisbon', savedBy: 'Dev', visited: false, space: 's2', km: 2.1, min: 27, x: '208px', y: '300px' },
+  { id: 'p7', name: 'Miradouro da Graça', category: 'Nature', area: 'Lisbon', savedBy: 'Mia', visited: false, space: 's2', km: 1.9, min: 24, x: '242px', y: '206px' },
+];
+
+// Trending = what's being saved and filmed most this week. At most one paid
+// slot per row, never first, always labelled.
+const RECS = [
+  { id: 'r1', name: 'Pastéis de Belém', category: 'Food', area: 'Belém', saves: 312 },
+  { id: 'r2', name: 'Alfama Miradouro', category: 'Nature', area: 'Alfama', saves: 248 },
+  { id: 'r3', name: 'Cervejaria Ramiro', category: 'Food', area: 'Anjos', sponsored: true },
+  { id: 'r4', name: 'LX Factory', category: 'Culture', area: 'Alcântara', saves: 190 },
+];
+const INTERESTS = [
+  { id: 'i1', emoji: '🍽️', label: 'Food & Dining', hint: 'Restaurants, markets' },
+  { id: 'i2', emoji: '☕', label: 'Coffee & Cafés', hint: 'Roasters, brunch' },
+  { id: 'i3', emoji: '🌳', label: 'Outdoors', hint: 'Parks, trails, views' },
+  { id: 'i4', emoji: '🎨', label: 'Arts & Culture', hint: 'Museums, galleries' },
+  { id: 'i5', emoji: '🛍️', label: 'Shopping', hint: 'Markets, vintage' },
+  { id: 'i6', emoji: '🍸', label: 'Bars & Nightlife', hint: 'Cocktails, rooftops' },
+  { id: 'i7', emoji: '💆', label: 'Wellness', hint: 'Spas, studios' },
+  { id: 'i8', emoji: '🎬', label: 'Entertainment', hint: 'Cinema, live music' },
+];
+
+const MEMORIES = [
+  { id: 'm1', placeId: 'p1', place: 'Time Out Market', cuisine: 'Portuguese', tags: ['dinner', 'group fave'], photos: [1, 2],
+    dishes: [ { name: 'Bifanas', rating: 5, note: 'Split three ways.' }, { name: 'Pastéis de nata', rating: 5, note: 'Still warm.' } ] },
+  { id: 'm2', placeId: 'p4', place: 'Feira da Ladra', cuisine: 'Flea market', tags: ['souvenirs', 'group fave'], photos: [1], dishes: [] },
+  { id: 'm3', placeId: 'p5', place: 'Pensão Amor', cuisine: 'Cocktails', tags: ['chill'], photos: [1, 2],
+    dishes: [ { name: 'Old fashioned', rating: 3, note: 'Rooftop, great light.' } ] },
+  { id: 'm4', placeId: 'p3', place: 'LX Factory', cuisine: 'Coffee', tags: ['chill'], photos: [1], dishes: [] },
+  { id: 'm5', placeId: 'p2', place: 'Jardim da Estrela', cuisine: 'Picnic', tags: ['morning'], photos: [1, 2], dishes: [] },
+];
+const STARS = ['☆☆☆☆☆', '★☆☆☆☆', '★★☆☆☆', '★★★☆☆', '★★★★☆', '★★★★★'];
+
+const TAG_EMOJI = {
+  restaurant: '🍽️', cafe: '☕', bar: '🍸', pizza: '🍕', sushi: '🍣', brunch: '🥞',
+  park: '🌳', nature: '🏞️', beach: '🏖️', museum: '🏛️', art: '🎨', shopping: '🛍️',
+  hotel: '🏨', coffee: '☕', bakery: '🥐', cocktails: '🍹', rooftop: '🌆', gym: '💪',
+};
+const GLOBAL_TAGS = ['restaurant', 'cafe', 'bar', 'pizza', 'sushi', 'brunch', 'park', 'nature', 'beach', 'museum', 'art', 'shopping', 'hotel', 'coffee', 'bakery', 'cocktails', 'rooftop', 'gym'];
+const SPACE_TAGS = ['portuguese', 'group fave'];
+const SEARCH_RESULTS = [
+  { name: 'Time Out Market Lisboa', address: 'Av. 24 de Julho 49, 1200-479 Lisboa', gid: 'g1' },
+  { name: 'Mercado da Ribeira', address: 'Cais do Sodré, 1200-109 Lisboa', gid: 'g2' },
+  { name: 'Time Out Market Porto', address: 'R. de Sá da Bandeira, Porto', gid: 'g3' },
+];
+const CANDIDATES = [
+  { name: 'Casa das Bifanas', address: 'Praça da Figueira 7, Lisboa', gid: 'c1' },
+  { name: 'Casa das Bifanas — Ribeira', address: 'Cais do Sodré 12, Lisboa', gid: 'c2' },
+  { name: 'Casa das Bifanas — Belém', address: 'R. de Belém 84, Lisboa', gid: 'c3' },
+];
+const CS_EMOJIS = [
+  '🌍', '🎯', '✨', '🔥', '💫', '🌟', '🎉', '💎', '🚀', '⚡',
+  '🍕', '🍣', '🍜', '🥗', '🥩', '🍔', '🌮', '🍱', '🥐', '☕',
+  '🏔️', '🌊', '🌸', '🌿', '🏝️', '🌅', '🌴', '🌳', '🌵', '🏕️',
+  '🎨', '🎭', '🎬', '🎵', '🎮', '🏋️', '⚽', '🎸', '🎪', '🎲',
+  '🏛️', '🏖️', '🗺️', '🧭', '🌃', '🌉', '🏙️', '🛍️', '💆', '🎁',
+];
+// Same idea as emojiColor() in CreateSpaceScreen: the icon picks the accent.
+const CS_ACCENTS = ['oklch(53% 0.15 200)', 'oklch(58% 0.17 280)', 'oklch(55% 0.14 155)', 'oklch(62% 0.14 60)'];
+const CS_LINK = '[your-domain]/j/K7Q2XM9P';
+
+const TAGS = ['restaurant', 'cafe', 'bar', 'park', 'museum', 'bakery', 'rooftop', 'shopping'];
+const POINTS = [
+  { id: 1, label: 'Home', address: 'R. da Rosa 212, 1200-387 Lisboa' },
+  { id: 2, label: 'Work', address: 'Av. da Liberdade 110, 1269-046 Lisboa' },
+];
+
+const TABS = [
+  { id: 'home', label: 'Home' },
+  { id: 'map', label: 'Map' },
+  { id: 'spaces', label: 'Spaces' },
+  { id: 'profile', label: 'Profile' },
+];
+
+class Component extends DCLogic {
+  state = {
+    dark: (this.props || {}).dark ?? false,
+    auth: 'app',
+    tab: 'home',
+    stack: [],
+    sheet: null,
+    location: 'Lisbon, Portugal',
+    visited: PLACES.reduce((m, p) => { m[p.id] = p.visited; return m; }, {}),
+    saved: {},
+    filters: {},
+    mapSeg: 'nearby',
+    spFilter: 'All',
+    showMemFilters: false,
+    memFilter: { place: null, cuisine: null, tag: null, status: 'All' },
+    interests: {},
+    tags: {},
+    cs: null,
+    csIcon: '🌍',
+    csPhoto: false,
+    csNamed: false,
+    csCopied: false,
+    addOpen: false,
+    addStep: 'form',
+    analysing: false,
+    analyseStep: 0,
+    showCandidates: false,
+    showResults: false,
+    locating: false,
+    picked: null,
+    addTags: [],
+    destSaved: true,
+    destSpaces: {},
+    addScopeSpace: null,
+    lang: (this.props || {}).lang || 'en',
+    points: POINTS.slice(),
+    pointsOpen: false,
+    review: null,
+  };
+
+  set = (patch) => this.setState(patch);
+  selectTab = (id) => this.setState({ tab: id, stack: [], sheet: null });
+  push = (entry) => this.setState(s => ({ stack: s.stack.concat([entry]), sheet: null }));
+  pop = () => this.setState(s => ({ stack: s.stack.slice(0, -1) }));
+  openSheet = (name) => this.setState({ sheet: name });
+  closeSheet = () => this.setState({ sheet: null });
+  toggleVisited = (id) => this.setState(s => {
+    const v = Object.assign({}, s.visited);
+    v[id] = !v[id];
+    // Marking visited asks for a review; un-marking stays silent.
+    return v[id]
+      ? { visited: v, lastToggled: id, sheet: 'review', review: { id, stars: 0, noted: false, photos: 0 } }
+      : { visited: v, lastToggled: id };
+  });
+  setReview = (patch) => this.setState(s => ({ review: Object.assign({}, s.review, patch) }));
+  setMemFilter = (key, value) => this.setState(s => {
+    const next = Object.assign({}, s.memFilter);
+    next[key] = next[key] === value ? (key === 'status' ? 'All' : null) : value;
+    return { memFilter: next };
+  });
+  addTag = (t) => this.setState(s => (
+    s.addTags.indexOf(t) >= 0 || s.addTags.length >= 10 ? null : { addTags: s.addTags.concat([t]) }
+  ));
+  toggleKey = (bag, key) => this.setState(s => {
+    const next = Object.assign({}, s[bag]);
+    if (next[key]) { delete next[key]; } else { next[key] = true; }
+    return { [bag]: next };
+  });
+
+  visibleSpaceIds() {
+    const on = Object.keys(this.state.filters);
+    return on.length ? on : SPACES.map(s => s.id);
+  }
+
+  t() { return STR[this.state.lang] || STR.en; }
+
+  decoratePlace(p) {
+    const T = this.t();
+    const v = this.state.visited[p.id];
+    const space = SPACES.find(s => s.id === p.space);
+    return Object.assign({}, p, {
+      pinColor: PINCOL[p.category],
+      spaceName: space ? space.name : 'Saved',
+      dist: p.km + ' ' + T.km,
+      meta: T[p.category] + ' · ' + p.km + ' ' + T.km + ' · ' + T.savedBy + ' ' + p.savedBy,
+      visited: !!v,
+      notVisited: !v,
+      pressed: v ? 'true' : 'false',
+      visitCls: v ? 'on' : '',
+      drawCls: v && this.state.lastToggled === p.id ? 'draw' : '',
+      iconFg: v ? '#fff' : 'var(--muted)',
+      ringColor: v ? OK : 'var(--ringIdle)',
+      fillColor: v ? 'var(--okFill)' : 'transparent',
+      visitBg: v ? 'color-mix(in oklab, ' + OK + ' 12%, transparent)' : 'transparent',
+      visitLabel: v ? T.visited : T.markVisited,
+      open: () => this.push({ type: 'place', id: p.id }),
+      toggle: () => this.toggleVisited(p.id),
+    });
+  }
+
+  renderVals() {
+    const s = this.state;
+    const T = this.t();
+    const top = s.stack.length ? s.stack[s.stack.length - 1] : null;
+    const inApp = s.auth === 'app';
+    const onScreen = inApp && !top;
+    const visIds = this.visibleSpaceIds();
+    const visPlaces = PLACES.filter(p => visIds.indexOf(p.space) >= 0);
+    const mapList = s.mapSeg === 'nearby' ? visPlaces.slice(0, 3) : visPlaces;
+    const activePlace = top && top.type === 'place' ? PLACES.find(p => p.id === top.id) : null;
+    const activeSpace = top && top.type === 'space' ? SPACES.find(x => x.id === top.id) : null;
+    const nInterests = Object.keys(s.interests).length;
+    const spAll = activeSpace ? PLACES.filter(p => p.space === activeSpace.id) : [];
+    const spSorted = spAll.slice().sort((a, b) => a.min - b.min);
+    const heroPlace = spSorted[0] || null;
+    const spCats = [];
+    spAll.forEach(p => { if (spCats.indexOf(p.category) < 0) spCats.push(p.category); });
+    const spFilterList = [['All', T.all]].concat(spCats.map(c => [c, T[c] || c])).concat([['Visited', T.visited]]);
+    const spVisible = spSorted.filter(p => {
+      if (s.spFilter === 'All') return true;
+      if (s.spFilter === 'Visited') return !!s.visited[p.id];
+      return p.category === s.spFilter;
+    });
+    const spIds = spAll.map(p => p.id);
+    const spMems = MEMORIES.filter(m => spIds.indexOf(m.placeId) >= 0);
+    const mf = s.memFilter;
+    const memVisible = spMems.filter(m => {
+      if (mf.place && m.place !== mf.place) return false;
+      if (mf.cuisine && m.cuisine !== mf.cuisine) return false;
+      if (mf.tag && m.tags.indexOf(mf.tag) < 0) return false;
+      if (mf.status === 'Visited' && !s.visited[m.placeId]) return false;
+      if (mf.status === 'Not visited' && s.visited[m.placeId]) return false;
+      return true;
+    });
+    const uniq = (arr) => { const o = []; arr.forEach(v => { if (o.indexOf(v) < 0) o.push(v); }); return o; };
+    const memChip = (label, key, value) => ({
+      label,
+      cls: mf[key] === value ? 'chipOn' : '',
+      select: () => this.setMemFilter(key, value),
+    });
+    const destCount = (s.destSaved ? 1 : 0) + Object.keys(s.destSpaces).length;
+    let successEmoji = '📍';
+    for (let i = 0; i < s.addTags.length; i++) {
+      if (TAG_EMOJI[s.addTags[i]]) { successEmoji = TAG_EMOJI[s.addTags[i]]; break; }
+    }
+    const tabVals = (id, label) => {
+      const on = s.tab === id && !s.stack.length;
+      return {
+        label,
+        fg: on ? 'var(--a1Text)' : 'var(--muted)',
+        sw: on ? '2.2' : '1.7',
+        select: () => this.selectTab(id),
+      };
+    };
+    const csValid = s.csNamed;
+    const csHint = !s.csNamed ? T.csNeedName : '';
+    const csIdx = Math.max(0, CS_EMOJIS.indexOf(s.csIcon));
+    const csAccent = CS_ACCENTS[csIdx % CS_ACCENTS.length];
+    const activeMemFilters = ['place', 'cuisine', 'tag'].filter(k => mf[k]).length + (mf.status !== 'All' ? 1 : 0);
+
+    return {
+      themeClass: s.dark ? 'dark' : '',
+      boardBg: s.dark ? 'oklch(13% 0.012 255)' : 'oklch(93% 0.005 250)',
+
+      isLogin: s.auth === 'login',
+      isSignup: s.auth === 'signup',
+      isSetup: s.auth === 'setup',
+      isInterests: s.auth === 'interests',
+      isHome: onScreen && s.tab === 'home',
+      isMap: onScreen && s.tab === 'map',
+      isSpaces: onScreen && s.tab === 'spaces',
+      isProfile: onScreen && s.tab === 'profile',
+      isSpaceDetail: !!activeSpace,
+      isPlaceDetail: !!activePlace,
+      showTabs: inApp && !s.addOpen && !s.cs,
+
+      doLogin: () => this.setState({ auth: 'app', tab: 'home', stack: [] }),
+      goSignup: () => this.setState({ auth: 'signup' }),
+      goLogin: () => this.setState({ auth: 'login' }),
+      goSetup: () => this.setState({ auth: 'setup' }),
+      goInterests: () => this.setState({ auth: 'interests' }),
+      finishOnboarding: () => this.setState({ auth: 'app', tab: 'home' }),
+      doLogout: () => this.setState({ auth: 'login', stack: [], sheet: null }),
+      goProfile: () => this.selectTab('profile'),
+      goSpaces: () => this.selectTab('spaces'),
+      pop: this.pop,
+      noop: () => {},
+
+      locationLabel: s.location,
+      openLocation: () => this.openSheet('location'),
+      openAdd: () => this.setState({ addOpen: true, addStep: 'form', sheet: null }),
+      openNewSpace: () => this.setState({ cs: 'config', csIcon: '🌍', csPhoto: false, csNamed: false, csCopied: false, sheet: null }),
+      openMemory: () => this.openSheet('memory'),
+      closeSheet: this.closeSheet,
+      sheetLocation: s.sheet === 'location',
+      sheetMemory: s.sheet === 'memory',
+      useCurrent: () => this.setState({ location: 'Current location', sheet: null }),
+      useCustom: () => this.setState({ location: 'Custom pin', sheet: null }),
+
+      interestCta: nInterests ? (T.continueWith + ' ' + nInterests + ' ' + T.selected) : T.continueLbl,
+      interests: INTERESTS.map(i => {
+        const on = !!s.interests[i.id];
+        return Object.assign({}, i, {
+          label: T[i.id], hint: T[i.id + 'h'],
+          on,
+          bg: on ? 'color-mix(in oklab, ' + A1 + ' 10%, transparent)' : 'var(--rowBg)',
+          border: on ? A1 : 'transparent',
+          toggle: () => this.toggleKey('interests', i.id),
+        });
+      }),
+
+      hasRecs: RECS.length > 0,
+      noRecs: RECS.length === 0,
+      recs: RECS.map(r => {
+        const on = !!s.saved[r.id];
+        return Object.assign({}, r, {
+          trending: !r.sponsored,
+          sponsored: !!r.sponsored,
+          signal: r.saves ? (r.saves + ' ' + T.savesThisWeek) : '',
+          meta: T[r.category] + ' · ' + r.area,
+          cta: on ? T.saved : T.save,
+          pressed: on ? 'true' : 'false',
+          saveCls: on ? 'on' : '',
+          iconFill: on ? 'currentColor' : 'none',
+          save: () => this.toggleKey('saved', r.id),
+        });
+      }),
+      homeSpaces: SPACES.slice(0, 3).map(sp => Object.assign({}, sp, {
+        membersLabel: sp.members + ' ' + T.members,
+        open: () => this.push({ type: 'space', id: sp.id }),
+      })),
+      spacesLink: SPACES.length > 3 ? (T.allCount + ' (' + SPACES.length + ')') : T.seeAll,
+      savedLink: T.allCount + ' (' + PLACES.length + ')',
+      goMap: () => this.selectTab('map'),
+
+      spaces: SPACES.map(sp => Object.assign({}, sp, {
+        membersLabel: sp.members + ' ' + T.members,
+        statLine: sp.members + ' members · ' + sp.places + ' places',
+        open: () => this.push({ type: 'space', id: sp.id }),
+      })),
+
+      places: PLACES.slice(0, 3).map(p => this.decoratePlace(p)),
+      mapPlaces: mapList.map(p => this.decoratePlace(p)),
+      pins: visPlaces.map(p => ({
+        x: p.x, y: p.y, size: '32px', badge: '',
+        color: (SPACES.find(x => x.id === p.space) || {}).color || A1,
+      })),
+      filters: [{ id: 'all', name: T.allPins, color: A1 }].concat(SPACES).map(f => {
+        const isAll = f.id === 'all';
+        const anyOn = Object.keys(s.filters).length > 0;
+        const on = isAll ? !anyOn : !!s.filters[f.id];
+        return {
+          name: f.name,
+          dot: on ? '#fff' : f.color,
+          cls: on ? 'chipOn' : '',
+          toggle: isAll ? (() => this.setState({ filters: {} })) : (() => this.toggleKey('filters', f.id)),
+        };
+      }),
+      mapSegNearby: s.mapSeg === 'nearby' ? 'segOn' : '',
+      mapSegAll: s.mapSeg === 'all' ? 'segOn' : '',
+      setMapNearby: () => this.setState({ mapSeg: 'nearby' }),
+      setMapAll: () => this.setState({ mapSeg: 'all' }),
+      space: activeSpace
+        ? Object.assign({}, activeSpace, {
+            subLine: activeSpace.members + ' ' + T.members + ' · ' + spAll.length + ' ' + T.places,
+          })
+        : { name: '', subLine: '' },
+      hero: heroPlace
+        ? Object.assign({}, this.decoratePlace(heroPlace), { meta: T[heroPlace.category] + ' · ' + heroPlace.min + ' ' + T.minWalk })
+        : { name: '', meta: '', open: () => {} },
+      spaceFilters: spFilterList.map(f => ({
+        label: f[1],
+        cls: s.spFilter === f[0] ? 'chipOn' : '',
+        select: () => this.setState({ spFilter: f[0] }),
+      })),
+      spacePlaces: spVisible.map(p => Object.assign({}, this.decoratePlace(p), {
+        travelLine: T[p.category] + ' · ' + p.min + ' ' + T.minWalk + ' · ' + p.km + ' ' + T.km,
+      })),
+      noPlaceResults: spVisible.length === 0,
+      visibleMemories: memVisible.map(m => Object.assign({}, m, {
+        dishes: m.dishes.map(d => ({ name: d.name, quote: '\u201C' + d.note + '\u201D', stars: STARS[d.rating] })),
+      })),
+      noMemories: memVisible.length === 0,
+      memFilterLabel: activeMemFilters > 0 ? (T.filters + ' (' + activeMemFilters + ')') : T.filters,
+      showMemFilters: s.showMemFilters,
+      openMemFilters: () => this.setState({ showMemFilters: true }),
+      closeMemFilters: () => this.setState({ showMemFilters: false }),
+      clearMemFilters: () => this.setState({ memFilter: { place: null, cuisine: null, tag: null, status: 'All' } }),
+      memFilterGroups: [
+        { title: T.place, chips: uniq(spMems.map(m => m.place)).map(p => memChip(p, 'place', p)) },
+        { title: T.cuisine, chips: uniq(spMems.map(m => m.cuisine)).map(c => memChip(c, 'cuisine', c)) },
+        { title: T.tags, chips: uniq([].concat.apply([], spMems.map(m => m.tags))).map(t => memChip(t, 'tag', t)) },
+        { title: T.status, chips: [['All', T.all], ['Visited', T.visited], ['Not visited', T.notVisited]].map(v => memChip(v[1], 'status', v[0])) },
+      ],
+      place: activePlace ? this.decoratePlace(activePlace) : { name: '', meta: '', category: '', area: '', mark: '', ringColor: 'var(--ringIdle)', fillColor: 'transparent', visitBg: 'transparent', visitLabel: '', pinColor: A1, toggle: () => {} },
+
+      tagChips: TAGS.map(t => ({
+        label: t,
+        cls: s.tags[t] ? 'chipOn' : '',
+        toggle: () => this.toggleKey('tags', t),
+      })),
+
+      segLight: s.dark ? '' : 'segOn',
+      segDark: s.dark ? 'segOn' : '',
+      setLight: () => this.setState({ dark: false }),
+      setDark: () => this.setState({ dark: true }),
+      visitedCount: Object.keys(s.visited).filter(k => s.visited[k]).length + ' ' + T.of + ' ' + PLACES.length,
+
+      isAdd: s.addOpen,
+      addForm: s.addStep === 'form',
+      addDestinations: s.addStep === 'destinations',
+      addSuccess: s.addStep === 'success',
+      analysing: s.analysing,
+      showCandidates: s.showCandidates,
+      showResults: s.showResults,
+      locating: s.locating,
+      pinLift: s.locating ? '-8px' : '0px',
+      hasLocation: !!s.picked,
+      noLocation: !s.picked,
+      pickedAddress: s.picked ? s.picked.address : '',
+      nameText: s.picked ? s.picked.name : 'e.g. Frenchie Restaurant',
+      nameFg: s.picked ? 'var(--text)' : 'var(--muted)',
+      nameCount: s.picked ? (s.picked.name.length + '/80') : '',
+      searchText: s.picked ? s.picked.name : 'Search for a place or address…',
+      searchFg: s.picked ? 'var(--text)' : 'var(--muted)',
+      nextDisabled: s.picked ? 'false' : 'true',
+      nextLabel: s.picked ? T.nextChoose : T.pickLocationFirst,
+      closeAdd: () => this.setState({ addOpen: false, addStep: 'form', picked: null, addTags: [], showResults: false, showCandidates: false, analysing: false }),
+      toggleResults: () => this.setState({ showResults: !s.showResults }),
+      searchResults: SEARCH_RESULTS.map(r => ({
+        name: r.name, address: r.address,
+        pick: () => this.setState({ picked: { name: r.name, address: r.address, gid: r.gid }, showResults: false }),
+      })),
+      dropPin: () => {
+        this.setState({ locating: true, showResults: false });
+        setTimeout(() => this.setState({
+          locating: false,
+          picked: { name: (this.state.picked ? this.state.picked.name : 'Dropped pin'), address: 'R. Nova do Carvalho 24, Lisboa', gid: null },
+        }), 900);
+      },
+      analyseLink: () => {
+        // Three real stages of the extraction pipeline. The prototype compresses
+        // ~20s into ~2.4s; the shape of the wait is what is being designed.
+        this.setState({ analysing: true, analyseStep: 0, showResults: false });
+        this.analyseTimers = [
+          setTimeout(() => this.setState({ analyseStep: 1 }), 800),
+          setTimeout(() => this.setState({ analyseStep: 2 }), 1600),
+          setTimeout(() => this.setState({ analysing: false, analyseStep: 0, showCandidates: true }), 2400),
+        ];
+      },
+      analyseProgress: ((s.analyseStep + 1) / 3 * 100) + '%',
+      analyseStages: [T.stage1, T.stage2, T.stage3].map((label, i) => ({
+        label,
+        done: i < s.analyseStep,
+        cls: i < s.analyseStep ? 'stageDone' : (i === s.analyseStep ? 'stageOn stageBusy' : ''),
+      })),
+      candidates: CANDIDATES.map(c => ({
+        name: c.name, address: c.address,
+        pick: () => this.setState({ picked: { name: c.name, address: c.address, gid: c.gid }, showCandidates: false }),
+      })),
+      dismissCandidates: () => this.setState({ showCandidates: false }),
+      hasTags: s.addTags.length > 0,
+      chosenTags: s.addTags.map(t => ({
+        label: t,
+        remove: () => this.setState({ addTags: s.addTags.filter(x => x !== t) }),
+      })),
+      hasSpaceTags: !!s.addScopeSpace,
+      spaceTagSuggestions: SPACE_TAGS.filter(t => s.addTags.indexOf(t) < 0).map(t => ({
+        label: t,
+        add: () => this.addTag(t),
+      })),
+      tagSuggestions: GLOBAL_TAGS.filter(t => s.addTags.indexOf(t) < 0).slice(0, 12).map(t => ({
+        label: (TAG_EMOJI[t] || '🏷️') + ' ' + t,
+        add: () => this.addTag(t),
+      })),
+      goDestinations: () => { if (s.picked) this.setState({ addStep: 'destinations' }); },
+      backToForm: () => this.setState({ addStep: 'form' }),
+      destinations: [{ id: 'saved', emoji: '📍', label: T.savedPlaces }].concat(
+        SPACES.map(sp => ({ id: sp.id, emoji: '🗂️', label: sp.name }))
+      ).map(d => {
+        const on = d.id === 'saved' ? s.destSaved : !!s.destSpaces[d.id];
+        return {
+          emoji: d.emoji, label: d.label,
+          on: on,
+          boxBorder: on ? A1 : 'var(--ringIdle)',
+          boxBg: on ? A1 : 'transparent',
+          toggle: d.id === 'saved'
+            ? (() => this.setState({ destSaved: !s.destSaved }))
+            : (() => this.toggleKey('destSpaces', d.id)),
+        };
+      }),
+      destCta: destCount === 0 ? T.pickAtLeastOne : (T.saveTo + ' ' + destCount + ' ' + (destCount === 1 ? T.destination : T.destinations)),
+      destDisabled: destCount === 0 ? 'true' : 'false',
+      saveWithDestinations: () => { if (destCount > 0) this.setState({ addStep: 'success' }); },
+      successSub: destCount === 1 ? 'It is now in one destination and can be added to any space.' : ('It is now in ' + destCount + ' destinations.'),
+      successEmoji: successEmoji,
+
+      dir: s.lang === 'ar' ? 'rtl' : 'ltr',
+      t: T,
+      segEn: s.lang === 'ar' ? '' : 'segOn',
+      segAr: s.lang === 'ar' ? 'segOn' : '',
+      setEn: () => this.setState({ lang: 'en' }),
+      setAr: () => this.setState({ lang: 'ar' }),
+
+      pointsOpen: s.pointsOpen,
+      pointsCaret: s.pointsOpen ? '180deg' : '0deg',
+      pointsSummary: s.points.length === 0 ? T.noneYet : (s.points.length + ' ' + (s.points.length === 1 ? T.address1 : T.addressN)),
+      togglePoints: () => this.setState({ pointsOpen: !s.pointsOpen }),
+      hasPoints: s.points.length > 0,
+      noPoints: s.points.length === 0,
+      points: s.points.map(p => ({
+        label: p.label,
+        address: p.address,
+        remove: () => this.setState({ points: s.points.filter(x => x.id !== p.id) }),
+        use: () => this.setState({ location: p.label, sheet: null }),
+      })),
+      openAddPoint: () => this.openSheet('point'),
+      openPassword: () => this.openSheet('password'),
+      sheetPoint: s.sheet === 'point',
+      sheetPassword: s.sheet === 'password',
+      openSettings: () => this.openSheet('settings'),
+      sheetSettings: s.sheet === 'settings',
+      settingsSummary: (s.dark ? T.dark : T.light) + ' · ' + (s.lang === 'ar' ? 'العربية' : 'English'),
+      sheetReview: s.sheet === 'review' && !!s.review,
+      reviewPlace: s.review ? ((PLACES.find(p => p.id === s.review.id) || {}).name || '') : '',
+      reviewStars: [1, 2, 3, 4, 5].map(n => ({
+        cls: s.review && s.review.stars >= n ? 'on' : '',
+        checked: s.review && s.review.stars === n ? 'true' : 'false',
+        label: n + ' / 5',
+        pick: () => this.setReview({ stars: n }),
+      })),
+      reviewNoteText: s.review && s.review.noted ? T.reviewSample : T.reviewNotePh,
+      reviewNoteFg: s.review && s.review.noted ? 'var(--text)' : 'var(--muted)',
+      reviewFillNote: () => this.setReview({ noted: true }),
+      reviewPhotoList: s.review ? Array.from({ length: s.review.photos }, (_, i) => ({ i })) : [],
+      reviewAddPhoto: () => this.setReview({ photos: Math.min(4, ((this.state.review || {}).photos || 0) + 1) }),
+      reviewDisabled: s.review && s.review.stars ? 'false' : 'true',
+      reviewSave: () => { if (this.state.review && this.state.review.stars) this.closeSheet(); },
+      passwordAge: T.passwordAge,
+      csConfig: s.cs === 'config' || s.cs === 'creating',
+      csDone: s.cs === 'done',
+      csClose: () => this.setState({ cs: null }),
+      csNoPhoto: !s.csPhoto,
+      csHasPhoto: s.csPhoto,
+      csBannerCls: s.csPhoto ? 'csBannerFilled' : '',
+      csPickPhoto: () => this.setState({ csPhoto: true }),
+      csIcon: s.csIcon,
+      csAccent: csAccent,
+      csAccentSoft: 'color-mix(in oklab, ' + csAccent + ' 20%, var(--rowBg))',
+      csNameText: s.csNamed ? T.csSampleName : T.csNamePh,
+      csNameFg: s.csNamed ? 'var(--text)' : 'var(--muted)',
+      csNameCount: (s.csNamed ? T.csSampleName.length : 0) + '/60',
+      csFillName: () => this.setState({ csNamed: true }),
+      csGridLabel: s.csPhoto ? T.csBadgeIcon : T.csIconLbl,
+      csEmojis: CS_EMOJIS.map(e => ({
+        emoji: e,
+        cls: e === s.csIcon ? 'csEmojiOn' : '',
+        pick: () => this.setState({ csIcon: e }),
+      })),
+      csHasHint: !!csHint,
+      csHint: csHint,
+      csDisabled: csValid && s.cs !== 'creating' ? 'false' : 'true',
+      csBusy: s.cs === 'creating',
+      csBtnLabel: s.cs === 'creating' ? T.csCreating : T.createSpace,
+      csCreate: () => {
+        if (!csValid || s.cs === 'creating') return;
+        this.setState({ cs: 'creating' });
+        setTimeout(() => this.setState({ cs: 'done', csCopied: false }), 900);
+      },
+      csDonePhoto: s.csPhoto,
+      csDoneEmoji: !s.csPhoto,
+      csLink: CS_LINK,
+      csCopied: s.csCopied,
+      csCopyHint: s.csCopied ? T.csCopied : T.csTapCopy,
+      csCopyFg: s.csCopied ? 'var(--okFill)' : 'var(--a1Text)',
+      csCopyLabel: s.csCopied ? T.csCopied : T.csCopyLink,
+      csCopy: () => {
+        this.setState({ csCopied: true });
+        clearTimeout(this.csCopyTimer);
+        this.csCopyTimer = setTimeout(() => this.setState({ csCopied: false }), 2500);
+      },
+      csFinish: () => this.setState({ cs: null, tab: 'home', stack: [] }),
+
+      tabHome: tabVals('home', T.home),
+      tabMap: tabVals('map', T.map),
+      tabSpaces: tabVals('spaces', T.spaces),
+      tabProfile: tabVals('profile', T.profile),
+    };
+  }
+}
+</script>
+
+</body>
+</html>

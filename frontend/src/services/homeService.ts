@@ -27,6 +27,7 @@ export interface ApiPlace {
   lat: number;
   lng: number;
   tags: string[];
+  visited?: boolean;
   created_at: string;
   updated_at: string;
 }

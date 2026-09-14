@@ -1,3 +1,8 @@
 {
-  "extends": "@react-native/typescript-config/tsconfig.json"
+  "extends": "@react-native/typescript-config/tsconfig.json",
+  "compilerOptions": {
+    // Lets *.check.ts files run directly under `node file.ts` (type stripping
+    // needs the real extension). Metro resolves the explicit path fine.
+    "allowImportingTsExtensions": true
+  }
 }

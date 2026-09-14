@@ -25,6 +25,8 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
+	"math"
 	"net/url"
 	"regexp"
 	"strings"
@@ -66,16 +68,36 @@ func normalizeURL(raw string) string {
 	return u.String()
 }
 
+// urlCacheVersion is bumped whenever a cached extraction payload would read
+// back wrong under the current response shape. v2: responses carry every
+// venue in `places`; a v1 entry would unmarshal fine with only one of them.
+const urlCacheVersion = "v2|"
+
 // VideoKey is the URL cache key for a resolved video ID, so a short link and
 // the long link it redirects to share one cache entry.
-func VideoKey(id string) string { return hashKey("tiktok:" + id) }
+func VideoKey(id string) string { return hashKey(urlCacheVersion + "tiktok:" + id) }
 
 // URLKey is the URL cache key for a raw share link.
-func URLKey(raw string) string { return hashKey(normalizeURL(raw)) }
+func URLKey(raw string) string { return hashKey(urlCacheVersion + normalizeURL(raw)) }
 
 func hashKey(s string) string {
 	sum := sha256.Sum256([]byte(s))
 	return hex.EncodeToString(sum[:])
+}
+
+// AreaKey scopes a cache key to the sharer's area. Candidates are ranked
+// around the sharer, so an answer cached in Cairo must not be served in Paris;
+// sharers in the same city still share entries. nil (no location) keeps the
+// key global, as before.
+//
+// ponytail: 0.5° cells (~55 km) — a metro area. Two cells can split one city at
+// a boundary; that costs a duplicate lookup, never a wrong answer.
+func AreaKey(key string, near *LatLng) string {
+	if near == nil {
+		return key
+	}
+	cell := fmt.Sprintf("%.1f,%.1f", math.Round(near.Lat*2)/2, math.Round(near.Lng*2)/2)
+	return hashKey(key + "|" + cell)
 }
 
 // LookupURL returns a cached extraction payload, or ok=false when absent,

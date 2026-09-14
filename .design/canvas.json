@@ -1,0 +1,11 @@
+{
+  "artboards": [
+    {"file": "Main.dc.html", "x": 0, "y": 0, "w": 900, "h": 980, "title": "Direction A · Postcard"},
+    {"file": "DirectionB.dc.html", "x": 1000, "y": 0, "w": 900, "h": 980, "title": "Direction B · Signal"},
+    {"file": "DirectionC.dc.html", "x": 2000, "y": 0, "w": 900, "h": 980, "title": "Direction C · Neon Dusk"}
+  ],
+  "annotations": [
+    {"id": "brief", "x": 0, "y": -220, "w": 900, "text": "Pick one and I build it out: full tokens/component board plus Home, Space Detail, Create Place and Settings.\nEach board = the same Home screen in that direction + its palette, type and controls. Copy is sample data (Lisbon), not real."}
+  ],
+  "launch": {"view": "canvas"}
+}

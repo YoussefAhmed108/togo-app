@@ -1,0 +1,11 @@
+{
+  "artboards": [
+    {"file": "Main.dc.html", "x": 0, "y": 0, "w": 390, "h": 844, "title": "A · Name tags"},
+    {"file": "TapToPeek.dc.html", "x": 470, "y": 0, "w": 390, "h": 844, "title": "B · Tap to peek"},
+    {"file": "ZoomLabels.dc.html", "x": 940, "y": 0, "w": 390, "h": 844, "title": "C · Names as you zoom"}
+  ],
+  "annotations": [
+    {"id": "brief", "x": 0, "y": -210, "w": 1330, "text": "Map — pull the sheet down to a peek bar (all three) and tell the pins apart.\nA · Name tags: every pin is a tag with the place's icon + name, bordered in its space's colour. Readable at a glance; gets crowded when many places sit close together.\nB · Tap to peek: small icon pins; tap one and it lifts with its name, and a place card slides up with Directions and Open place. Cleanest map; you tap to learn a name.\nC · Names as you zoom: icon pins zoomed out, names appear beside them as you zoom in (like street labels); tap still opens B's card. Best of both, a little more to build.\nPlace names are yours; the peek bar shows how many places are on the map."}
+  ],
+  "launch": {"view": "canvas"}
+}

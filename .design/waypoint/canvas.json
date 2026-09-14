@@ -1,0 +1,12 @@
+{
+  "artboards": [
+    {"file": "Main.dc.html", "x": 0, "y": 0, "w": 430, "h": 1130, "title": "Waypoint Home · light"},
+    {"file": "Dark.dc.html", "x": 530, "y": 0, "w": 430, "h": 1130, "title": "Waypoint Home · dark"},
+    {"file": "GridOptions.dc.html", "x": 1120, "y": 0, "w": 430, "h": 1180, "title": "Grid options A / B / C"}
+  ],
+  "annotations": [
+    {"id": "note", "x": 0, "y": -190, "w": 960, "text": "Your Waypoint design, rebuilt from its source values — Inter, teal oklch(62% 0.15 200) / violet oklch(60% 0.17 280), same radii, spacing and copy.\nOnly one thing changed: the spaces rail is now a grid. Everything else is left exactly as you had it.\nNo fake iOS status bar or home indicator drawn — on a real phone the OS paints those over your layout."},
+    {"id": "note-b", "x": 1120, "y": -190, "w": 430, "text": "Three grid treatments with their real height cost, so the choice is made on numbers rather than taste."}
+  ],
+  "launch": {"view": "canvas"}
+}

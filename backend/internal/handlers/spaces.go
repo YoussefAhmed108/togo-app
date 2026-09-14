@@ -59,6 +59,10 @@ func (h *SpaceHandler) CreateSpace(w http.ResponseWriter, r *http.Request) {
 	if strings.TrimSpace(req.Icon) == "" {
 		req.Icon = "🌍"
 	}
+	if req.BannerKey != nil && *req.BannerKey != "" && !ownKey("space_banner", userID, *req.BannerKey) {
+		writeError(w, http.StatusBadRequest, "invalid banner_key")
+		return
+	}
 
 	spaceID, err := h.spaces.CreateSpace(r.Context(), req.Name, req.Icon, userID)
 	if err != nil {
@@ -132,6 +136,10 @@ func (h *SpaceHandler) UpdateSpace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "name required")
 		return
 	}
+	if req.BannerKey != nil && !ownKey("space_banner", userID, *req.BannerKey) {
+		writeError(w, http.StatusBadRequest, "invalid banner_key")
+		return
+	}
 
 	if err := h.spaces.UpdateSpace(r.Context(), spaceID, req.Name, req.Icon, req.BannerKey); err != nil {
 		serverError(w, err)
@@ -165,43 +173,6 @@ func (h *SpaceHandler) DeleteSpace(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// POST /api/v1/spaces/{id}/members
-func (h *SpaceHandler) AddMember(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserID(r)
-	spaceID, ok := parseSpaceID(w, r)
-	if !ok {
-		return
-	}
-
-	if ok, err := h.assertOwner(w, r, spaceID, userID); err != nil || !ok {
-		return
-	}
-
-	var req struct {
-		UserID uint64 `json:"user_id"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
-		return
-	}
-	if req.UserID == 0 {
-		writeError(w, http.StatusBadRequest, "user_id required")
-		return
-	}
-
-	if err := h.spaces.AddMember(r.Context(), spaceID, req.UserID); err != nil {
-		serverError(w, err)
-		return
-	}
-
-	members, err := h.spaces.ListMembers(r.Context(), spaceID)
-	if err != nil {
-		serverError(w, err)
-		return
-	}
-	writeJSON(w, http.StatusOK, membersResponse(members))
-}
-
 // DELETE /api/v1/spaces/{id}/members/{userId}
 func (h *SpaceHandler) RemoveMember(w http.ResponseWriter, r *http.Request) {
 	callerID := middleware.GetUserID(r)
@@ -210,7 +181,8 @@ func (h *SpaceHandler) RemoveMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if ok, err := h.assertOwner(w, r, spaceID, callerID); err != nil || !ok {
+	callerRole, ok := h.assertLeader(w, r, spaceID, callerID)
+	if !ok {
 		return
 	}
 
@@ -220,8 +192,21 @@ func (h *SpaceHandler) RemoveMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if targetUserID == callerID {
-		writeError(w, http.StatusBadRequest, "owner cannot remove themselves from the space")
+	target, err := h.spaces.GetMember(r.Context(), spaceID, targetUserID)
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, http.StatusNotFound, "member not found")
+		return
+	}
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	switch {
+	case target.Role == "owner":
+		writeError(w, http.StatusBadRequest, "the owner cannot be removed from the space")
+		return
+	case target.Role == "leader" && callerRole != "owner":
+		writeError(w, http.StatusForbidden, "only the owner can remove a leader")
 		return
 	}
 
@@ -419,20 +404,62 @@ func (h *SpaceHandler) GenerateInviteLink(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if ok, err := h.assertOwner(w, r, spaceID, userID); err != nil || !ok {
+	if _, ok := h.assertLeader(w, r, spaceID, userID); !ok {
 		return
 	}
 
-	token, err := h.spaces.GetOrCreateInviteToken(r.Context(), spaceID, userID)
+	token, expiresAt, err := h.spaces.GetOrCreateInviteToken(r.Context(), spaceID, userID)
 	if err != nil {
 		serverError(w, err)
 		return
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
-		"token": token,
-		"link":  "prism://join/" + token,
+		"token":      token,
+		"link":       "prism://join/" + token,
+		"expires_at": expiresAt,
 	})
+}
+
+// PATCH /api/v1/spaces/{id}/members/{userId}  {"role": "leader" | "member"}
+// Owner only: leaders run membership, so choosing them stays with the owner.
+func (h *SpaceHandler) SetMemberRole(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r)
+	spaceID, ok := parseSpaceID(w, r)
+	if !ok {
+		return
+	}
+	if ok, err := h.assertOwner(w, r, spaceID, userID); err != nil || !ok {
+		return
+	}
+
+	targetUserID, err := strconv.ParseUint(mux.Vars(r)["userId"], 10, 64)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid user id")
+		return
+	}
+	var req struct {
+		Role string `json:"role"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if req.Role != "leader" && req.Role != "member" {
+		writeError(w, http.StatusBadRequest, "role must be leader or member")
+		return
+	}
+
+	found, err := h.spaces.SetMemberRole(r.Context(), spaceID, targetUserID, req.Role)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	if !found {
+		writeError(w, http.StatusNotFound, "member not found")
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // POST /api/v1/spaces/join
@@ -454,7 +481,7 @@ func (h *SpaceHandler) JoinViaInvite(w http.ResponseWriter, r *http.Request) {
 
 	space, err := h.spaces.FindSpaceByInviteToken(r.Context(), req.Token)
 	if errors.Is(err, sql.ErrNoRows) {
-		writeError(w, http.StatusNotFound, "invite link not found")
+		writeError(w, http.StatusNotFound, "invite link is invalid or has expired")
 		return
 	}
 	if err != nil {
@@ -516,6 +543,29 @@ func (h *SpaceHandler) assertOwner(w http.ResponseWriter, r *http.Request, space
 		return false, nil
 	}
 	return true, nil
+}
+
+// assertLeader passes owners and leaders, returning the caller's role. On
+// failure it has already written the 403/404/500.
+func (h *SpaceHandler) assertLeader(w http.ResponseWriter, r *http.Request, spaceID, userID uint64) (string, bool) {
+	m, err := h.spaces.GetMember(r.Context(), spaceID, userID)
+	if err == nil && (m.Role == "owner" || m.Role == "leader") {
+		return m.Role, true
+	}
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		serverError(w, err)
+		return "", false
+	}
+	_, getErr := h.spaces.GetSpace(r.Context(), spaceID)
+	switch {
+	case errors.Is(getErr, sql.ErrNoRows):
+		writeError(w, http.StatusNotFound, "space not found")
+	case getErr != nil:
+		serverError(w, getErr)
+	default:
+		writeError(w, http.StatusForbidden, "forbidden")
+	}
+	return "", false
 }
 
 func parseSpaceID(w http.ResponseWriter, r *http.Request) (uint64, bool) {

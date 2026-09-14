@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"app/backend/internal/middleware"
 	"app/backend/internal/models"
@@ -54,6 +55,8 @@ func (h *PlaceHandler) CreatePlace(w http.ResponseWriter, r *http.Request) {
 		// Places lookup (TikTok extraction or autocomplete); absent for a pin
 		// the user dropped by hand.
 		GooglePlaceID *string `json:"google_place_id"`
+		// SourceURL is the TikTok the place was extracted from.
+		SourceURL *string `json:"source_url"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
@@ -63,6 +66,24 @@ func (h *PlaceHandler) CreatePlace(w http.ResponseWriter, r *http.Request) {
 	if req.Name == "" {
 		writeError(w, http.StatusBadRequest, "name required")
 		return
+	}
+
+	if !validTags(req.Tags) {
+		writeError(w, http.StatusBadRequest, "invalid tags")
+		return
+	}
+
+	// Only http(s) links: the app opens this URL, so nothing else gets stored.
+	if req.SourceURL != nil {
+		u := strings.TrimSpace(*req.SourceURL)
+		if u == "" {
+			req.SourceURL = nil
+		} else if len(u) > 2048 || !(strings.HasPrefix(u, "https://") || strings.HasPrefix(u, "http://")) {
+			writeError(w, http.StatusBadRequest, "invalid source_url")
+			return
+		} else {
+			req.SourceURL = &u
+		}
 	}
 
 	saved := true
@@ -81,10 +102,16 @@ func (h *PlaceHandler) CreatePlace(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		placeID = existing
+		if placeID != 0 && req.SourceURL != nil {
+			if err := h.places.SetSourceURLIfEmpty(r.Context(), placeID, *req.SourceURL); err != nil {
+				serverError(w, err)
+				return
+			}
+		}
 	}
 	if placeID == 0 {
 		var err error
-		placeID, err = h.places.CreatePlace(r.Context(), userID, req.Name, req.Address, req.Lat, req.Lng, saved, req.GooglePlaceID)
+		placeID, err = h.places.CreatePlace(r.Context(), userID, req.Name, req.Address, req.Lat, req.Lng, saved, req.GooglePlaceID, req.SourceURL)
 		if err != nil {
 			serverError(w, err)
 			return
@@ -140,7 +167,7 @@ func (h *PlaceHandler) GetPlace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	memories, err := h.places.ListMemories(r.Context(), placeID)
+	memories, err := h.places.ListMemories(r.Context(), placeID, userID)
 	if err != nil {
 		serverError(w, err)
 		return
@@ -269,6 +296,10 @@ func (h *PlaceHandler) AddTags(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	if !validTags(req.Tags) {
+		writeError(w, http.StatusBadRequest, "invalid tags")
+		return
+	}
 
 	for _, tagName := range req.Tags {
 		tagID, err := h.places.UpsertTag(r.Context(), tagName)
@@ -345,7 +376,7 @@ func (h *PlaceHandler) ListMemories(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	memories, err := h.places.ListMemories(r.Context(), placeID)
+	memories, err := h.places.ListMemories(r.Context(), placeID, userID)
 	if err != nil {
 		serverError(w, err)
 		return
@@ -365,14 +396,40 @@ func (h *PlaceHandler) AddMemory(w http.ResponseWriter, r *http.Request) {
 		ImageKey string  `json:"image_key"`
 		Caption  *string `json:"caption"`
 		SpaceID  *uint64 `json:"space_id"` // optional: memory is attributed to this space
+		Dishes   []struct {
+			Name   string `json:"name"`
+			Rating uint8  `json:"rating"`
+		} `json:"dishes"` // optional: dishes eaten, each rated 1-5
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if req.ImageKey == "" {
-		writeError(w, http.StatusBadRequest, "image_key required")
+	if !ownKey("memory", userID, req.ImageKey) {
+		writeError(w, http.StatusBadRequest, "invalid image_key")
 		return
+	}
+
+	if len(req.Dishes) > maxDishesPerMemory {
+		writeError(w, http.StatusBadRequest, "too many dishes")
+		return
+	}
+	dishes := make([]models.Dish, 0, len(req.Dishes))
+	for _, d := range req.Dishes {
+		name := strings.TrimSpace(d.Name)
+		if name == "" {
+			writeError(w, http.StatusBadRequest, "dish name required")
+			return
+		}
+		if len([]rune(name)) > 120 {
+			writeError(w, http.StatusBadRequest, "dish name too long")
+			return
+		}
+		if d.Rating < 1 || d.Rating > 5 {
+			writeError(w, http.StatusBadRequest, "dish rating must be 1-5")
+			return
+		}
+		dishes = append(dishes, models.Dish{Name: name, Rating: d.Rating})
 	}
 
 	// Authorization: if space_id provided, user must be a space member and place must
@@ -404,6 +461,11 @@ func (h *PlaceHandler) AddMemory(w http.ResponseWriter, r *http.Request) {
 
 	memoryID, err := h.places.CreateMemory(r.Context(), placeID, userID, req.ImageKey, req.Caption, req.SpaceID)
 	if err != nil {
+		serverError(w, err)
+		return
+	}
+
+	if err := h.places.AddDishes(r.Context(), memoryID, dishes); err != nil {
 		serverError(w, err)
 		return
 	}
@@ -487,6 +549,7 @@ func placeResponse(p *models.Place, s *storage.Client) map[string]any {
 		"lat":             p.Lat,
 		"lng":             p.Lng,
 		"google_place_id": p.GooglePlaceID,
+		"source_url":      p.SourceURL,
 		"tags":            tags,
 		"created_at":      p.CreatedAt,
 		"updated_at":      p.UpdatedAt,
@@ -501,8 +564,32 @@ func placesResponse(places []*models.Place, s *storage.Client) []map[string]any 
 	return out
 }
 
+// Each tag is a DB write, so the count is capped; 64 is the tags.name column.
+const maxTags = 20
+
+func validTags(tags []string) bool {
+	if len(tags) > maxTags {
+		return false
+	}
+	for _, t := range tags {
+		t = strings.TrimSpace(t)
+		if t == "" || utf8.RuneCountInString(t) > 64 {
+			return false
+		}
+	}
+	return true
+}
+
+// One memory is one sitting — 20 dishes is already generous.
+const maxDishesPerMemory = 20
+
 func memoryResponse(m *models.Memory, s *storage.Client) map[string]any {
+	dishes := make([]map[string]any, 0, len(m.Dishes))
+	for _, d := range m.Dishes {
+		dishes = append(dishes, map[string]any{"id": d.ID, "name": d.Name, "rating": d.Rating})
+	}
 	return map[string]any{
+		"dishes":     dishes,
 		"id":         m.ID,
 		"place_id":   m.PlaceID,
 		"space_id":   m.SpaceID,

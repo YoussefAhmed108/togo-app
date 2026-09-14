@@ -3,8 +3,10 @@ package handlers
 import (
 	"context"
 	"database/sql"
+	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"app/backend/internal/middleware"
 	"app/backend/internal/recommendations"
@@ -15,11 +17,11 @@ import (
 
 // RecommendationHandler serves place suggestions for the home screen and per-space.
 type RecommendationHandler struct {
-	users   repository.UserStore
-	places  repository.PlaceStore
-	spaces  repository.SpaceStore
-	db      *sql.DB
-	apiKey  string // Google Places API key; empty = no external recs
+	users  repository.UserStore
+	places repository.PlaceStore
+	spaces repository.SpaceStore
+	db     *sql.DB
+	apiKey string // Google Places API key; empty = no external recs
 }
 
 func NewRecommendationHandler(
@@ -42,6 +44,43 @@ type recResponse struct {
 	Emoji         string  `json:"emoji"`
 	ReasonType    string  `json:"reason_type"`
 	ReasonLabel   string  `json:"reason_label"`
+}
+
+// fetchCategory returns the cached or freshly-searched places for one category.
+//
+// Every error here is deliberately non-fatal — one dead category must not empty
+// the whole shelf — but they used to be dropped without a trace, so a wrong API
+// key and a genuinely quiet neighbourhood both rendered as an empty list.
+func (h *RecommendationHandler) fetchCategory(
+	ctx context.Context, r *http.Request, cat string, gq recommendations.GoogleQuery,
+	gridLat, gridLng, lat, lng float64,
+) []recommendations.GooglePlace {
+	id := middleware.ReqID(r)
+
+	places, err := recommendations.GetCached(ctx, h.db, gridLat, gridLng, cat)
+	if err != nil {
+		log.Printf("req[%s] recs: cache read %s: %v", id, cat, err)
+	}
+	if err == nil && places != nil {
+		log.Printf("req[%s] recs: %s cache hit (%d)", id, cat, len(places))
+		return places
+	}
+	if h.apiKey == "" {
+		log.Printf("req[%s] recs: %s cache miss and no Places key configured", id, cat)
+		return nil
+	}
+
+	t0 := time.Now()
+	places, err = recommendations.NearbySearch(ctx, h.apiKey, lat, lng, 2000, gq)
+	log.Printf("req[%s] recs: %s nearby %v (%d results, err=%v)",
+		id, cat, time.Since(t0).Round(time.Millisecond), len(places), err)
+	if err != nil || len(places) == 0 {
+		return places
+	}
+	if err := recommendations.SetCached(ctx, h.db, gridLat, gridLng, cat, places); err != nil {
+		log.Printf("req[%s] recs: cache write %s: %v", id, cat, err)
+	}
+	return places
 }
 
 // GET /api/v1/recommendations
@@ -93,6 +132,8 @@ func (h *RecommendationHandler) GetGlobal(w http.ResponseWriter, r *http.Request
 
 	lat, lng := recommendations.Centroid(points)
 	gridLat, gridLng := recommendations.GridCell(lat, lng)
+	log.Printf("req[%s] recs: uid=%d cats=%v centroid=%.2f,%.2f from %d place(s)",
+		middleware.ReqID(r), userID, cats, lat, lng, len(points))
 
 	// 3. Fetch & cache Google Places results per category
 	var results []recResponse
@@ -107,16 +148,7 @@ func (h *RecommendationHandler) GetGlobal(w http.ResponseWriter, r *http.Request
 			continue
 		}
 
-		places, err := recommendations.GetCached(ctx, h.db, gridLat, gridLng, cat)
-		if err != nil || places == nil {
-			// Cache miss → hit Google Places API if key is configured
-			if h.apiKey != "" {
-				places, err = recommendations.NearbySearch(ctx, h.apiKey, lat, lng, 2000, gq)
-				if err == nil && len(places) > 0 {
-					_ = recommendations.SetCached(ctx, h.db, gridLat, gridLng, cat, places)
-				}
-			}
-		}
+		places := h.fetchCategory(ctx, r, cat, gq, gridLat, gridLng, lat, lng)
 
 		for _, p := range places {
 			if seen[p.PlaceID] {
@@ -140,6 +172,7 @@ func (h *RecommendationHandler) GetGlobal(w http.ResponseWriter, r *http.Request
 		}
 	}
 
+	log.Printf("req[%s] recs: returning %d", middleware.ReqID(r), len(results))
 	writeJSON(w, http.StatusOK, map[string]any{"data": results})
 }
 
@@ -202,6 +235,9 @@ func (h *RecommendationHandler) GetSpaceRecs(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	log.Printf("req[%s] recs: space=%d cats=%v centroid=%.2f,%.2f from %d place(s)",
+		middleware.ReqID(r), spaceID, cats, lat, lng, len(spacePlaces))
+
 	var results []recResponse
 	seen := map[string]bool{}
 
@@ -214,15 +250,7 @@ func (h *RecommendationHandler) GetSpaceRecs(w http.ResponseWriter, r *http.Requ
 			continue
 		}
 
-		places, err := recommendations.GetCached(ctx, h.db, gridLat, gridLng, cat)
-		if err != nil || places == nil {
-			if h.apiKey != "" {
-				places, err = recommendations.NearbySearch(ctx, h.apiKey, lat, lng, 2000, gq)
-				if err == nil && len(places) > 0 {
-					_ = recommendations.SetCached(ctx, h.db, gridLat, gridLng, cat, places)
-				}
-			}
-		}
+		places := h.fetchCategory(ctx, r, cat, gq, gridLat, gridLng, lat, lng)
 
 		for _, p := range places {
 			// Skip places already in the space (by name dedup)
@@ -247,6 +275,7 @@ func (h *RecommendationHandler) GetSpaceRecs(w http.ResponseWriter, r *http.Requ
 		}
 	}
 
+	log.Printf("req[%s] recs: space returning %d", middleware.ReqID(r), len(results))
 	writeJSON(w, http.StatusOK, map[string]any{"data": results})
 }
 

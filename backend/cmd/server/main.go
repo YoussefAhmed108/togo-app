@@ -1,32 +1,37 @@
 package main
 
 import (
-	"context"
-	"database/sql"
 	"log"
 	"net/http"
-	"os"
+	"time"
 
 	"app/backend/internal/config"
 	"app/backend/internal/handlers"
 	"app/backend/internal/storage"
 
 	"github.com/gorilla/mux"
-	"golang.org/x/crypto/bcrypt"
 )
 
 func main() {
 	cfg := config.Load()
+
+	// A missing or guessable secret lets anyone mint a token for any user id.
+	if len(cfg.JWTSecret) < 32 {
+		log.Fatal("JWT_SECRET must be set to at least 32 random bytes (openssl rand -base64 48)")
+	}
 
 	db, err := config.NewDB(cfg)
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
 	}
 	defer db.Close()
+	log.Print("database: connected")
 
-	if err := seedDemoAccount(context.Background(), db); err != nil {
-		log.Fatalf("failed to seed demo account: %v", err)
-	}
+	// Presence only, never the values: "extraction is not configured" and
+	// "recommendations are empty" are both silent 3rd-party misconfigurations
+	// that this one line diagnoses at boot.
+	log.Printf("config: anthropic_key=%t places_key=%t r2=%t",
+		cfg.AnthropicAPIKey != "", cfg.GooglePlacesKey != "", cfg.R2AccountID != "")
 
 	var storageClient *storage.Client
 	if cfg.R2AccountID != "" {
@@ -47,56 +52,16 @@ func main() {
 		Config:  cfg,
 	})
 
+	// Timeouts stop slow-loris clients pinning connections forever. WriteTimeout
+	// sits above the 150s extraction budget so that endpoint can still finish.
+	srv := &http.Server{
+		Addr:              cfg.ServerAddr,
+		Handler:           r,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      180 * time.Second,
+		IdleTimeout:       120 * time.Second,
+	}
 	log.Printf("server listening on %s", cfg.ServerAddr)
-	log.Fatal(http.ListenAndServe(cfg.ServerAddr, r))
-}
-
-func seedDemoAccount(ctx context.Context, db *sql.DB) error {
-	email := os.Getenv("DEMO_EMAIL")
-	password := os.Getenv("DEMO_PASSWORD")
-	if email == "" || password == "" {
-		return nil
-	}
-
-	name := os.Getenv("DEMO_NAME")
-	if name == "" {
-		name = "Demo User"
-	}
-	username := os.Getenv("DEMO_USERNAME")
-	if username == "" {
-		username = "demo_user"
-	}
-
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return err
-	}
-
-	var existingID uint64
-	err = db.QueryRowContext(ctx, `SELECT id FROM users WHERE email = ?`, email).Scan(&existingID)
-	if err != nil && err != sql.ErrNoRows {
-		return err
-	}
-
-	if err == sql.ErrNoRows {
-		_, err = db.ExecContext(ctx,
-			`INSERT INTO users (email, password, name, username, profile_complete) VALUES (?, ?, ?, ?, 1)`,
-			email, string(hash), name, username,
-		)
-		if err != nil {
-			return err
-		}
-		log.Printf("seeded demo account email=%s username=%s", email, username)
-		return nil
-	}
-
-	_, err = db.ExecContext(ctx,
-		`UPDATE users SET password = ?, name = ?, username = ?, profile_complete = 1 WHERE id = ?`,
-		string(hash), name, username, existingID,
-	)
-	if err != nil {
-		return err
-	}
-	log.Printf("updated demo account email=%s username=%s", email, username)
-	return nil
+	log.Fatal(srv.ListenAndServe())
 }

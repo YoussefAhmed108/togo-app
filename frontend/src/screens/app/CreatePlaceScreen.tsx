@@ -26,10 +26,29 @@ import {GOOGLE_MAPS_API_KEY} from '../../config/maps';
 import {colors, fonts, radius, spacing} from '../../theme';
 import {Pin} from '../../components/Pin';
 import {displayAddress} from '../../utils/address';
+import {useLocation} from '../../hooks/useLocation';
+import {RouteWait} from '../../components/RouteWait';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'CreatePlace'>;
 
 const {height: SCREEN_H} = Dimensions.get('window');
+// Tag kinds share the app's category pin colours: food orange, outdoors green,
+// culture violet, shopping pink; anything else (custom tags) sits in teal.
+const KINDS = [
+  {key: 'food', label: 'Food & drink', color: '#E65719', tint: '#FFE7DC', ink: '#9A3412',
+    match: /restaurant|cafe|coffee|bar|pizza|sushi|brunch|bakery|cocktail|burger|dessert|noodle|egyptian|food/},
+  {key: 'outdoors', label: 'Outdoors', color: '#2E9E52', tint: '#DCF3E3', ink: '#166534',
+    match: /park|nature|beach|rooftop|garden|hiking|view/},
+  {key: 'culture', label: 'Culture', color: '#6A69DB', tint: '#E8E6FB', ink: '#4338CA',
+    match: /museum|art|gallery|music|cinema|theatre/},
+  {key: 'shopping', label: 'Shopping', color: '#DB5392', tint: '#FCE4EF', ink: '#9D174D',
+    match: /shop|market|mall|vintage/},
+];
+const OTHER_KIND = {key: 'other', label: 'Place', color: '#00838E', tint: '#D5F2F3', ink: '#006873', match: /$^/};
+function kindOf(tag: string) {
+  return KINDS.find(k => k.match.test(tag.toLowerCase())) ?? OTHER_KIND;
+}
+const ALL_KINDS = [...KINDS, OTHER_KIND];
 const MAP_HEIGHT = Math.round(SCREEN_H * 0.35);
 
 const DEFAULT_REGION: Region = {
@@ -71,6 +90,12 @@ export default function CreatePlaceScreen({route, navigation}: Props) {
   const tiktokUrl: string | undefined = route.params?.tiktokUrl;
 
   const mapRef = useRef<MapView>(null);
+  const {origin, hasFix} = useLocation();
+  // Read at call time, so a moving fix never restarts a running extraction.
+  const nearRef = useRef<{lat: number; lng: number} | undefined>(undefined);
+  nearRef.current = hasFix ? origin : undefined;
+  const nameRef = useRef<TextInput>(null);
+  const [linkInput, setLinkInput] = useState('');
 
   // Location
   const [pickedLocation, setPickedLocation] = useState<{lat: number; lng: number; address: string} | null>(null);
@@ -93,6 +118,15 @@ export default function CreatePlaceScreen({route, navigation}: Props) {
   const [extracting, setExtracting] = useState(false);
   const [extractResult, setExtractResult] = useState<ExtractResult | null>(null);
   const [showCandidates, setShowCandidates] = useState(false);
+  // ponytail: the extract endpoint reports no progress, so stages advance on a
+  // timer matched to the ~20s pipeline. Stream real stage events if it ever does.
+  const [stage, setStage] = useState(0);
+  useEffect(() => {
+    if (!extracting) return;
+    setStage(0);
+    const timers = [setTimeout(() => setStage(1), 6000), setTimeout(() => setStage(2), 12000)];
+    return () => timers.forEach(clearTimeout);
+  }, [extracting]);
 
   // Destination picker — a place can go to saved places and/or several spaces
   const [showDestinations, setShowDestinations] = useState(false);
@@ -142,9 +176,16 @@ export default function CreatePlaceScreen({route, navigation}: Props) {
     (async () => {
       setExtracting(true);
       try {
-        const result = await extractService.extract(tiktokUrl);
+        const result = await extractService.extract(tiktokUrl, nearRef.current);
         if (cancelled) return;
         setExtractResult(result);
+
+        // A roundup: each venue gets its own destinations on the review screen.
+        // `places` is absent from a backend that predates multi-place.
+        if ((result.places ?? []).filter(p => p.selected).length > 1) {
+          navigation.replace('ReviewPlaces', {places: result.places, spaceId, sourceUrl: tiktokUrl});
+          return;
+        }
 
         if (result.selected) {
           applyCandidate(result.selected);
@@ -171,7 +212,7 @@ export default function CreatePlaceScreen({route, navigation}: Props) {
     })();
 
     return () => { cancelled = true; };
-  }, [tiktokUrl, applyCandidate]);
+  }, [tiktokUrl, applyCandidate, navigation, spaceId]);
 
   // ── Google Places selection ───────────────────────────────────────────────
 
@@ -244,10 +285,12 @@ export default function CreatePlaceScreen({route, navigation}: Props) {
     if (tagInput.trim()) { addTag(tagInput.trim()); setTagInput(''); }
   };
 
-  const spaceSuggestions = spaceTags.filter(t => !tags.includes(t));
-  const globalSuggestions = GLOBAL_TAGS.filter(
-    t => !tags.includes(t) && !spaceTags.includes(t),
-  ).slice(0, 12);
+  // Every tag on offer — picked, this space's, popular — grouped by kind.
+  const tagGroups = ALL_KINDS.map(k => ({
+    ...k,
+    tags: Array.from(new Set([...tags, ...spaceTags, ...GLOBAL_TAGS])).filter(t => kindOf(t).key === k.key),
+  })).filter(g => g.tags.length > 0);
+  const kind = tags.length > 0 ? kindOf(tags[0]) : OTHER_KIND;
 
   // ── Save ─────────────────────────────────────────────────────────────────
 
@@ -289,6 +332,7 @@ export default function CreatePlaceScreen({route, navigation}: Props) {
         pickedLocation.address,
         savedPlacesSelected,
         googlePlaceId,
+        tiktokUrl ?? null,
       );
 
       if (tags.length > 0) {
@@ -382,7 +426,7 @@ export default function CreatePlaceScreen({route, navigation}: Props) {
         <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={12} style={s.headerBack}>
           <Text style={s.headerBackIcon}>‹</Text>
         </TouchableOpacity>
-        <Text style={s.headerTitle}>Add Place</Text>
+        <Text style={s.headerTitle}>Add a place</Text>
         <View style={s.headerBack} />
       </View>
 
@@ -407,7 +451,12 @@ export default function CreatePlaceScreen({route, navigation}: Props) {
           }}
           keepResultsAfterBlur
           listViewDisplayed="auto"
-          query={{key: GOOGLE_MAPS_API_KEY, language: 'en'}}
+          // Rank suggestions around the user; without it, Google favours big cities worldwide.
+          query={{
+            key: GOOGLE_MAPS_API_KEY,
+            language: 'en',
+            ...(hasFix ? {location: `${origin.lat},${origin.lng}`, radius: 50000} : {}),
+          }}
           enablePoweredByContainer={false}
           keyboardShouldPersistTaps="always"
           styles={autoStyles}
@@ -428,7 +477,7 @@ export default function CreatePlaceScreen({route, navigation}: Props) {
             ref={mapRef}
             provider={PROVIDER_GOOGLE}
             style={s.map}
-            initialRegion={DEFAULT_REGION}
+            initialRegion={{...DEFAULT_REGION, latitude: origin.lat, longitude: origin.lng}}
             showsUserLocation
             showsMyLocationButton={false}
             onRegionChange={() => setIsMapMoving(true)}
@@ -467,96 +516,115 @@ export default function CreatePlaceScreen({route, navigation}: Props) {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
 
-          {/* Confirmed address pill */}
-          {pickedLocation && (
-            <View style={s.locationPill}>
-              <Pin size={16} color={colors.primary} filled />
-              <Text style={s.locationPillText} numberOfLines={1}>
-                {pickedLocation.address}
+          {/* The name leads: a big, editable title on its own card. */}
+          <View style={s.hero}>
+            <View style={s.heroTop}>
+              <View style={[s.kindPill, {backgroundColor: kind.tint}]}>
+                <Text style={[s.kindText, {color: kind.ink}]}>{kind.label}</Text>
+              </View>
+              {!!extractResult?.selected && <Text style={s.heroFrom}>Found from your TikTok</Text>}
+            </View>
+            <View style={s.heroRow}>
+              <TextInput
+                ref={nameRef}
+                style={s.heroName}
+                placeholder="Name this place"
+                placeholderTextColor={colors.ringIdle}
+                value={name}
+                onChangeText={setName}
+                maxLength={80}
+                multiline
+                blurOnSubmit
+                returnKeyType="done"
+              />
+              <TouchableOpacity
+                style={s.editBtn}
+                accessibilityLabel="Edit name"
+                onPress={() => nameRef.current?.focus()}>
+                <Text style={s.editGlyph}>✎</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={s.heroAddrRow}>
+              <Pin size={13} color={pickedLocation ? kind.color : colors.textSecondary} filled={!!pickedLocation} />
+              <Text style={s.heroAddr} numberOfLines={2}>
+                {pickedLocation
+                  ? displayAddress(pickedLocation.address) ?? pickedLocation.address
+                  : 'Search above or drag the map to set the spot'}
               </Text>
             </View>
-          )}
-
-          {/* Place name */}
-          <View style={s.card}>
-            <Text style={s.cardLabel}>PLACE NAME</Text>
-            <TextInput
-              style={s.nameInput}
-              placeholder="e.g. Frenchie Restaurant"
-              placeholderTextColor={colors.placeholder}
-              value={name}
-              onChangeText={setName}
-              maxLength={80}
-              returnKeyType="done"
-            />
-            {name.length > 0 && <Text style={s.charCount}>{name.length}/80</Text>}
           </View>
 
-          {/* Tags */}
-          <View style={s.card}>
-            <Text style={s.cardLabel}>
-              TAGS{'  '}
-              <Text style={s.cardLabelHint}>optional · up to 10</Text>
-            </Text>
-
-            {tags.length > 0 && (
-              <View style={s.tagRow}>
-                {tags.map(tag => (
-                  <TouchableOpacity key={tag} style={s.tagChip} onPress={() => removeTag(tag)} activeOpacity={0.75}>
-                    <Text style={s.tagChipText}>{tag}</Text>
-                    <Text style={s.tagChipX}>×</Text>
-                  </TouchableOpacity>
-                ))}
+          {/* Tags, coloured by kind — picked ones fill solid. */}
+          <View style={s.tagsHead}>
+            <Text style={s.tagsTitle}>What kind of place?</Text>
+            <Text style={s.tagsCount}>{tags.length} of 10</Text>
+          </View>
+          <View style={s.tagGroups}>
+            {tagGroups.map(group => (
+              <View key={group.key} style={s.tagWrap}>
+                {group.tags.map(t => {
+                  const on = tags.includes(t);
+                  return (
+                    <TouchableOpacity
+                      key={t}
+                      style={[s.kindChip, {backgroundColor: on ? group.color : group.tint}]}
+                      activeOpacity={0.8}
+                      accessibilityState={{selected: on}}
+                      onPress={() => (on ? removeTag(t) : addTag(t))}>
+                      {on && <Text style={s.kindChipTick}>✓</Text>}
+                      <Text style={[s.kindChipText, {color: on ? colors.white : group.ink}, on && s.kindChipTextOn]}>
+                        {t}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
-            )}
+            ))}
+          </View>
+          <View style={s.customTag}>
+            <TextInput
+              style={s.customTagInput}
+              placeholder="Add your own tag…"
+              placeholderTextColor={colors.placeholder}
+              value={tagInput}
+              onChangeText={setTagInput}
+              onSubmitEditing={handleTagSubmit}
+              returnKeyType="done"
+              maxLength={30}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <TouchableOpacity
+              style={[s.customTagAdd, !tagInput.trim() && s.customTagAddOff]}
+              accessibilityLabel="Add tag"
+              disabled={!tagInput.trim()}
+              onPress={handleTagSubmit}>
+              <Text style={s.customTagPlus}>＋</Text>
+            </TouchableOpacity>
+          </View>
 
-            <View style={s.tagInputRow}>
+          <View style={s.linkCard}>
+            <View style={s.linkIcon}>
+              <Text style={s.linkIconText}>🎬</Text>
+            </View>
+            <View style={s.flex}>
+              <Text style={s.linkTitle}>Paste a TikTok link</Text>
               <TextInput
-                style={s.tagInput}
-                placeholder="Type a custom tag…"
+                style={s.linkInput}
+                placeholder="We'll read the video and find the place"
                 placeholderTextColor={colors.placeholder}
-                value={tagInput}
-                onChangeText={setTagInput}
-                onSubmitEditing={handleTagSubmit}
-                returnKeyType="done"
-                maxLength={30}
+                value={linkInput}
+                onChangeText={setLinkInput}
                 autoCapitalize="none"
                 autoCorrect={false}
+                keyboardType="url"
+                returnKeyType="go"
+                onSubmitEditing={() => {
+                  const url = linkInput.trim();
+                  if (/^https?:\/\//.test(url)) navigation.setParams({tiktokUrl: url});
+                }}
               />
-              {tagInput.trim().length > 0 && (
-                <TouchableOpacity style={s.tagAddBtn} onPress={handleTagSubmit} activeOpacity={0.8}>
-                  <Text style={s.tagAddBtnText}>Add</Text>
-                </TouchableOpacity>
-              )}
             </View>
-
-            {spaceSuggestions.length > 0 && (
-              <>
-                <Text style={s.suggestionLabel}>USED IN THIS SPACE</Text>
-                <View style={s.suggestionRow}>
-                  {spaceSuggestions.map(t => (
-                    <TouchableOpacity key={t} style={[s.suggestion, s.suggestionSpace]} onPress={() => addTag(t)} activeOpacity={0.75}>
-                      <Text style={[s.suggestionText, s.suggestionTextSpace]}>{t}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </>
-            )}
-
-            {globalSuggestions.length > 0 && (
-              <>
-                {spaceSuggestions.length > 0 && (
-                  <Text style={[s.suggestionLabel, {marginTop: spacing.sm}]}>POPULAR</Text>
-                )}
-                <View style={s.suggestionRow}>
-                  {globalSuggestions.map(t => (
-                    <TouchableOpacity key={t} style={s.suggestion} onPress={() => addTag(t)} activeOpacity={0.75}>
-                      <Text style={s.suggestionText}>{t}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </>
-            )}
           </View>
 
           <View style={{height: 100}} />
@@ -575,8 +643,8 @@ export default function CreatePlaceScreen({route, navigation}: Props) {
           activeOpacity={0.85}>
           {saving
             ? <ActivityIndicator color="#fff" />
-            : <Text style={s.saveBtnText}>
-                Next — Choose Destination
+            : <Text style={[s.saveBtnText, !canSave && s.saveBtnTextOff]}>
+                Next — choose destination
               </Text>
           }
         </TouchableOpacity>
@@ -585,10 +653,8 @@ export default function CreatePlaceScreen({route, navigation}: Props) {
       {/* Analysing a shared TikTok — the backend downloads and reads the video,
           which takes ~15s, so this must be visible for the whole wait. */}
       {extracting && (
-        <View style={s.overlay}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={s.overlayTitle}>Analysing TikTok…</Text>
-          <Text style={s.overlaySub}>Reading the video to find the place</Text>
+        <View style={s.overlay} accessibilityLiveRegion="polite">
+          <RouteWait stage={stage} />
         </View>
       )}
 
@@ -631,7 +697,7 @@ export default function CreatePlaceScreen({route, navigation}: Props) {
                 style={s.destRow}
                 onPress={() => setSavedPlacesSelected(v => !v)}
                 activeOpacity={0.7}>
-                <Text style={s.destCheck}>{savedPlacesSelected ? '☑' : '☐'}</Text>
+                <CheckBox on={savedPlacesSelected} />
                 <Text style={s.destEmoji}>📍</Text>
                 <Text style={s.destLabel}>Saved Places</Text>
               </TouchableOpacity>
@@ -642,7 +708,7 @@ export default function CreatePlaceScreen({route, navigation}: Props) {
                   style={s.destRow}
                   onPress={() => toggleSpace(space.id)}
                   activeOpacity={0.7}>
-                  <Text style={s.destCheck}>{selectedSpaceIds.has(space.id) ? '☑' : '☐'}</Text>
+                  <CheckBox on={selectedSpaceIds.has(space.id)} />
                   <Text style={s.destEmoji}>{space.icon}</Text>
                   <Text style={s.destLabel}>{space.name}</Text>
                 </TouchableOpacity>
@@ -658,7 +724,7 @@ export default function CreatePlaceScreen({route, navigation}: Props) {
               onPress={handleSaveWithDestinations}
               disabled={destinationCount === 0}
               activeOpacity={0.85}>
-              <Text style={s.saveBtnText}>
+              <Text style={[s.saveBtnText, destinationCount === 0 && s.saveBtnTextOff]}>
                 {destinationCount === 0
                   ? 'Pick at least one'
                   : `Save to ${destinationCount} ${destinationCount === 1 ? 'destination' : 'destinations'}`}
@@ -675,54 +741,83 @@ export default function CreatePlaceScreen({route, navigation}: Props) {
   );
 }
 
+function CheckBox({on}: {on: boolean}) {
+  return (
+    <View style={[s.check, on && s.checkOn]}>
+      {on && <Text style={s.checkMark}>✓</Text>}
+    </View>
+  );
+}
+
 // ── Styles ────────────────────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
   safe: {flex: 1, backgroundColor: colors.background},
 
   // TikTok extraction overlay
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-  },
-  overlayTitle: {fontFamily: fonts.display, fontSize: 18, color: colors.text, marginTop: spacing.md},
-  overlaySub: {fontFamily: fonts.body, fontSize: 14, color: colors.textMuted, textAlign: 'center'},
+  overlay: {...StyleSheet.absoluteFillObject, backgroundColor: colors.background, justifyContent: 'center'},
+  overlayTitle: {fontFamily: fonts.bold, fontSize: 20, letterSpacing: -0.3, color: colors.text},
+  overlaySub: {fontFamily: fonts.regular, fontSize: 11.5, lineHeight: 17, color: colors.textSecondary, marginTop: 26},
 
   // Bottom sheets (candidate + destination pickers)
   sheetBackdrop: {flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end'},
-  sheet: {
-    backgroundColor: colors.background,
-    borderTopLeftRadius: radius.lg,
-    borderTopRightRadius: radius.lg,
-    padding: spacing.lg,
-    maxHeight: '80%',
-  },
-  sheetTitle: {fontFamily: fonts.display, fontSize: 20, color: colors.text, marginBottom: spacing.xs},
-  sheetSub: {fontFamily: fonts.body, fontSize: 13, color: colors.textMuted, marginBottom: spacing.md},
+  sheet: {backgroundColor: colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingHorizontal: 20, paddingTop: 22, paddingBottom: 34, maxHeight: '88%'},
+  sheetTitle: {fontFamily: fonts.bold, fontSize: 16, color: colors.text, marginBottom: 6},
+  sheetSub: {fontFamily: fonts.regular, fontSize: 11.5, lineHeight: 17, color: colors.textSecondary, marginBottom: 16},
   sheetScroll: {marginBottom: spacing.md},
-  sheetSecondary: {alignItems: 'center', paddingVertical: spacing.md},
-  sheetSecondaryText: {fontFamily: fonts.body, fontSize: 14, color: colors.textMuted},
+  sheetSecondary: {alignItems: 'center', justifyContent: 'center', minHeight: 48, borderRadius: radius.lg, backgroundColor: colors.surface, marginTop: 10},
+  sheetSecondaryText: {fontFamily: fonts.bold, fontSize: 15, color: colors.text},
 
-  candidateCard: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  candidateName: {fontFamily: fonts.display, fontSize: 16, color: colors.text},
-  candidateAddress: {fontFamily: fonts.body, fontSize: 13, color: colors.textMuted, marginTop: 2},
+  candidateCard: {backgroundColor: colors.surface, borderRadius: radius.md, paddingVertical: 13, paddingHorizontal: 14, marginBottom: 10},
+  candidateName: {fontFamily: fonts.semibold, fontSize: 13.5, color: colors.text},
+  candidateAddress: {fontFamily: fonts.regular, fontSize: 11.5, color: colors.textSecondary, marginTop: 3},
 
-  destRow: {flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.md, gap: spacing.sm},
+  destRow: {flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.surface, borderRadius: radius.md, paddingVertical: 10, paddingHorizontal: 12, minHeight: 52, marginBottom: 10},
   destCheck: {fontSize: 20, color: colors.primary},
-  destEmoji: {fontSize: 20},
-  destLabel: {fontFamily: fonts.body, fontSize: 16, color: colors.text},
-  destEmpty: {fontFamily: fonts.body, fontSize: 14, color: colors.textMuted, paddingVertical: spacing.md},
+  destEmoji: {fontSize: 17},
+  destLabel: {flex: 1, fontFamily: fonts.semibold, fontSize: 13.5, color: colors.text},
+  destEmpty: {fontFamily: fonts.regular, fontSize: 14, color: colors.textMuted, paddingVertical: spacing.md},
 
   flex: {flex: 1},
+
+  overlayArt: {
+    width: 88,
+    height: 88,
+    borderRadius: 22,
+    backgroundColor: colors.surfaceDim,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 26,
+  },
+  overlayArtEmoji: {fontSize: 38},
+  track: {height: 4, borderRadius: 2, backgroundColor: colors.border, overflow: 'hidden', marginTop: 22, marginBottom: 20},
+  trackFill: {height: '100%', borderRadius: 2, backgroundColor: colors.primary},
+  stage: {flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14},
+  stageDot: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stageDotDone: {backgroundColor: colors.success, borderColor: colors.success},
+  stageCheck: {fontFamily: fonts.bold, fontSize: 10, color: colors.white},
+  stageText: {fontFamily: fonts.regular, fontSize: 13.5, color: colors.textSecondary},
+  stageTextOn: {fontFamily: fonts.bold, color: colors.text},
+
+  check: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: colors.ringIdle,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkOn: {backgroundColor: colors.primary, borderColor: colors.primary},
+  checkMark: {fontFamily: fonts.bold, fontSize: 12, color: colors.white},
 
   header: {
     flexDirection: 'row',
@@ -736,7 +831,7 @@ const s = StyleSheet.create({
   },
   headerBack: {width: 36, alignItems: 'center', justifyContent: 'center'},
   headerBackIcon: {fontSize: 30, color: colors.primary, lineHeight: 34},
-  headerTitle: {fontFamily: fonts.display, fontSize: 19, color: colors.text},
+  headerTitle: {fontFamily: fonts.bold, fontSize: 16, color: colors.text},
 
   // Search sits between header and map — unrestricted height for dropdown
   searchSection: {
@@ -746,7 +841,7 @@ const s = StyleSheet.create({
     zIndex: 30,
   },
 
-  mapWrap: {height: 300, backgroundColor: colors.sand},
+  mapWrap: {height: 264, backgroundColor: colors.surfaceDim},
   map: {...StyleSheet.absoluteFillObject},
   pinOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -759,14 +854,14 @@ const s = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: 'rgba(45,42,36,0.25)',
+    backgroundColor: 'rgba(20,20,30,0.25)',
     marginTop: 16,
   },
   pinShadowLifted: {
     width: 10,
     height: 4,
     borderRadius: 5,
-    backgroundColor: 'rgba(45,42,36,0.15)',
+    backgroundColor: 'rgba(20,20,30,0.15)',
     marginTop: 26,
   },
   geocodingBadge: {
@@ -786,48 +881,13 @@ const s = StyleSheet.create({
   form: {flex: 1, backgroundColor: colors.background},
   formContent: {paddingHorizontal: spacing.lg, paddingTop: spacing.md},
 
-  locationPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: colors.primaryLight,
-    borderRadius: radius.full,
-    paddingVertical: 14,
-    paddingHorizontal: spacing.md,
-    marginBottom: spacing.md,
-  },
-  locationPillText: {
-    flex: 1,
-    fontFamily: fonts.regular,
-    fontSize: 15,
-    color: colors.text,
-  },
+  locationPill: {flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.primaryLight, borderRadius: radius.full, paddingVertical: 9, paddingHorizontal: 14, marginBottom: 14},
+  locationPillText: {flex: 1, fontFamily: fonts.semibold, fontSize: 12, color: colors.text},
 
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    marginBottom: spacing.md,
-  },
-  cardLabel: {
-    fontFamily: fonts.semibold,
-    fontSize: 12,
-    letterSpacing: 1.2,
-    color: colors.textSecondary,
-    marginBottom: 10,
-  },
-  cardLabelHint: {
-    fontFamily: fonts.regular,
-    fontSize: 12,
-    letterSpacing: 0.6,
-    color: colors.textMuted,
-  },
-  nameInput: {
-    fontFamily: fonts.display,
-    fontSize: 22,
-    color: colors.text,
-    paddingVertical: 2,
-  },
+  card: {backgroundColor: colors.surface, borderRadius: radius.lg, padding: 14, marginBottom: 12},
+  cardLabel: {fontFamily: fonts.bold, fontSize: 11, letterSpacing: 0.7, color: colors.textSecondary, marginBottom: 8},
+  cardLabelHint: {fontFamily: fonts.regular, fontSize: 11.5, letterSpacing: 0, color: colors.textSecondary},
+  nameInput: {fontFamily: fonts.regular, fontSize: 15, color: colors.text, paddingVertical: 2},
   charCount: {
     fontFamily: fonts.regular,
     fontSize: 12,
@@ -837,36 +897,13 @@ const s = StyleSheet.create({
   },
 
   tagRow: {flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 10},
-  tagChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: colors.primary,
-    borderRadius: radius.full,
-    paddingVertical: 9,
-    paddingHorizontal: 16,
-  },
+  tagChip: {flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: colors.primary, borderRadius: radius.full, minHeight: 36, paddingHorizontal: 13},
   tagChipEmoji: {fontSize: 14},
-  tagChipText: {fontFamily: fonts.semibold, fontSize: 14.5, color: colors.white},
+  tagChipText: {fontFamily: fonts.semibold, fontSize: 12, color: colors.white},
   tagChipX: {fontSize: 15, color: 'rgba(255,255,255,0.75)'},
 
-  tagInputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: colors.sand,
-    borderRadius: radius.full,
-    paddingHorizontal: spacing.md,
-    height: 46,
-    marginBottom: 12,
-  },
-  tagInput: {
-    flex: 1,
-    fontFamily: fonts.regular,
-    fontSize: 15,
-    color: colors.text,
-    paddingVertical: 0,
-  },
+  tagInputRow: {flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 12, height: 44, marginBottom: 14},
+  tagInput: {flex: 1, fontFamily: fonts.regular, fontSize: 13, color: colors.text, paddingVertical: 0},
   tagAddBtn: {
     backgroundColor: colors.primary,
     borderRadius: radius.full,
@@ -875,24 +912,13 @@ const s = StyleSheet.create({
   },
   tagAddBtnText: {fontFamily: fonts.semibold, fontSize: 13, color: colors.white},
 
-  suggestionLabel: {
-    fontFamily: fonts.semibold,
-    fontSize: 11,
-    letterSpacing: 1.1,
-    color: colors.textMuted,
-    marginBottom: 8,
-  },
+  suggestionLabel: {fontFamily: fonts.bold, fontSize: 11, letterSpacing: 0.7, color: colors.textSecondary, marginBottom: 8},
   suggestionRow: {flexDirection: 'row', flexWrap: 'wrap', gap: 8},
-  suggestion: {
-    backgroundColor: colors.sand,
-    borderRadius: radius.full,
-    paddingVertical: 9,
-    paddingHorizontal: 16,
-  },
-  suggestionSpace: {backgroundColor: colors.sageTint},
+  suggestion: {backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.full, minHeight: 36, justifyContent: 'center', paddingHorizontal: 13},
+  suggestionSpace: {borderColor: colors.primary},
   suggestionEmoji: {fontSize: 14},
-  suggestionText: {fontFamily: fonts.regular, fontSize: 14.5, color: colors.textSecondary},
-  suggestionTextSpace: {color: colors.sage},
+  suggestionText: {fontFamily: fonts.semibold, fontSize: 12, color: colors.text},
+  suggestionTextSpace: {color: colors.primaryDeep},
 
   footer: {
     backgroundColor: colors.background,
@@ -902,22 +928,120 @@ const s = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
-  footerHint: {
-    fontFamily: fonts.regular,
-    fontSize: 14,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: 10,
-  },
+  footerHint: {fontFamily: fonts.regular, fontSize: 11.5, color: colors.textSecondary, textAlign: 'center', marginBottom: 10},
   saveBtn: {
     backgroundColor: colors.primary,
-    borderRadius: radius.full,
-    height: 56,
+    borderRadius: radius.lg,
+    minHeight: 48,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  saveBtnDisabled: {backgroundColor: colors.sandDeep},
-  saveBtnText: {fontFamily: fonts.display, fontSize: 17, color: colors.white},
+  saveBtnDisabled: {backgroundColor: colors.disabledBg},
+  saveBtnTextOff: {color: colors.disabledFg},
+
+  hero: {
+    backgroundColor: colors.surface,
+    borderRadius: 20,
+    padding: 18,
+    gap: 10,
+    marginBottom: 22,
+    shadowColor: '#14141E',
+    shadowOffset: {width: 0, height: 10},
+    shadowOpacity: 0.1,
+    shadowRadius: 24,
+    elevation: 4,
+  },
+  heroTop: {flexDirection: 'row', alignItems: 'center', gap: 8},
+  kindPill: {borderRadius: 999, paddingVertical: 4, paddingHorizontal: 9},
+  kindText: {fontFamily: fonts.bold, fontSize: 11, letterSpacing: 0.7, textTransform: 'uppercase'},
+  heroFrom: {fontFamily: fonts.regular, fontSize: 11.5, color: colors.textSecondary},
+  heroRow: {flexDirection: 'row', alignItems: 'flex-start', gap: 12},
+  heroName: {
+    flex: 1,
+    fontFamily: fonts.bold,
+    fontSize: 28,
+    lineHeight: 31,
+    letterSpacing: -0.8,
+    color: colors.text,
+    padding: 0,
+  },
+  editBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  editGlyph: {fontSize: 16, color: colors.text},
+  heroAddrRow: {flexDirection: 'row', alignItems: 'center', gap: 6},
+  heroAddr: {flex: 1, fontFamily: fonts.regular, fontSize: 12.5, color: colors.textSecondary},
+
+  tagsHead: {flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12},
+  tagsTitle: {fontFamily: fonts.bold, fontSize: 15, color: colors.text},
+  tagsCount: {fontFamily: fonts.regular, fontSize: 11.5, color: colors.textSecondary},
+  tagGroups: {gap: 10, marginBottom: 14},
+  tagWrap: {flexDirection: 'row', flexWrap: 'wrap', gap: 7},
+  kindChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    minHeight: 36,
+    paddingHorizontal: 13,
+    borderRadius: 999,
+  },
+  kindChipTick: {fontFamily: fonts.bold, fontSize: 12, color: colors.white},
+  kindChipText: {fontFamily: fonts.semibold, fontSize: 12.5},
+  kindChipTextOn: {fontFamily: fonts.bold},
+  customTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    minHeight: 46,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: colors.ringIdle,
+    borderRadius: 12,
+    paddingLeft: 14,
+    paddingRight: 6,
+    marginBottom: 16,
+  },
+  customTagInput: {flex: 1, fontFamily: fonts.regular, fontSize: 13, color: colors.text, paddingVertical: 12},
+  customTagAdd: {
+    width: 34,
+    height: 34,
+    borderRadius: 9,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  customTagAddOff: {backgroundColor: colors.disabledBg},
+  customTagPlus: {fontSize: 16, color: colors.white},
+  linkCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+  },
+  linkIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 9,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  linkIconText: {fontSize: 15},
+  linkTitle: {fontFamily: fonts.bold, fontSize: 13, color: colors.text},
+  linkInput: {fontFamily: fonts.regular, fontSize: 12, color: colors.text, paddingVertical: 2, marginTop: 1},
+  saveBtnText: {fontFamily: fonts.bold, fontSize: 15, color: colors.white},
 
   // ── Success ─────────────────────────────────────────────────────────────
   successWrap: {
@@ -926,22 +1050,9 @@ const s = StyleSheet.create({
     paddingTop: spacing.xxl,
     alignItems: 'center',
   },
-  successCheck: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    backgroundColor: colors.sageTint,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.lg,
-  },
-  successCheckIcon: {fontSize: 38, color: colors.sage},
-  successHeading: {
-    fontFamily: fonts.display,
-    fontSize: 28,
-    color: colors.text,
-    marginBottom: 8,
-  },
+  successCheck: {width: 64, height: 64, borderRadius: 32, backgroundColor: colors.success, alignItems: 'center', justifyContent: 'center', marginBottom: 20},
+  successCheckIcon: {fontSize: 30, color: colors.white, fontFamily: fonts.bold},
+  successHeading: {fontFamily: fonts.bold, fontSize: 24, letterSpacing: -0.5, color: colors.text, marginBottom: 8},
   successSub: {
     fontFamily: fonts.regular,
     fontSize: 15,
@@ -962,7 +1073,7 @@ const s = StyleSheet.create({
   },
   successCardIcon: {
     width: 56,
-    height: 56,
+    minHeight: 48,
     borderRadius: radius.md,
     backgroundColor: colors.sand,
     alignItems: 'center',
@@ -986,18 +1097,18 @@ const s = StyleSheet.create({
   successBtn: {
     alignSelf: 'stretch',
     backgroundColor: colors.primary,
-    borderRadius: radius.full,
-    height: 56,
+    borderRadius: radius.lg,
+    minHeight: 48,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  successBtnText: {fontFamily: fonts.display, fontSize: 17, color: colors.white},
+  successBtnText: {fontFamily: fonts.bold, fontSize: 15, color: colors.white},
 });
 
 const autoStyles = {
   container: {flex: 0, zIndex: 30},
   textInputContainer: {
-    borderRadius: radius.full,
+    borderRadius: radius.md,
     backgroundColor: colors.sand,
     height: 50,
     borderWidth: 1,
@@ -1008,7 +1119,7 @@ const autoStyles = {
     fontSize: 16,
     color: colors.text,
     backgroundColor: colors.sand,
-    borderRadius: radius.full,
+    borderRadius: radius.md,
     height: 48,
     paddingLeft: spacing.lg,
     marginBottom: 0,
@@ -1023,7 +1134,7 @@ const autoStyles = {
     marginTop: 4,
     borderWidth: 1,
     borderColor: colors.border,
-    shadowColor: '#4A3B28',
+    shadowColor: '#14141E',
     shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.12,
     shadowRadius: 10,

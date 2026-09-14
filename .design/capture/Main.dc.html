@@ -1,0 +1,84 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap">
+  <style>
+    body { margin: 0; font-family: 'Figtree', 'Avenir Next', 'Helvetica Neue', sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #006873; } a:hover { color: #00838E; }
+    /* One 6s loop stands in for the ~20s pipeline: the route draws, a video rides it, each stop lands. */
+    @keyframes draw { 0% { stroke-dashoffset: 160; } 88%, 100% { stroke-dashoffset: 0; } }
+    @keyframes ride { 0% { offset-distance: 0%; } 88%, 100% { offset-distance: 100%; } }
+    @keyframes s1 { 0%, 2% { transform: scale(0); } 8% { transform: scale(1.35); } 13%, 100% { transform: scale(1); } }
+    @keyframes s2 { 0%, 40% { transform: scale(0); } 46% { transform: scale(1.35); } 51%, 100% { transform: scale(1); } }
+    @keyframes s3 { 0%, 84% { transform: scale(0); } 90% { transform: scale(1.4); } 95%, 100% { transform: scale(1); } }
+    @keyframes ring { 0%, 88% { transform: scale(0.6); opacity: 0; } 92% { opacity: 0.55; } 100% { transform: scale(2.1); opacity: 0; } }
+    @keyframes bar { 0% { width: 4%; } 44% { width: 38%; } 86% { width: 78%; } 100% { width: 100%; } }
+    @keyframes on1 { 0%, 44% { color: #1C1C25; font-weight: 700; } 45%, 100% { color: #5C5C69; font-weight: 500; } }
+    @keyframes on2 { 0%, 44% { color: #5C5C69; font-weight: 500; } 45%, 86% { color: #1C1C25; font-weight: 700; } 87%, 100% { color: #5C5C69; font-weight: 500; } }
+    @keyframes on3 { 0%, 86% { color: #5C5C69; font-weight: 500; } 87%, 100% { color: #1C1C25; font-weight: 700; } }
+    @keyframes done1 { 0%, 44% { background: transparent; border-color: #00838E; } 45%, 100% { background: #00884B; border-color: #00884B; } }
+    @keyframes done2 { 0%, 44% { background: transparent; border-color: #DCDCE0; } 45%, 86% { background: transparent; border-color: #00838E; } 87%, 100% { background: #00884B; border-color: #00884B; } }
+    @keyframes done3 { 0%, 86% { background: transparent; border-color: #DCDCE0; } 87%, 100% { background: transparent; border-color: #00838E; } }
+    @keyframes tick1 { 0%, 44% { opacity: 0; transform: scale(0.4); } 50%, 100% { opacity: 1; transform: scale(1); } }
+    @keyframes tick2 { 0%, 86% { opacity: 0; transform: scale(0.4); } 92%, 100% { opacity: 1; transform: scale(1); } }
+    .loop { animation-duration: 6s; animation-iteration-count: infinite; animation-timing-function: cubic-bezier(0.45, 0, 0.3, 1); }
+    .pop { transform-box: fill-box; transform-origin: center; animation-duration: 6s; animation-iteration-count: infinite; animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
+  </style>
+</helmet>
+<!-- A · Route W: the logo's route draws itself, a video rides it, and every stop is a stage. -->
+<div style="position: relative; width: 390px; height: 844px; overflow: hidden; background: #F0F0F3; color: #1C1C25;">
+  <div style="position: absolute; left: 12px; top: 56px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1C1C25" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+  </div>
+
+  <div style="position: absolute; left: 55px; top: 150px; width: 280px; height: 280px;">
+    <svg width="280" height="280" viewBox="0 0 100 100" style="position: absolute; inset: 0;">
+      <path d="M16 30L33 72 50 42 67 72 84 30" fill="none" stroke="#DCDCE0" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"></path>
+      <path class="loop" d="M16 30L33 72 50 42 67 72 84 30" fill="none" stroke="#00838E" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="160" style="animation-name: draw;"></path>
+      <circle class="pop" cx="16" cy="30" r="8" fill="#00838E" style="animation-name: s1;"></circle>
+      <circle class="pop" cx="50" cy="42" r="8" fill="#00838E" style="animation-name: s2;"></circle>
+      <circle class="pop" cx="84" cy="30" r="17" fill="#6A69DB" style="animation-name: ring; animation-duration: 6s; animation-iteration-count: infinite;"></circle>
+      <circle class="pop" cx="84" cy="30" r="11" fill="#DBDBFF" style="animation-name: s3;"></circle>
+      <circle class="pop" cx="84" cy="30" r="4.5" fill="#6A69DB" style="animation-name: s3;"></circle>
+    </svg>
+    <!-- the video, riding the route -->
+    <div class="loop" style="position: absolute; left: 0; top: 0; width: 34px; height: 46px; margin: -23px 0 0 -17px; border-radius: 9px; background: #1C1C25; box-shadow: 0 8px 18px rgba(20,20,30,0.28); display: flex; align-items: center; justify-content: center; offset-path: path('M44.8 84 L92.4 201.6 L140 117.6 L187.6 201.6 L235.2 84'); offset-rotate: 0deg; animation-name: ride;">
+      <svg width="14" height="14" viewBox="0 0 24 24"><path d="M8 5.5v13l10-6.5z" fill="#FFFFFF"></path></svg>
+    </div>
+  </div>
+
+  <div style="position: absolute; left: 32px; right: 32px; top: 470px; display: flex; flex-direction: column;">
+    <div style="font-size: 22px; font-weight: 800; letter-spacing: -0.02em;">Analysing TikTok…</div>
+    <div style="height: 4px; border-radius: 2px; background: #DCDCE0; overflow: hidden; margin: 20px 0 22px;">
+      <div class="loop" style="height: 100%; border-radius: 2px; background: #00838E; animation-name: bar;"></div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div class="loop" style="width: 20px; height: 20px; box-sizing: border-box; border-radius: 50%; border: 2px solid #00838E; display: flex; align-items: center; justify-content: center; animation-name: done1;">
+          <svg class="loop" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" style="animation-name: tick1;"><path d="M5 13l4.5 4.5L19 7"></path></svg>
+        </div>
+        <div class="loop" style="font-size: 14px; animation-name: on1;">Reading the video</div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div class="loop" style="width: 20px; height: 20px; box-sizing: border-box; border-radius: 50%; border: 2px solid #DCDCE0; display: flex; align-items: center; justify-content: center; animation-name: done2;">
+          <svg class="loop" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" style="animation-name: tick2;"><path d="M5 13l4.5 4.5L19 7"></path></svg>
+        </div>
+        <div class="loop" style="font-size: 14px; animation-name: on2;">Finding the place</div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div class="loop" style="width: 20px; height: 20px; box-sizing: border-box; border-radius: 50%; border: 2px solid #DCDCE0; animation-name: done3;"></div>
+        <div class="loop" style="font-size: 14px; animation-name: on3;">Matching it on the map</div>
+      </div>
+    </div>
+    <div style="font-size: 12px; color: #5C5C69; margin-top: 28px;">This usually takes about 20 seconds.</div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

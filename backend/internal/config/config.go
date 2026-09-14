@@ -66,7 +66,7 @@ func Load() *Config {
 		MySQLDatabase: getEnv("MYSQL_DATABASE", "appdb"),
 		MySQLTLS:      getEnv("MYSQL_TLS", ""),
 
-		JWTSecret:        getEnv("JWT_SECRET", "change-me-in-production"),
+		JWTSecret:        getEnv("JWT_SECRET", ""), // required; main refuses to start without it
 		JWTAccessExpiry:  getDuration("JWT_ACCESS_EXPIRY", 15*time.Minute),
 		JWTRefreshExpiry: getDuration("JWT_REFRESH_EXPIRY", 7*24*time.Hour),
 

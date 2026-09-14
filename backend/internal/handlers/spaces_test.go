@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 	"time"
 
@@ -42,8 +43,10 @@ func newSpaceHandler(spaces *mockSpaceStore, places *mockPlaceStore) *handlers.S
 
 func TestListSpaces_Success(t *testing.T) {
 	store := &mockSpaceStore{
-		listSpacesByMember: func(_ context.Context, _ uint64) ([]*models.Space, error) {
-			return []*models.Space{stubSpace(1), stubSpace(2)}, nil
+		listSpacesSummary: func(_ context.Context, _ uint64) ([]*models.SpaceSummary, error) {
+			return []*models.SpaceSummary{
+				{Space: *stubSpace(1)}, {Space: *stubSpace(2)},
+			}, nil
 		},
 	}
 	rr, req := spaceRequest(t, http.MethodGet, "/spaces", nil, 1, nil)
@@ -118,51 +121,45 @@ func TestGetSpace_NotFound(t *testing.T) {
 	}
 }
 
-// --- Add Member ---
+// --- Remove Member: leaders manage members, only the owner removes leaders ---
 
-func TestAddMember_Success(t *testing.T) {
-	store := &mockSpaceStore{
-		isSpaceOwner: func(_ context.Context, _, _ uint64) (bool, error) { return true, nil },
-		addMember:    func(_ context.Context, _, _ uint64) error { return nil },
-		listMembers: func(_ context.Context, _ uint64) ([]*models.SpaceMember, error) {
-			return []*models.SpaceMember{
-				{SpaceID: 1, UserID: 1, Role: "owner"},
-				{SpaceID: 1, UserID: 2, Role: "member"},
-			}, nil
+// roles maps user id -> role for a one-space mock.
+func memberStore(roles map[uint64]string) *mockSpaceStore {
+	return &mockSpaceStore{
+		getMember: func(_ context.Context, spaceID, userID uint64) (*models.SpaceMember, error) {
+			role, ok := roles[userID]
+			if !ok {
+				return nil, sql.ErrNoRows
+			}
+			return &models.SpaceMember{SpaceID: spaceID, UserID: userID, Role: role}, nil
 		},
-	}
-	rr, req := spaceRequest(t, http.MethodPost, "/spaces/1/members",
-		map[string]uint64{"user_id": 2}, 1, map[string]string{"id": "1"})
-	newSpaceHandler(store, &mockPlaceStore{}).AddMember(rr, req)
-	if rr.Code != http.StatusOK {
-		t.Fatalf("expected 200, got %d — %s", rr.Code, rr.Body.String())
-	}
-}
-
-func TestAddMember_NotOwner(t *testing.T) {
-	store := &mockSpaceStore{
-		isSpaceOwner: func(_ context.Context, _, _ uint64) (bool, error) { return false, nil },
 		getSpace:     func(_ context.Context, id uint64) (*models.Space, error) { return stubSpace(id), nil },
-	}
-	rr, req := spaceRequest(t, http.MethodPost, "/spaces/1/members",
-		map[string]uint64{"user_id": 2}, 99, map[string]string{"id": "1"})
-	newSpaceHandler(store, &mockPlaceStore{}).AddMember(rr, req)
-	if rr.Code != http.StatusForbidden {
-		t.Errorf("expected 403, got %d", rr.Code)
+		removeMember: func(_ context.Context, _, _ uint64) error { return nil },
 	}
 }
 
-// --- Remove Member (owner cannot remove themselves) ---
-
-func TestRemoveMember_OwnerRemovesSelf(t *testing.T) {
-	store := &mockSpaceStore{
-		isSpaceOwner: func(_ context.Context, _, _ uint64) (bool, error) { return true, nil },
+func TestRemoveMember_Permissions(t *testing.T) {
+	roles := map[uint64]string{1: "owner", 2: "leader", 3: "leader", 4: "member", 5: "member"}
+	cases := []struct {
+		name           string
+		caller, target uint64
+		want           int
+	}{
+		{"owner removes self", 1, 1, http.StatusBadRequest},
+		{"leader removes owner", 2, 1, http.StatusBadRequest},
+		{"owner removes leader", 1, 2, http.StatusNoContent},
+		{"leader removes leader", 2, 3, http.StatusForbidden},
+		{"leader removes member", 2, 4, http.StatusNoContent},
+		{"member removes member", 4, 5, http.StatusForbidden},
+		{"leader removes non-member", 2, 99, http.StatusNotFound},
 	}
-	rr, req := spaceRequest(t, http.MethodDelete, "/spaces/1/members/1", nil,
-		1, map[string]string{"id": "1", "userId": "1"}) // callerID == targetID
-	newSpaceHandler(store, &mockPlaceStore{}).RemoveMember(rr, req)
-	if rr.Code != http.StatusBadRequest {
-		t.Errorf("expected 400, got %d", rr.Code)
+	for _, c := range cases {
+		rr, req := spaceRequest(t, http.MethodDelete, "/spaces/1/members/x", nil, c.caller,
+			map[string]string{"id": "1", "userId": strconv.FormatUint(c.target, 10)})
+		newSpaceHandler(memberStore(roles), &mockPlaceStore{}).RemoveMember(rr, req)
+		if rr.Code != c.want {
+			t.Errorf("%s: expected %d, got %d", c.name, c.want, rr.Code)
+		}
 	}
 }
 

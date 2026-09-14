@@ -1,0 +1,12 @@
+{
+  "artboards": [
+    {"file": "Main.dc.html", "x": 0, "y": 0, "w": 430, "h": 1010, "title": "Waypoint · light", "is_interactive": true},
+    {"file": "Dark.dc.html", "x": 530, "y": 0, "w": 430, "h": 1010, "title": "Waypoint · dark", "is_interactive": true},
+    {"file": "Arabic.dc.html", "x": 1060, "y": 0, "w": 430, "h": 1010, "title": "Waypoint · العربية", "is_interactive": true}
+  ],
+  "annotations": [
+    {"id": "how", "x": 0, "y": -250, "w": 1490, "text": "WAYPOINT — FULL LIGHT AND DARK THEMES. Click straight into the frames.\n\nLight: neutral ground, white cards, and the teal header on Home that the page rises over.\nDark: unchanged. Every frame has a dark chip, so any of them can be flipped.\n\nWorking: tabs, spaces and places, Add a place (search, pin drop, tags, TikTok analysis, destinations), Create space (photo or emoji, icon, name, invite link), memories and filters, saved addresses, change password, English / العربية."},
+    {"id": "gaps", "x": 0, "y": 1060, "w": 1490, "text": "Not shown: the invite-link error state and the real share sheet (Share is a no-op). The invite link is a placeholder while the product name and domain are undecided. Change password has no backend endpoint yet."}
+  ],
+  "launch": {"view": "canvas"}
+}

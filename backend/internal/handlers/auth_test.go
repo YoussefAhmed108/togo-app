@@ -76,8 +76,8 @@ func TestRegister_DuplicateEmail(t *testing.T) {
 	}
 	rr := postJSON(t, newAuthHandler(store).Register,
 		map[string]string{"email": "user@example.com", "password": "password123", "phone_number": "+1234567890"})
-	if rr.Code != http.StatusConflict {
-		t.Errorf("expected 409, got %d", rr.Code)
+	if rr.Code != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", rr.Code)
 	}
 }
 
@@ -147,19 +147,36 @@ func TestLogin_UserNotFound(t *testing.T) {
 // --- Refresh ---
 
 func TestRefresh_Success(t *testing.T) {
+	var spent, issued, retired string
 	store := &mockUserStore{
-		findRefreshToken: func(_ context.Context, _ string) (uint64, time.Time, error) {
+		findRefreshToken: func(_ context.Context, hash string) (uint64, time.Time, error) {
+			spent = hash
 			return 5, time.Now().Add(time.Hour), nil
 		},
 		findByID: func(_ context.Context, id uint64) (*models.User, error) {
 			return &models.User{ID: id, ProfileComplete: true}, nil
 		},
-		storeRefreshToken: func(_ context.Context, _ uint64, _ string, _ time.Time) error { return nil },
+		storeRefreshToken: func(_ context.Context, _ uint64, hash string, _ time.Time) error {
+			issued = hash
+			return nil
+		},
+		deleteRefreshToken: func(_ context.Context, hash string) error {
+			retired = hash
+			return nil
+		},
 	}
 	rr := postJSON(t, newAuthHandler(store).Refresh,
 		map[string]string{"refresh_token": "some-valid-token"})
 	if rr.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d — body: %s", rr.Code, rr.Body.String())
+	}
+	// Rotation retires exactly the token just spent — never the new one,
+	// and nothing else, so the user's other devices stay signed in.
+	if retired == "" || retired != spent {
+		t.Errorf("expected the spent token to be retired, got %q (spent %q)", retired, spent)
+	}
+	if retired == issued {
+		t.Error("the newly issued token must not be retired")
 	}
 }
 
@@ -220,7 +237,7 @@ func TestProfileSetup_TakenUsername(t *testing.T) {
 	rr := httptest.NewRecorder()
 	newAuthHandler(store).ProfileSetup(rr, req)
 	if rr.Code != http.StatusConflict {
-		t.Errorf("expected 409, got %d", rr.Code)
+		t.Errorf("expected 400, got %d", rr.Code)
 	}
 }
 

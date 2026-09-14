@@ -1,4 +1,4 @@
-import React, {useCallback, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -11,10 +11,11 @@ import MapView, {PROVIDER_GOOGLE, Region} from 'react-native-maps';
 import {GooglePlacesAutocomplete} from 'react-native-google-places-autocomplete';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {GOOGLE_MAPS_API_KEY} from '../config/maps';
+import {useLocation} from '../hooks/useLocation';
 import {colors, fonts, radius, spacing, typography} from '../theme';
 import {Pin} from './Pin';
 
-// Default map region — New York City. Map opens here on first load.
+// Fallback map region — New York City. Only used when the device has no fix.
 const DEFAULT_REGION: Region = {
   latitude: 40.7128,
   longitude: -74.006,
@@ -39,8 +40,26 @@ export function LocationMapPicker({visible, onConfirm, onClose}: Props) {
   // SafeAreaView reports zero insets inside an iOS Modal — read them from the
   // provider instead so the header clears the status bar / notch.
   const insets = useSafeAreaInsets();
+  const {origin, hasFix} = useLocation();
 
-  const [region, setRegion] = useState<Region>(DEFAULT_REGION);
+  // Open on the user's current position; NYC only if we have no fix at all.
+  // Recomputed per open so a fix that arrived while the picker was closed counts.
+  const initialRegion = useMemo<Region>(
+    () =>
+      hasFix
+        ? {...DEFAULT_REGION, latitude: origin.lat, longitude: origin.lng}
+        : DEFAULT_REGION,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [visible],
+  );
+
+  const [region, setRegion] = useState<Region>(initialRegion);
+
+  // The Modal unmounts the map when hidden, so initialRegion applies on reopen —
+  // this keeps the confirm coords in sync before the map reports its region.
+  useEffect(() => {
+    if (visible) setRegion(initialRegion);
+  }, [visible, initialRegion]);
   const [locationLabel, setLocationLabel] = useState('');
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [isMoving, setIsMoving] = useState(false);
@@ -112,7 +131,7 @@ export function LocationMapPicker({visible, onConfirm, onClose}: Props) {
             ref={mapRef}
             provider={PROVIDER_GOOGLE}
             style={styles.map}
-            initialRegion={DEFAULT_REGION}
+            initialRegion={initialRegion}
             showsUserLocation
             showsMyLocationButton={false}
             onRegionChange={() => {

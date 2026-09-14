@@ -1,0 +1,61 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap">
+  <style>
+    body { margin: 0; font-family: 'Figtree', 'Avenir Next', 'Helvetica Neue', sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #006873; } a:hover { color: #00838E; }
+    /* The video is scanned; the words it read peel off as chips; they fold into a pin. */
+    @keyframes scan { 0% { top: -8%; } 50% { top: 100%; } 100% { top: -8%; } }
+    @keyframes peel { 0% { transform: translate(0, 0) scale(0.6); opacity: 0; } 12% { transform: translate(0, 0) scale(1); opacity: 1; } 62% { transform: translate(var(--dx), var(--dy)) scale(1); opacity: 1; } 76%, 100% { transform: translate(var(--tx), var(--ty)) scale(0.3); opacity: 0; } }
+    @keyframes drop { 0%, 72% { transform: translateY(-60px) scale(0.6); opacity: 0; } 82% { transform: translateY(6px) scale(1.08); opacity: 1; } 88% { transform: translateY(-4px) scale(1); } 94%, 100% { transform: translateY(0) scale(1); opacity: 1; } }
+    @keyframes shadow { 0%, 72% { transform: scale(0.2); opacity: 0; } 84%, 100% { transform: scale(1); opacity: 1; } }
+    @keyframes dim { 0%, 70% { opacity: 1; } 80%, 100% { opacity: 0.35; } }
+    @keyframes bar { 0% { width: 6%; } 70% { width: 72%; } 100% { width: 100%; } }
+    .loop6 { animation-duration: 6s; animation-iteration-count: infinite; animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
+  </style>
+</helmet>
+<!-- B · Scan the video: a teal line scans the clip, the words it read fly out, then fold into a pin. -->
+<div style="position: relative; width: 390px; height: 844px; overflow: hidden; background: #F0F0F3; color: #1C1C25;">
+  <div style="position: absolute; left: 12px; top: 56px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1C1C25" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+  </div>
+
+  <!-- the clip -->
+  <div class="loop6" style="position: absolute; left: 115px; top: 128px; width: 160px; height: 272px; border-radius: 22px; overflow: hidden; background: #1C1C25; box-shadow: 0 22px 50px rgba(20,20,30,0.28); animation-name: dim;">
+    <div style="position: absolute; inset: 0; background: repeating-linear-gradient(45deg, #26263A, #26263A 9px, #2E2E44 9px, #2E2E44 18px);"></div>
+    <div style="position: absolute; left: 50%; top: 50%; width: 48px; height: 48px; margin: -24px 0 0 -24px; border-radius: 50%; background: rgba(255,255,255,0.16); display: flex; align-items: center; justify-content: center;">
+      <svg width="20" height="20" viewBox="0 0 24 24"><path d="M8 5.5v13l10-6.5z" fill="#FFFFFF"></path></svg>
+    </div>
+    <div style="position: absolute; left: 0; right: 0; height: 26px; background: linear-gradient(to bottom, rgba(0,159,170,0), rgba(0,159,170,0.55)); border-bottom: 2px solid #3FD0D8; animation: scan 2s linear infinite;"></div>
+  </div>
+
+  <!-- words the scan read, peeling off, then folding into the pin -->
+  <div class="loop6" style="--dx: -96px; --dy: -30px; --tx: 10px; --ty: 90px; position: absolute; left: 150px; top: 190px; background: #FDFDFF; border-radius: 999px; padding: 7px 12px; font-size: 12.5px; font-weight: 700; box-shadow: 0 8px 20px rgba(20,20,30,0.14); white-space: nowrap; animation-name: peel; animation-delay: 0.1s;">“best koshary”</div>
+  <div class="loop6" style="--dx: 104px; --dy: -14px; --tx: -20px; --ty: 70px; position: absolute; left: 160px; top: 250px; background: #FDFDFF; border-radius: 999px; padding: 7px 12px; font-size: 12.5px; font-weight: 700; color: #006873; box-shadow: 0 8px 20px rgba(20,20,30,0.14); white-space: nowrap; animation-name: peel; animation-delay: 0.5s;">downtown</div>
+  <div class="loop6" style="--dx: -90px; --dy: 40px; --tx: 20px; --ty: 0px; position: absolute; left: 150px; top: 310px; background: #DBDBFF; color: #3B3A8F; border-radius: 999px; padding: 7px 12px; font-size: 12.5px; font-weight: 700; box-shadow: 0 8px 20px rgba(20,20,30,0.14); white-space: nowrap; animation-name: peel; animation-delay: 0.9s;">@ the caption</div>
+
+  <!-- the pin it lands on -->
+  <div style="position: absolute; left: 175px; top: 408px; width: 40px; height: 10px; border-radius: 50%; background: rgba(20,20,30,0.22); animation: shadow 6s cubic-bezier(0.16,1,0.3,1) infinite;"></div>
+  <div style="position: absolute; left: 172px; top: 356px; animation: drop 6s cubic-bezier(0.16,1,0.3,1) infinite;">
+    <svg width="46" height="56" viewBox="0 0 24 30"><path d="M12 1c5 0 9 4 9 9 0 6.5-9 19-9 19S3 16.5 3 10c0-5 4-9 9-9z" fill="#00838E"></path><circle cx="12" cy="10" r="3.4" fill="#FFFFFF"></circle></svg>
+  </div>
+
+  <div style="position: absolute; left: 32px; right: 32px; top: 500px; display: flex; flex-direction: column;">
+    <div style="font-size: 22px; font-weight: 800; letter-spacing: -0.02em;">Reading the video…</div>
+    <div style="font-size: 13.5px; color: #5C5C69; margin-top: 6px;">Pulling the place out of what’s said and shown.</div>
+    <div style="height: 4px; border-radius: 2px; background: #DCDCE0; overflow: hidden; margin-top: 22px;">
+      <div class="loop6" style="height: 100%; border-radius: 2px; background: #00838E; animation-name: bar; animation-timing-function: linear;"></div>
+    </div>
+    <div style="font-size: 12px; color: #5C5C69; margin-top: 12px;">This usually takes about 20 seconds.</div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

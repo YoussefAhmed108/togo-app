@@ -1,0 +1,87 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap">
+  <style>
+    body { margin: 0; font-family: 'Figtree', 'Avenir Next', 'Helvetica Neue', sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #006873; } a:hover { color: #00838E; }
+  </style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; overflow: hidden; background: #F0F0F3; color: #1C1C25;">
+
+  <!-- The city, already full of your places -->
+  <svg width="390" height="480" viewBox="0 0 390 480" style="position: absolute; top: 0; left: 0;">
+    <rect width="390" height="480" fill="#E6E7EC"></rect>
+    <path d="M150 -10 C120 90 190 150 160 250 C135 330 200 400 185 490 L225 490 C240 400 175 330 200 250 C230 150 160 90 190 -10 Z" fill="#CFE0EF"></path>
+    <ellipse cx="300" cy="140" rx="62" ry="44" fill="#D6ECDD"></ellipse>
+    <ellipse cx="62" cy="330" rx="48" ry="36" fill="#D6ECDD"></ellipse>
+    <path d="M-10 90 L400 40 M-10 205 L400 180 M-10 315 L400 290 M70 -10 L110 490 M280 -10 L250 490 M340 -10 L370 490" stroke="#FBFBFD" stroke-width="10" fill="none"></path>
+    <path d="M-10 250 L400 228" stroke="#FBFBFD" stroke-width="16" fill="none"></path>
+    <path d="M110 150 C170 190 230 170 262 232 S300 330 250 372" stroke="#00838E" stroke-width="2.5" stroke-dasharray="2 7" stroke-linecap="round" fill="none"></path>
+  </svg>
+
+  <!-- Pins, in the app's own marker style: ring by space colour -->
+  <div style="position: absolute; left: 96px; top: 124px; display: flex; flex-direction: column; align-items: center;">
+    <div style="width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 3px solid #E65719; box-sizing: border-box; box-shadow: 0 3px 10px rgba(20,20,30,0.18);"></div>
+    <div style="width: 2px; height: 7px; background: #E65719;"></div>
+  </div>
+  <div style="position: absolute; left: 248px; top: 204px; display: flex; flex-direction: column; align-items: center;">
+    <div style="width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 3px solid #6A69DB; box-sizing: border-box; box-shadow: 0 3px 10px rgba(20,20,30,0.18);"></div>
+    <div style="width: 2px; height: 7px; background: #6A69DB;"></div>
+  </div>
+  <div style="position: absolute; left: 300px; top: 92px; display: flex; flex-direction: column; align-items: center;">
+    <div style="width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 3px solid #2E9E52; box-sizing: border-box; box-shadow: 0 3px 10px rgba(20,20,30,0.18);"></div>
+    <div style="width: 2px; height: 7px; background: #2E9E52;"></div>
+  </div>
+  <div style="position: absolute; left: 236px; top: 344px; display: flex; flex-direction: column; align-items: center;">
+    <div style="width: 26px; height: 26px; border-radius: 50%; background: #FFFFFF; border: 3px solid #DB5392; box-sizing: border-box; box-shadow: 0 3px 10px rgba(20,20,30,0.18);"></div>
+    <div style="width: 2px; height: 7px; background: #DB5392;"></div>
+  </div>
+
+  <!-- A place just pulled out of a video -->
+  <div style="position: absolute; left: 118px; top: 252px; display: flex; align-items: center; gap: 10px; background: #FDFDFF; border-radius: 14px; padding: 9px 12px 9px 9px; box-shadow: 0 10px 26px rgba(20,20,30,0.14);">
+    <div style="width: 30px; height: 30px; border-radius: 9px; background: #6A69DB; display: flex; align-items: center; justify-content: center;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="3"></rect><path d="M10.5 9.5l4 2.5-4 2.5z" fill="#FFFFFF"></path></svg>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 1px;">
+      <div style="font-size: 12.5px; font-weight: 700;">Saved from a TikTok</div>
+      <div style="font-size: 11px; color: #5C5C69;">Matched on the map</div>
+    </div>
+  </div>
+
+  <!-- Fade the map into the page -->
+  <div style="position: absolute; left: 0; right: 0; top: 330px; height: 150px; background: linear-gradient(to bottom, rgba(240,240,243,0), #F0F0F3 85%);"></div>
+
+  <!-- Brand -->
+  <div style="position: absolute; left: 24px; top: 64px; display: flex; align-items: center; gap: 9px; background: rgba(253,253,255,0.9); border-radius: 999px; padding: 6px 14px 6px 6px; box-shadow: 0 4px 14px rgba(20,20,30,0.10);">
+    <div style="position: relative; width: 26px; height: 26px; border-radius: 8px; background: #009FAA;">
+      <div style="position: absolute; right: -4px; bottom: -4px; width: 14px; height: 14px; border-radius: 50%; background: #6F6FE2; border: 2px solid #FDFDFF;"></div>
+    </div>
+    <div style="font-size: 16px; font-weight: 800; letter-spacing: -0.01em;">Waypoint</div>
+  </div>
+
+  <!-- Form -->
+  <div style="position: absolute; left: 24px; right: 24px; top: 428px; display: flex; flex-direction: column;">
+    <div style="font-size: 30px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.05; text-wrap: balance;">Your city, already saved.</div>
+    <div style="font-size: 14px; color: #5C5C69; margin-top: 8px;">Sign in to your places and spaces.</div>
+    <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 24px;">
+      <div style="height: 50px; box-sizing: border-box; background: #FDFDFF; border: 1px solid #DCDCE0; border-radius: 12px; padding: 0 14px; display: flex; align-items: center; font-size: 14px; color: #5C5C69;">you@email.com</div>
+      <div style="height: 50px; box-sizing: border-box; background: #FDFDFF; border: 1px solid #DCDCE0; border-radius: 12px; padding: 0 14px; display: flex; align-items: center; justify-content: space-between; font-size: 14px; color: #5C5C69;">
+        <span>Password</span><span style="font-size: 13px; font-weight: 700; color: #006873;">Show</span>
+      </div>
+    </div>
+    <div style="margin-top: 18px; min-height: 48px; border-radius: 14px; background: #00838E; color: #FFFFFF; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center;">Sign in</div>
+    <div style="display: flex; justify-content: center; gap: 5px; margin-top: 20px; font-size: 13px; color: #5C5C69;">
+      <span>Don't have an account?</span><span style="font-weight: 700; color: #00838E;">Create one</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

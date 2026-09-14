@@ -76,7 +76,7 @@ export function ProfileSetupScreen() {
             </View>
             <Text style={styles.heading}>One last step</Text>
             <Text style={styles.sub}>
-              Set up your profile so friends can find and invite you to spaces.
+              Tell people who you are.
             </Text>
           </View>
 
@@ -110,12 +110,12 @@ export function ProfileSetupScreen() {
 
             <View style={styles.hint}>
               <Text style={styles.hintText}>
-                Usernames can contain letters, numbers, and underscores (3–20 characters).
+                Letters, numbers and underscores.
               </Text>
             </View>
 
             <AppButton
-              title="Let's Go"
+              title="Continue"
               loading={loading}
               onPress={handleContinue}
               style={styles.submitBtn}
@@ -131,44 +131,14 @@ export function ProfileSetupScreen() {
 const styles = StyleSheet.create({
   safe: {flex: 1, backgroundColor: colors.background},
   flex: {flex: 1},
-  scroll: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.xl,
-  },
-  header: {alignItems: 'center', marginBottom: spacing.lg},
-  emojiCircle: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    backgroundColor: colors.sageSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.md,
-  },
+  scroll: {flexGrow: 1, paddingHorizontal: spacing.lg, paddingTop: 72, paddingBottom: spacing.xl},
+  header: {alignItems: 'flex-start', marginBottom: spacing.lg},
+  emojiCircle: {marginBottom: 14},
   emoji: {fontSize: 34},
-  heading: {...typography.h1, textAlign: 'center', marginBottom: 8},
-  sub: {
-    fontFamily: fonts.regular,
-    fontSize: 15,
-    lineHeight: 22,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    padding: 26,
-    ...shadows.card,
-  },
-  hint: {marginTop: -spacing.sm, marginBottom: spacing.md, paddingHorizontal: spacing.md},
-  hintText: {
-    fontFamily: fonts.regular,
-    fontSize: 13,
-    lineHeight: 19,
-    color: colors.textSecondary,
-  },
+  heading: {...typography.h1, marginBottom: 6},
+  sub: {fontFamily: fonts.regular, fontSize: 13, lineHeight: 19, color: colors.textSecondary},
+  card: {marginTop: spacing.sm},
+  hint: {marginTop: -8, marginBottom: spacing.md},
+  hintText: {fontFamily: fonts.regular, fontSize: 11.5, lineHeight: 17, color: colors.textSecondary},
   submitBtn: {marginTop: spacing.xs},
 });

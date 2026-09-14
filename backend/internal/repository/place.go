@@ -12,14 +12,14 @@ type PlaceRepository struct {
 	Base
 }
 
-func (r *PlaceRepository) CreatePlace(ctx context.Context, ownerID uint64, name string, address *string, lat, lng float64, saved bool, googlePlaceID *string) (uint64, error) {
+func (r *PlaceRepository) CreatePlace(ctx context.Context, ownerID uint64, name string, address *string, lat, lng float64, saved bool, googlePlaceID, sourceURL *string) (uint64, error) {
 	savedInt := 1
 	if !saved {
 		savedInt = 0
 	}
 	res, err := r.DB.ExecContext(ctx,
-		`INSERT INTO places (owner_id, saved, name, address, lat, lng, google_place_id) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		ownerID, savedInt, name, address, lat, lng, googlePlaceID,
+		`INSERT INTO places (owner_id, saved, name, address, lat, lng, google_place_id, source_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		ownerID, savedInt, name, address, lat, lng, googlePlaceID, sourceURL,
 	)
 	if err != nil {
 		return 0, err
@@ -44,11 +44,19 @@ func (r *PlaceRepository) FindByGoogleID(ctx context.Context, ownerID uint64, go
 	return id, err
 }
 
+// SetSourceURLIfEmpty records where a reused place was found, keeping the
+// first link when it already has one.
+func (r *PlaceRepository) SetSourceURLIfEmpty(ctx context.Context, id uint64, sourceURL string) error {
+	_, err := r.DB.ExecContext(ctx,
+		`UPDATE places SET source_url = ? WHERE id = ? AND (source_url IS NULL OR source_url = '')`, sourceURL, id)
+	return err
+}
+
 func (r *PlaceRepository) GetPlace(ctx context.Context, id uint64) (*models.Place, error) {
 	p := &models.Place{}
 	err := r.DB.QueryRowContext(ctx,
-		`SELECT id, owner_id, saved, visited, name, address, lat, lng, google_place_id, created_at, updated_at FROM places WHERE id = ?`, id,
-	).Scan(&p.ID, &p.OwnerID, &p.Saved, &p.Visited, &p.Name, &p.Address, &p.Lat, &p.Lng, &p.GooglePlaceID, &p.CreatedAt, &p.UpdatedAt)
+		`SELECT id, owner_id, saved, visited, name, address, lat, lng, google_place_id, source_url, created_at, updated_at FROM places WHERE id = ?`, id,
+	).Scan(&p.ID, &p.OwnerID, &p.Saved, &p.Visited, &p.Name, &p.Address, &p.Lat, &p.Lng, &p.GooglePlaceID, &p.SourceURL, &p.CreatedAt, &p.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +71,7 @@ func (r *PlaceRepository) GetPlace(ctx context.Context, id uint64) (*models.Plac
 // ListPlacesByOwner returns only places explicitly saved by the user (saved = 1).
 func (r *PlaceRepository) ListPlacesByOwner(ctx context.Context, ownerID uint64) ([]*models.Place, error) {
 	rows, err := r.DB.QueryContext(ctx,
-		`SELECT id, owner_id, saved, visited, name, address, lat, lng, google_place_id, created_at, updated_at
+		`SELECT id, owner_id, saved, visited, name, address, lat, lng, google_place_id, source_url, created_at, updated_at
 		 FROM places WHERE owner_id = ? AND saved = 1 ORDER BY created_at DESC`, ownerID,
 	)
 	if err != nil {
@@ -74,7 +82,7 @@ func (r *PlaceRepository) ListPlacesByOwner(ctx context.Context, ownerID uint64)
 	var places []*models.Place
 	for rows.Next() {
 		p := &models.Place{}
-		if err := rows.Scan(&p.ID, &p.OwnerID, &p.Saved, &p.Visited, &p.Name, &p.Address, &p.Lat, &p.Lng, &p.GooglePlaceID, &p.CreatedAt, &p.UpdatedAt); err != nil {
+		if err := rows.Scan(&p.ID, &p.OwnerID, &p.Saved, &p.Visited, &p.Name, &p.Address, &p.Lat, &p.Lng, &p.GooglePlaceID, &p.SourceURL, &p.CreatedAt, &p.UpdatedAt); err != nil {
 			return nil, err
 		}
 		places = append(places, p)
@@ -201,14 +209,20 @@ func (r *PlaceRepository) CreateMemory(ctx context.Context, placeID, uploaderID 
 	return uint64(id), err
 }
 
-func (r *PlaceRepository) ListMemories(ctx context.Context, placeID uint64) ([]*models.Memory, error) {
+// ListMemories returns the place's memories that viewerID may see: personal
+// ones (no space) only for the place's owner, and space ones only for members
+// of that space. A memory belongs to its place + space pair, never the place alone.
+func (r *PlaceRepository) ListMemories(ctx context.Context, placeID, viewerID uint64) ([]*models.Memory, error) {
 	rows, err := r.DB.QueryContext(ctx, `
 		SELECT m.id, m.place_id, m.space_id, s.name, m.uploader_id, m.image_key, m.caption, m.created_at
 		FROM memories m
+		JOIN places p ON p.id = m.place_id
 		LEFT JOIN spaces s ON s.id = m.space_id
 		WHERE m.place_id = ?
+		  AND ((m.space_id IS NULL AND p.owner_id = ?)
+		       OR m.space_id IN (SELECT space_id FROM space_members WHERE user_id = ?))
 		ORDER BY m.created_at DESC`,
-		placeID,
+		placeID, viewerID, viewerID,
 	)
 	if err != nil {
 		return nil, err
@@ -223,7 +237,67 @@ func (r *PlaceRepository) ListMemories(ctx context.Context, placeID uint64) ([]*
 		}
 		memories = append(memories, m)
 	}
-	return memories, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if err := r.attachDishes(ctx, memories); err != nil {
+		return nil, err
+	}
+	return memories, nil
+}
+
+// attachDishes fills Dishes on every memory with ONE extra query rather than
+// one per memory.
+func (r *PlaceRepository) attachDishes(ctx context.Context, memories []*models.Memory) error {
+	if len(memories) == 0 {
+		return nil
+	}
+	byID := make(map[uint64]*models.Memory, len(memories))
+	args := make([]any, 0, len(memories))
+	placeholders := make([]string, 0, len(memories))
+	for _, m := range memories {
+		byID[m.ID] = m
+		args = append(args, m.ID)
+		placeholders = append(placeholders, "?")
+	}
+
+	rows, err := r.DB.QueryContext(ctx,
+		`SELECT memory_id, id, name, rating FROM memory_dishes
+		 WHERE memory_id IN (`+strings.Join(placeholders, ",")+`) ORDER BY id`, args...)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var memoryID uint64
+		var d models.Dish
+		if err := rows.Scan(&memoryID, &d.ID, &d.Name, &d.Rating); err != nil {
+			return err
+		}
+		if m := byID[memoryID]; m != nil {
+			m.Dishes = append(m.Dishes, d)
+		}
+	}
+	return rows.Err()
+}
+
+// AddDishes stores the dishes rated on a memory.
+func (r *PlaceRepository) AddDishes(ctx context.Context, memoryID uint64, dishes []models.Dish) error {
+	if len(dishes) == 0 {
+		return nil
+	}
+	return withTx(ctx, r.DB, func(tx *sql.Tx) error {
+		for _, d := range dishes {
+			if _, err := tx.ExecContext(ctx,
+				`INSERT INTO memory_dishes (memory_id, name, rating) VALUES (?, ?, ?)`,
+				memoryID, d.Name, d.Rating,
+			); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }
 
 func (r *PlaceRepository) GetMemory(ctx context.Context, memoryID uint64) (*models.Memory, error) {
@@ -235,6 +309,9 @@ func (r *PlaceRepository) GetMemory(ctx context.Context, memoryID uint64) (*mode
 		WHERE m.id = ?`, memoryID,
 	).Scan(&m.ID, &m.PlaceID, &m.SpaceID, &m.SpaceName, &m.UploaderID, &m.ImageKey, &m.Caption, &m.CreatedAt)
 	if err != nil {
+		return nil, err
+	}
+	if err := r.attachDishes(ctx, []*models.Memory{m}); err != nil {
 		return nil, err
 	}
 	return m, nil

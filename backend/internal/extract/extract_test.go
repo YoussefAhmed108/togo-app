@@ -1,8 +1,10 @@
 package extract
 
 import (
+	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -107,6 +109,48 @@ func TestQueryExcludesArea(t *testing.T) {
 	}
 }
 
+func TestParseResultDedupesAndCaps(t *testing.T) {
+	block := func(s string) []struct {
+		Type string `json:"type"`
+		Text string `json:"text"`
+	} {
+		return []struct {
+			Type string `json:"type"`
+			Text string `json:"text"`
+		}{{Type: "text", Text: s}}
+	}
+
+	// A nameless entry and a repeat of the same venue are dropped.
+	got, _, err := ParseResult(block(`{"places":[
+		{"place_name":"Zein El Sham","city":"Cairo"},
+		{"place_name":"","city":"Cairo"},
+		{"place_name":"zein el sham ","city":"cairo"},
+		{"place_name":"Café Riche","city":"Cairo"}]}`), &Usage{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 2 || got[0].PlaceName != "Zein El Sham" || got[1].PlaceName != "Café Riche" {
+		t.Errorf("ParseResult = %+v, want Zein El Sham then Café Riche", got)
+	}
+
+	// A roundup longer than maxPlaces is cut — each entry is a paid lookup.
+	many := `{"places":[`
+	for i := 0; i < maxPlaces+3; i++ {
+		if i > 0 {
+			many += ","
+		}
+		many += `{"place_name":"Venue ` + string(rune('A'+i)) + `"}`
+	}
+	if got, _, _ := ParseResult(block(many+`]}`), &Usage{}); len(got) != maxPlaces {
+		t.Errorf("ParseResult kept %d places, want cap of %d", len(got), maxPlaces)
+	}
+
+	// No venue read is an empty list, not an error.
+	if got, _, err := ParseResult(block(`{"places":[]}`), &Usage{}); err != nil || len(got) != 0 {
+		t.Errorf("ParseResult(empty) = %v, %v", got, err)
+	}
+}
+
 func TestLanguageCode(t *testing.T) {
 	// Anything that is not a bare ISO 639-1 code is unset, so Google infers the
 	// language from the query script. This used to default to "ar", which was
@@ -183,5 +227,130 @@ func TestQueryKeyFoldsSpellingVariance(t *testing.T) {
 	// Different venues must not collide.
 	if QueryKey("Zooba Cairo Egypt", "en") == QueryKey("Zooba Lagos Nigeria", "en") {
 		t.Error("different cities must not share a cache key")
+	}
+}
+
+// Long links only: short links need a network hop and are covered live.
+func TestVideoURLRewritesPhotoPosts(t *testing.T) {
+	cases := map[string]string{
+		"https://www.tiktok.com/@a/photo/123?_r=1": "https://www.tiktok.com/@a/video/123?_r=1",
+		"https://m.tiktok.com/@a.b/photo/9":        "https://m.tiktok.com/@a.b/video/9",
+		"https://www.tiktok.com/@a/video/123":      "https://www.tiktok.com/@a/video/123",
+		"https://www.tiktok.com/@photo/video/1":    "https://www.tiktok.com/@photo/video/1",
+	}
+	for in, want := range cases {
+		got := videoURL(context.Background(), in)
+		if got != want {
+			t.Errorf("videoURL(%q) = %q, want %q", in, got, want)
+		}
+		if !ValidURL(got) {
+			t.Errorf("videoURL(%q) = %q fails ValidURL", in, got)
+		}
+	}
+}
+
+func TestUnescapeJSONURL(t *testing.T) {
+	cases := map[string]string{
+		`https:\/\/p16.tiktokcdn.com\/a.jpeg?x=1&y=2`:                  "https://p16.tiktokcdn.com/a.jpeg?x=1&y=2",
+		`https:\u002F\u002Fp19.tiktokcdn.com\u002Fb.jpeg?x=1\u0026y=2`: "https://p19.tiktokcdn.com/b.jpeg?x=1&y=2",
+		`https:\u002f\u002fp19.tiktokcdn.com\u002fc.jpeg`:              "https://p19.tiktokcdn.com/c.jpeg",
+	}
+	for in, want := range cases {
+		if got := unescapeJSONURL(in); got != want {
+			t.Errorf("unescapeJSONURL(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestPickSlides(t *testing.T) {
+	all := []string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"}
+	// More than 10 slides: first 5 and last 5, middle dropped.
+	got := pickSlides(all)
+	want := []string{"1", "2", "3", "4", "5", "8", "9", "10", "11", "12"}
+	if len(got) != len(want) {
+		t.Fatalf("pickSlides(12) = %v, want %v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("pickSlides(12) = %v, want %v", got, want)
+		}
+	}
+	// The source slice must not be clobbered by the append.
+	if all[5] != "6" {
+		t.Errorf("pickSlides overwrote its input: %v", all)
+	}
+	// 10 or fewer: all of them.
+	for _, n := range []int{0, 1, 6, 10} {
+		if got := pickSlides(all[:n]); len(got) != n {
+			t.Errorf("pickSlides(%d) returned %d, want %d", n, len(got), n)
+		}
+	}
+}
+
+func TestSlideURLs(t *testing.T) {
+	dir := t.TempDir()
+	// The app API shape: sibling keys precede url_list, and & is escaped.
+	dump := `{"image_post_info":{"images":[` +
+		`{"display_image":{"uri":"x","url_list":["https://cdn/a.jpeg?a=1&b=2","https://cdn/a2"]}},` +
+		`{"display_image":{"uri":"y","url_list":["https://cdn/b.jpeg"]}}]}}`
+	if err := os.WriteFile(filepath.Join(dir, "p.dump"), []byte(dump), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	got := slideURLs(context.Background(), dir)
+	want := []string{"https://cdn/a.jpeg?a=1&b=2", "https://cdn/b.jpeg"}
+	if len(got) != 2 || got[0] != want[0] || got[1] != want[1] {
+		t.Fatalf("slideURLs = %v, want %v", got, want)
+	}
+
+	// The web shape.
+	web := `{"imagePost":{"images":[{"imageURL":{"urlList":["https:\/\/cdn\/w.jpeg"]}}]}}`
+	dir2 := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir2, "p.dump"), []byte(web), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if got := slideURLs(context.Background(), dir2); len(got) != 1 || got[0] != "https://cdn/w.jpeg" {
+		t.Fatalf("slideURLs(web) = %v", got)
+	}
+
+	// A normal video's pages contain no image post.
+	dir3 := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir3, "p.dump"), []byte(`{"video":{"playAddr":"x"}}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if got := slideURLs(context.Background(), dir3); got != nil {
+		t.Errorf("slideURLs(video) = %v, want nil", got)
+	}
+}
+
+func TestMetaHashtags(t *testing.T) {
+	m := Meta{Description: "أحلى فطار #زين_الشام #القاهرة #fyp #fyp", Title: "x #cairo"}
+	if got, want := m.Hashtags(), "#زين_الشام #القاهرة #fyp #cairo"; got != want {
+		t.Errorf("Hashtags() = %q, want %q", got, want)
+	}
+	// The tags must reach the model on their own labelled line.
+	if !strings.Contains(m.Caption(), "\nHashtags: #زين_الشام") {
+		t.Errorf("Caption() dropped the hashtags: %q", m.Caption())
+	}
+	if strings.Contains(Meta{Description: "no tags"}.Caption(), "Hashtags") {
+		t.Error("Caption() added an empty Hashtags line")
+	}
+}
+
+func TestAreaKey(t *testing.T) {
+	base := QueryKey("fresh noodles", "")
+	downtown := &LatLng{Lat: 30.0444, Lng: 31.2357}
+	zamalek := &LatLng{Lat: 30.0626, Lng: 31.2197}
+	paris := &LatLng{Lat: 48.8566, Lng: 2.3522}
+	if AreaKey(base, nil) != base {
+		t.Fatal("no location must keep the global key")
+	}
+	if AreaKey(base, downtown) != AreaKey(base, zamalek) {
+		t.Fatal("two Cairo neighbourhoods must share a cache entry")
+	}
+	if AreaKey(base, downtown) == AreaKey(base, paris) {
+		t.Fatal("Cairo and Paris must not share a cache entry")
+	}
+	if AreaKey(base, downtown) == base {
+		t.Fatal("a located key must differ from the global one")
 	}
 }

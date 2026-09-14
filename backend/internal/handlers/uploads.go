@@ -6,6 +6,8 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"regexp"
+	"strings"
 	"time"
 
 	"app/backend/internal/middleware"
@@ -57,6 +59,23 @@ func (h *UploadHandler) Presign(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// keyTail is the random part of a key Presign issued (a uuid). Tests use short ids.
+var keyTail = regexp.MustCompile(`^[A-Za-z0-9-]{1,64}$`)
+
+// ownKey reports whether key is one Presign issued to userID for kind.
+// Client-sent keys are otherwise stored verbatim, and CDNUrl returns a bare key
+// as-is when no CDN base is set — so an unchecked key could point other users'
+// clients at an arbitrary URL, or at someone else's upload.
+func ownKey(kind string, userID uint64, key string) bool {
+	tail, ok := strings.CutPrefix(key, fmt.Sprintf("%s/%d/", kind, userID))
+	return ok && keyTail.MatchString(tail)
+}
+
+// localKey is exactly the shape Presign produces. Anything else — "..",
+// absolute paths, extra segments — would let this unauthenticated route write
+// outside the upload directory.
+var localKey = regexp.MustCompile(`^(memory|space_banner|avatar)/[0-9]+/[0-9a-f-]{36}$`)
+
 // PUT /local-upload/{key}
 //
 // Local-mode only. Receives a raw image body from the React Native app
@@ -67,7 +86,7 @@ func (h *UploadHandler) Presign(w http.ResponseWriter, r *http.Request) {
 func (h *UploadHandler) LocalUpload(w http.ResponseWriter, r *http.Request) {
 	encodedKey := mux.Vars(r)["key"]
 	key, err := url.PathUnescape(encodedKey)
-	if err != nil {
+	if err != nil || !localKey.MatchString(key) {
 		writeError(w, http.StatusBadRequest, "invalid key")
 		return
 	}

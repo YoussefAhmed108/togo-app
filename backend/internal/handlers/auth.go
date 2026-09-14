@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"regexp"
 	"strings"
@@ -58,6 +59,10 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "password must be at least 8 characters")
 		return
 	}
+	if len(req.Password) > 72 { // bcrypt's input limit
+		writeError(w, http.StatusBadRequest, "password must be at most 72 bytes")
+		return
+	}
 	if req.PhoneNumber == "" || !phoneRe.MatchString(req.PhoneNumber) {
 		writeError(w, http.StatusBadRequest, "valid phone number required")
 		return
@@ -65,7 +70,9 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	_, err := h.users.FindByEmail(r.Context(), req.Email)
 	if err == nil {
-		writeError(w, http.StatusConflict, "email already registered")
+		// Deliberately vague: "email already registered" told anyone which
+		// addresses have accounts.
+		writeError(w, http.StatusBadRequest, "unable to create account")
 		return
 	}
 	if !errors.Is(err, sql.ErrNoRows) {
@@ -175,6 +182,13 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		serverError(w, err)
 		return
+	}
+
+	// Rotate: the token just spent is retired, so each device's session
+	// replaces only itself and a leaked old token stops working. A failed
+	// delete leaves it valid until it expires — logged, not fatal.
+	if err := h.users.DeleteRefreshToken(r.Context(), tokenHash); err != nil {
+		log.Printf("auth: retire refresh token: %v", err)
 	}
 
 	writeJSON(w, http.StatusOK, map[string]string{

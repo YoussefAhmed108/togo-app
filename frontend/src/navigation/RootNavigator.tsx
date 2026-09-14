@@ -1,5 +1,5 @@
 import React from 'react';
-import {ActivityIndicator, StyleSheet, View} from 'react-native';
+import {StyleSheet, View} from 'react-native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {useAuth} from '../hooks/useAuth';
 import {useAppSettings} from '../hooks/useAppSettings';
@@ -8,6 +8,7 @@ import {AppNavigator} from './AppNavigator';
 import {ProfileSetupScreen} from '../screens/auth/ProfileSetupScreen';
 import {InterestPickerScreen} from '../screens/auth/InterestPickerScreen';
 import {colors} from '../theme';
+import {WaypointLoader} from '../components/WaypointLoader';
 
 const Stack = createNativeStackNavigator();
 
@@ -18,7 +19,7 @@ export default function RootNavigator() {
   if (isLoading) {
     return (
       <View style={styles.loader}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <WaypointLoader />
       </View>
     );
   }

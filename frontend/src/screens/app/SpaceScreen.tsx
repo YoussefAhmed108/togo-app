@@ -1,15 +1,9 @@
 /**
  * SpaceScreen — full detail view for a Space.
- *
- * Memory upload requires react-native-image-picker:
- *   npm install react-native-image-picker
- *   cd ios && pod install
- *   Add to ios/frontend/Info.plist:
- *     NSCameraUsageDescription   → "Take a photo for this memory"
- *     NSPhotoLibraryUsageDescription → "Choose a photo for this memory"
  */
 
 import React, {useCallback, useEffect, useRef, useState} from 'react';
+import {WaypointLoader} from '../../components/WaypointLoader';
 import {useFocusEffect} from '@react-navigation/native';
 import {
   ActivityIndicator,
@@ -17,6 +11,7 @@ import {
   Animated,
   FlatList,
   Image,
+  Linking,
   Modal,
   Pressable,
   Platform,
@@ -28,6 +23,7 @@ import {
   View,
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import MapView, {Marker, PROVIDER_GOOGLE} from 'react-native-maps';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {AppStackParamList} from '../../types/navigation';
 import {
@@ -44,8 +40,11 @@ import {recommendationService, ApiRecommendation} from '../../services/recommend
 import {colors, fonts, radius, shadows, spacing} from '../../theme';
 import {categoryTint} from '../../components/home/PlaceCard';
 import {useLocation} from '../../hooks/useLocation';
+import {fetchEtas, fmtEta} from '../../services/etaService';
+import {regionOf, regionsOf} from '../../utils/region';
 import {useAuth} from '../../hooks/useAuth';
 import {displayAddress} from '../../utils/address';
+import {pickImage, PickedImage} from '../../utils/pickImage';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'SpaceDetail'>;
 
@@ -66,40 +65,6 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
 function fmtDistance(km: number): string {
   if (km < 1) return `${Math.round(km * 1000)} m`;
   return `${km.toFixed(1)} km`;
-}
-
-// ── Place filtering ───────────────────────────────────────────────────────────
-
-export type StatusFilter = 'all' | 'unvisited' | 'visited';
-export type SortKey = 'distance' | 'recent' | 'name';
-
-export interface PlaceFilters {
-  status: StatusFilter;
-  tags: string[];
-  sort: SortKey;
-}
-
-const DEFAULT_FILTERS: PlaceFilters = {status: 'all', tags: [], sort: 'distance'};
-
-const STATUS_OPTIONS: Array<{key: StatusFilter; label: string}> = [
-  {key: 'all', label: 'All'},
-  {key: 'unvisited', label: 'Unvisited'},
-  {key: 'visited', label: 'Visited'},
-];
-
-const SORT_OPTIONS: Array<{key: SortKey; label: string}> = [
-  {key: 'distance', label: 'Distance — nearest first'},
-  {key: 'recent', label: 'Recently added'},
-  {key: 'name', label: 'Name — A to Z'},
-];
-
-/** How many filter groups are away from their default — drives the chip badge. */
-function activeFilterCount(f: PlaceFilters): number {
-  return (
-    (f.status !== 'all' ? 1 : 0) +
-    (f.tags.length > 0 ? 1 : 0) +
-    (f.sort !== 'distance' ? 1 : 0)
-  );
 }
 
 // ── Emoji / colour helpers ────────────────────────────────────────────────────
@@ -138,77 +103,7 @@ function initials(name: string): string {
     : (p[0][0] + p[p.length - 1][0]).toUpperCase();
 }
 
-function buildQuickMemoryPlaces(
-  places: ApiSpacePlace[],
-  activePlaceId: number | null,
-  maxItems = 4,
-): ApiSpacePlace[] {
-  const picked: ApiSpacePlace[] = [];
 
-  if (activePlaceId !== null) {
-    const activePlace = places.find(place => place.id === activePlaceId);
-    if (activePlace) {
-      picked.push(activePlace);
-    }
-  }
-
-  for (const place of places) {
-    if (picked.some(item => item.id === place.id)) continue;
-    picked.push(place);
-    if (picked.length >= maxItems) break;
-  }
-
-  return picked;
-}
-
-// ── Image picker helper ───────────────────────────────────────────────────────
-// Requires: npm install react-native-image-picker && pod install
-
-interface PickedImage {
-  uri: string;
-  type: string;
-  fileName: string;
-}
-
-async function pickImage(source: 'camera' | 'gallery'): Promise<PickedImage | null> {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const {launchCamera, launchImageLibrary} = require('react-native-image-picker');
-    const options = {
-      mediaType: 'photo' as const,
-      quality: 0.85 as const,
-      maxWidth: 1920,
-      maxHeight: 1920,
-      includeBase64: false,
-    };
-
-    const result = await new Promise<any>(resolve => {
-      if (source === 'camera') {
-        launchCamera(options, resolve);
-      } else {
-        launchImageLibrary(options, resolve);
-      }
-    });
-
-    if (result.didCancel || result.errorCode) return null;
-
-    const asset = result.assets?.[0];
-    if (!asset?.uri) return null;
-
-    return {
-      uri: asset.uri,
-      type: asset.type ?? 'image/jpeg',
-      fileName: asset.fileName ?? 'memory.jpg',
-    };
-  } catch {
-    // react-native-image-picker not installed — show friendly error
-    Alert.alert(
-      'Image Picker Unavailable',
-      'Run: npm install react-native-image-picker && cd ios && pod install — then rebuild the app.',
-    );
-    return null;
-  }
-}
 
 // ── Memory Upload Modal ───────────────────────────────────────────────────────
 
@@ -226,8 +121,12 @@ function MemoryUploadModal({place, spaceId, onDismiss, onUploaded}: MemoryUpload
   const [progress, setProgress] = useState<'idle' | 'presigning' | 'uploading' | 'saving'>('idle');
 
   const handlePick = async (source: 'camera' | 'gallery') => {
-    const img = await pickImage(source);
-    if (img) setPicked(img);
+    try {
+      const img = await pickImage(source);
+      if (img) setPicked(img);
+    } catch (err: any) {
+      Alert.alert('Could not open photos', err?.message ?? 'Check photo and camera access in Settings.');
+    }
   };
 
   const handleUpload = async () => {
@@ -424,7 +323,7 @@ const mu = StyleSheet.create({
 
   captionInput: {
     marginTop: spacing.md,
-    borderRadius: radius.xl,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.sandDeep,
     backgroundColor: colors.surface,
@@ -447,8 +346,8 @@ const mu = StyleSheet.create({
 
   uploadBtn: {
     backgroundColor: colors.primary,
-    borderRadius: radius.full,
-    height: 56,
+    borderRadius: radius.lg,
+    minHeight: 48,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -457,261 +356,6 @@ const mu = StyleSheet.create({
 });
 
 // ── "Add Place to Space" bottom sheet ────────────────────────────────────────
-
-// ── Filter Places Modal ───────────────────────────────────────────────────────
-
-interface FilterSheetProps {
-  filters: PlaceFilters;
-  /** Tags actually present on this space's places. */
-  availableTags: string[];
-  /** How many places the pending selection would show. */
-  resultCount: (f: PlaceFilters) => number;
-  onApply: (f: PlaceFilters) => void;
-  onClose: () => void;
-}
-
-function FilterPlacesSheet({
-  filters,
-  availableTags,
-  resultCount,
-  onApply,
-  onClose,
-}: FilterSheetProps) {
-  const [draft, setDraft] = useState<PlaceFilters>(filters);
-
-  const toggleTag = (tag: string) =>
-    setDraft(d => ({
-      ...d,
-      tags: d.tags.includes(tag) ? d.tags.filter(t => t !== tag) : [...d.tags, tag],
-    }));
-
-  const count = resultCount(draft);
-  const dirty = activeFilterCount(draft) > 0;
-
-  return (
-    <Modal visible animationType="slide" transparent onRequestClose={onClose}>
-      <Pressable style={filter.backdrop} onPress={onClose} />
-      <View style={filter.container}>
-        <View style={filter.handle} />
-
-        <View style={filter.titleRow}>
-          <Text style={filter.title}>Filter Places</Text>
-          {dirty && (
-            <TouchableOpacity onPress={() => setDraft(DEFAULT_FILTERS)} hitSlop={8}>
-              <Text style={filter.reset}>Reset</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        <ScrollView showsVerticalScrollIndicator={false}>
-          {/* ── Status ─────────────────────────────────────────────────── */}
-          <Text style={filter.label}>STATUS</Text>
-          <View style={filter.segment}>
-            {STATUS_OPTIONS.map(opt => {
-              const active = draft.status === opt.key;
-              return (
-                <TouchableOpacity
-                  key={opt.key}
-                  style={[filter.segmentItem, active && filter.segmentItemActive]}
-                  activeOpacity={0.8}
-                  onPress={() => setDraft(d => ({...d, status: opt.key}))}>
-                  <Text
-                    style={[filter.segmentText, active && filter.segmentTextActive]}>
-                    {opt.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-
-          {/* ── Tags ───────────────────────────────────────────────────── */}
-          {availableTags.length > 0 && (
-            <>
-              <View style={filter.labelRow}>
-                <Text style={filter.label}>TAGS</Text>
-                {draft.tags.length > 0 && (
-                  <Text style={filter.labelCount}>{draft.tags.length} selected</Text>
-                )}
-              </View>
-              <View style={filter.tagGrid}>
-                {availableTags.map(tag => {
-                  const active = draft.tags.includes(tag);
-                  return (
-                    <TouchableOpacity
-                      key={tag}
-                      style={[filter.tagChip, active && filter.tagChipActive]}
-                      activeOpacity={0.8}
-                      onPress={() => toggleTag(tag)}>
-                      <Text style={filter.tagChipEmoji}>{tagEmoji(tag)}</Text>
-                      <Text
-                        style={[filter.tagChipText, active && filter.tagChipTextActive]}>
-                        {tag}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </>
-          )}
-
-          {/* ── Sort ───────────────────────────────────────────────────── */}
-          <Text style={filter.label}>SORT BY</Text>
-          {SORT_OPTIONS.map(opt => {
-            const active = draft.sort === opt.key;
-            return (
-              <TouchableOpacity
-                key={opt.key}
-                style={[filter.sortRow, active && filter.sortRowActive]}
-                activeOpacity={0.8}
-                onPress={() => setDraft(d => ({...d, sort: opt.key}))}>
-                <Text style={filter.sortLabel}>{opt.label}</Text>
-                <View style={[filter.radio, active && filter.radioActive]}>
-                  {active && <Text style={filter.radioCheck}>✓</Text>}
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-
-          <View style={filter.scrollPad} />
-        </ScrollView>
-
-        <TouchableOpacity
-          style={filter.applyBtn}
-          activeOpacity={0.85}
-          onPress={() => onApply(draft)}>
-          <Text style={filter.applyText}>
-            Show {count} {count === 1 ? 'place' : 'places'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </Modal>
-  );
-}
-
-const filter = StyleSheet.create({
-  backdrop: {flex: 1, backgroundColor: colors.overlay},
-  container: {
-    backgroundColor: colors.background,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    paddingTop: spacing.md,
-    paddingBottom: 34,
-    paddingHorizontal: spacing.lg,
-    maxHeight: '88%',
-  },
-  handle: {
-    width: 44,
-    height: 5,
-    borderRadius: radius.full,
-    backgroundColor: colors.sandDeep,
-    alignSelf: 'center',
-    marginBottom: spacing.md,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.lg,
-  },
-  title: {fontFamily: fonts.display, fontSize: 24, color: colors.text},
-  reset: {fontFamily: fonts.semibold, fontSize: 15, color: colors.primary},
-
-  labelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  label: {
-    fontFamily: fonts.semibold,
-    fontSize: 12,
-    letterSpacing: 1.2,
-    color: colors.textSecondary,
-    marginBottom: 10,
-  },
-  labelCount: {
-    fontFamily: fonts.semibold,
-    fontSize: 13,
-    color: colors.primary,
-    marginBottom: 10,
-  },
-
-  segment: {
-    flexDirection: 'row',
-    backgroundColor: colors.sand,
-    borderRadius: radius.full,
-    padding: 5,
-    marginBottom: spacing.lg,
-  },
-  segmentItem: {
-    flex: 1,
-    borderRadius: radius.full,
-    paddingVertical: 11,
-    alignItems: 'center',
-  },
-  segmentItemActive: {backgroundColor: colors.primary},
-  segmentText: {fontFamily: fonts.medium, fontSize: 15, color: colors.textSecondary},
-  segmentTextActive: {fontFamily: fonts.semibold, color: colors.white},
-
-  tagGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: spacing.lg,
-  },
-  tagChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    backgroundColor: colors.sand,
-    borderRadius: radius.full,
-    paddingVertical: 9,
-    paddingHorizontal: 14,
-  },
-  tagChipActive: {backgroundColor: colors.primary},
-  tagChipEmoji: {fontSize: 14},
-  tagChipText: {fontFamily: fonts.regular, fontSize: 14.5, color: colors.text},
-  tagChipTextActive: {fontFamily: fonts.semibold, color: colors.white},
-
-  sortRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderRadius: radius.lg,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    paddingVertical: 16,
-    paddingHorizontal: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  sortRowActive: {
-    borderColor: colors.primaryBorder,
-    backgroundColor: colors.primaryLight,
-  },
-  sortLabel: {fontFamily: fonts.regular, fontSize: 16, color: colors.text},
-  radio: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 1.5,
-    borderColor: colors.sandDeep,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  radioActive: {backgroundColor: colors.primary, borderColor: colors.primary},
-  radioCheck: {fontSize: 12, color: colors.white},
-
-  scrollPad: {height: spacing.sm},
-
-  applyBtn: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.full,
-    height: 56,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: spacing.md,
-  },
-  applyText: {fontFamily: fonts.display, fontSize: 17, color: colors.white},
-});
 
 interface AddPlaceSheetProps {
   spaceId: number;
@@ -758,7 +402,7 @@ function AddPlaceSheet({spaceId, existingIds, onDismiss, onAdded}: AddPlaceSheet
         <Text style={sheet.sub}>Select one of your saved places to add to this space.</Text>
 
         {loading ? (
-          <ActivityIndicator color={colors.primary} style={{marginTop: spacing.lg}} />
+          <WaypointLoader size={64} style={{marginTop: spacing.lg}} />
         ) : available.length === 0 ? (
           <View style={sheet.empty}>
             <Text style={sheet.emptyEmoji}>📍</Text>
@@ -988,7 +632,7 @@ const picker = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     backgroundColor: colors.surface,
-    borderRadius: radius.full,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
     paddingHorizontal: spacing.md,
@@ -1005,7 +649,7 @@ const picker = StyleSheet.create({
   },
   empty: {alignItems: 'center', paddingVertical: spacing.xl},
   emptyEmoji: {fontSize: 30, marginBottom: 10},
-  emptyTitle: {fontFamily: fonts.display, fontSize: 18, color: colors.text, marginBottom: 4},
+  emptyTitle: {fontFamily: fonts.bold, fontSize: 15, color: colors.text, marginBottom: 4},
   emptyText: {fontFamily: fonts.regular, fontSize: 14, color: colors.textSecondary},
   row: {
     flexDirection: 'row',
@@ -1067,16 +711,25 @@ const picker = StyleSheet.create({
 
 function MembersModal({
   members,
-  canManage,
+  myRole,
+  myId,
   onRemove,
+  onToggleLeader,
   onClose,
 }: {
   members: ApiSpaceMember[];
-  /** Only the space owner may remove people, and never themselves. */
-  canManage: boolean;
+  /** Leaders remove members; only the owner removes leaders or changes roles. */
+  myRole: ApiSpaceMember['role'] | undefined;
+  myId: number | undefined;
   onRemove: (member: ApiSpaceMember) => void;
+  onToggleLeader: (member: ApiSpaceMember) => void;
   onClose: () => void;
 }) {
+  const canRemove = (m: ApiSpaceMember) =>
+    m.role !== 'owner' &&
+    m.user_id !== myId &&
+    (myRole === 'owner' || (myRole === 'leader' && m.role === 'member'));
+  const roleLabel = {owner: 'Owner', leader: 'Leader', member: 'Member'};
   return (
     <Modal visible animationType="slide" transparent onRequestClose={onClose}>
       <TouchableOpacity style={sheet.backdrop} activeOpacity={1} onPress={onClose} />
@@ -1095,13 +748,28 @@ function MembersModal({
               <View style={mem.info}>
                 <Text style={mem.name}>{item.name}</Text>
               </View>
-              <View style={[mem.badge, item.role === 'owner' && mem.badgeOwner]}>
-                <Text
-                  style={[mem.badgeText, item.role === 'owner' && mem.badgeTextOwner]}>
-                  {item.role === 'owner' ? 'Owner' : 'Member'}
-                </Text>
-              </View>
-              {canManage && item.role !== 'owner' && (
+              {myRole === 'owner' && item.role !== 'owner' ? (
+                // The owner taps the badge to promote or demote.
+                <TouchableOpacity
+                  style={[mem.badge, item.role === 'leader' && mem.badgeOwner]}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    item.role === 'leader' ? `Make ${item.name} a member` : `Make ${item.name} a leader`
+                  }
+                  onPress={() => onToggleLeader(item)}>
+                  <Text style={[mem.badgeText, item.role === 'leader' && mem.badgeTextOwner]}>
+                    {roleLabel[item.role]} ⇅
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <View style={[mem.badge, item.role !== 'member' && mem.badgeOwner]}>
+                  <Text style={[mem.badgeText, item.role !== 'member' && mem.badgeTextOwner]}>
+                    {roleLabel[item.role]}
+                  </Text>
+                </View>
+              )}
+              {canRemove(item) && (
                 <TouchableOpacity
                   style={mem.removeBtn}
                   hitSlop={10}
@@ -1192,7 +860,7 @@ function EditSpaceSheet({
   const [saving, setSaving] = useState(false);
 
   const pickBanner = async () => {
-    const picked = await pickImage('gallery');
+    const picked = await pickImage('gallery', 'banner');
     if (picked) setNewBanner({uri: picked.uri, mime: picked.type});
   };
 
@@ -1301,7 +969,7 @@ const ed = StyleSheet.create({
   },
   bannerOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(45,42,36,0.35)',
+    backgroundColor: 'rgba(20,20,30,0.35)',
   },
   bannerHint: {
     fontFamily: fonts.medium,
@@ -1345,8 +1013,8 @@ const ed = StyleSheet.create({
   emojiText: {fontSize: 21},
   saveBtn: {
     backgroundColor: colors.primary,
-    borderRadius: radius.full,
-    height: 56,
+    borderRadius: radius.lg,
+    minHeight: 48,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: spacing.md,
@@ -1356,7 +1024,16 @@ const ed = StyleSheet.create({
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 
+/** One chip row, single select: all, a neighbourhood, a tag, or visited. */
+type PlaceChip = 'all' | 'visited' | `tag:${string}` | `region:${string}`;
+type MemStatus = 'all' | 'visited' | 'unvisited';
 
+function plural(n: number, word: string) {
+  return `${n} ${word}${n === 1 ? '' : 's'}`;
+}
+function capitalise(t: string) {
+  return t ? t[0].toUpperCase() + t.slice(1) : t;
+}
 
 export default function SpaceScreen({route, navigation}: Props) {
   const {spaceId} = route.params;
@@ -1377,49 +1054,38 @@ export default function SpaceScreen({route, navigation}: Props) {
   const [loading, setLoading] = useState(true);
 
   const [showMembers, setShowMembers] = useState(false);
-  const {origin} = useLocation();
-  const [showAllPlaces, setShowAllPlaces] = useState(false);
-  const [filters, setFilters] = useState<PlaceFilters>(DEFAULT_FILTERS);
-  const [showFilters, setShowFilters] = useState(false);
+  const [showMemFilters, setShowMemFilters] = useState(false);
   const [showMemoryPlacePicker, setShowMemoryPlacePicker] = useState(false);
-
-  // Memory upload — which place is currently being added to
   const [memoryTargetPlace, setMemoryTargetPlace] = useState<ApiSpacePlace | null>(null);
 
-  // Memories view — which place is currently selected
-  const [memTabPlaceId, setMemTabPlaceId] = useState<number | null>(null);
+  const [chip, setChip] = useState<PlaceChip>('all');
+  const [memPlace, setMemPlace] = useState<number | null>(null);
+  const [memStatus, setMemStatus] = useState<MemStatus>('all');
 
-  const fabScale = useRef(new Animated.Value(1)).current;
+  const {origin, hasFix} = useLocation();
+  /** Live driving time per place id — absent until Google answers. */
+  const [etas, setEtas] = useState<Record<number, number>>({});
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [spaceResult, placesResult, membersResult, memoriesResult, recsResult] = await Promise.allSettled([
-      spaceDetailService.getSpace(spaceId),
-      spaceDetailService.getPlaces(spaceId),
-      spaceDetailService.getMembers(spaceId),
-      spaceDetailService.getMemories(spaceId),
-      recommendationService.getForSpace(spaceId),
-    ]);
-
+    const [spaceResult, placesResult, membersResult, memoriesResult, recsResult] =
+      await Promise.allSettled([
+        spaceDetailService.getSpace(spaceId),
+        spaceDetailService.getPlaces(spaceId),
+        spaceDetailService.getMembers(spaceId),
+        spaceDetailService.getMemories(spaceId),
+        recommendationService.getForSpace(spaceId),
+      ]);
     if (spaceResult.status === 'fulfilled') {
       setSpaceName(spaceResult.value.name);
       setSpaceIcon(spaceResult.value.icon);
       setBannerUrl(spaceResult.value.banner_url);
       setOwnerId(spaceResult.value.owner_id);
     }
-    if (placesResult.status === 'fulfilled') {
-      setPlaces(placesResult.value);
-    }
-    if (membersResult.status === 'fulfilled') {
-      setMembers(membersResult.value);
-    }
-    if (memoriesResult.status === 'fulfilled') {
-      setMemories(memoriesResult.value);
-    }
-    if (recsResult.status === 'fulfilled') {
-      setSpaceRecs(recsResult.value);
-    }
-
+    if (placesResult.status === 'fulfilled') setPlaces(placesResult.value);
+    if (membersResult.status === 'fulfilled') setMembers(membersResult.value);
+    if (memoriesResult.status === 'fulfilled') setMemories(memoriesResult.value);
+    if (recsResult.status === 'fulfilled') setSpaceRecs(recsResult.value);
     setLoading(false);
   }, [spaceId]);
 
@@ -1427,671 +1093,420 @@ export default function SpaceScreen({route, navigation}: Props) {
     load();
   }, [load]));
 
-  // Toggle visited — optimistic update so the UI reacts instantly
+  // Optimistic: the ring fills at once and reverts if the server says no.
   const toggleVisited = useCallback(async (placeId: number) => {
     const target = places.find(p => p.id === placeId);
     if (!target) return;
-    const newVisited = !target.visited;
-
-    // Optimistic: update local state immediately
-    setPlaces(prev =>
-      prev.map(p => (p.id === placeId ? {...p, visited: newVisited} : p)),
-    );
-
+    const next = !target.visited;
+    setPlaces(prev => prev.map(p => (p.id === placeId ? {...p, visited: next} : p)));
     try {
-      await placeService.setVisited(placeId, newVisited);
+      await placeService.setVisited(placeId, next);
     } catch {
-      // Revert on failure
-      setPlaces(prev =>
-        prev.map(p => (p.id === placeId ? {...p, visited: !newVisited} : p)),
-      );
+      setPlaces(prev => prev.map(p => (p.id === placeId ? {...p, visited: !next} : p)));
       Alert.alert('Error', 'Could not update visited status.');
     }
   }, [places]);
 
   const isOwner = ownerId != null && user?.id === ownerId;
 
-  const removePlace = useCallback(
-    (place: ApiSpacePlace) => {
-      Alert.alert(
-        'Remove place',
-        `Remove "${place.name}" from this space? The place itself is kept.`,
-        [
-          {text: 'Cancel', style: 'cancel'},
-          {
-            text: 'Remove',
-            style: 'destructive',
-            onPress: async () => {
-              const snapshot = places;
-              setPlaces(prev => prev.filter(p => p.id !== place.id));
-              try {
-                await spaceDetailService.removePlace(spaceId, place.id);
-              } catch {
-                setPlaces(snapshot);
-                Alert.alert('Error', 'Could not remove that place.');
-              }
-            },
-          },
-        ],
-      );
-    },
-    [places, spaceId],
-  );
-
-  // Long-press is the only spare gesture on a place row, so it opens a menu
-  // rather than firing one action.
-  const openPlaceActions = useCallback(
-    (place: ApiSpacePlace) => {
-      Alert.alert(place.name, undefined, [
-        {
-          text: place.visited ? 'Mark as unvisited' : 'Mark as visited',
-          onPress: () => toggleVisited(place.id),
+  const removePlace = useCallback((place: ApiSpacePlace) => {
+    Alert.alert('Remove place', `Remove "${place.name}" from this space? The place itself is kept.`, [
+      {text: 'Cancel', style: 'cancel'},
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: async () => {
+          const snapshot = places;
+          setPlaces(prev => prev.filter(p => p.id !== place.id));
+          try {
+            await spaceDetailService.removePlace(spaceId, place.id);
+          } catch {
+            setPlaces(snapshot);
+            Alert.alert('Error', 'Could not remove that place.');
+          }
         },
-        {text: 'Remove from space', style: 'destructive', onPress: () => removePlace(place)},
-        {text: 'Cancel', style: 'cancel'},
-      ]);
-    },
-    [toggleVisited, removePlace],
-  );
+      },
+    ]);
+  }, [places, spaceId]);
 
-  const removeMember = useCallback(
-    (member: ApiSpaceMember) => {
-      Alert.alert('Remove member', `Remove ${member.name} from this space?`, [
-        {text: 'Cancel', style: 'cancel'},
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: async () => {
-            const snapshot = members;
-            setMembers(prev => prev.filter(m => m.user_id !== member.user_id));
-            try {
-              await spaceDetailService.removeMember(spaceId, member.user_id);
-            } catch {
-              setMembers(snapshot);
-              Alert.alert('Error', 'Could not remove that member.');
-            }
-          },
+  const removeMember = useCallback((member: ApiSpaceMember) => {
+    Alert.alert('Remove member', `Remove ${member.name} from this space?`, [
+      {text: 'Cancel', style: 'cancel'},
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: async () => {
+          const snapshot = members;
+          setMembers(prev => prev.filter(m => m.user_id !== member.user_id));
+          try {
+            await spaceDetailService.removeMember(spaceId, member.user_id);
+          } catch {
+            setMembers(snapshot);
+            Alert.alert('Error', 'Could not remove that member.');
+          }
         },
-      ]);
-    },
-    [members, spaceId],
-  );
+      },
+    ]);
+  }, [members, spaceId]);
 
-  // Sort places by distance — the memories section always sees the full list.
-  const sortedPlaces = [...places].sort((a, b) => {
-    const da = haversineKm(origin.lat, origin.lng, a.lat, a.lng);
-    const db = haversineKm(origin.lat, origin.lng, b.lat, b.lng);
-    return da - db;
+  const toggleLeader = useCallback(async (member: ApiSpaceMember) => {
+    const role = member.role === 'leader' ? 'member' : 'leader';
+    const snapshot = members;
+    setMembers(prev => prev.map(m => (m.user_id === member.user_id ? {...m, role} : m)));
+    try {
+      await spaceDetailService.setMemberRole(spaceId, member.user_id, role);
+    } catch {
+      setMembers(snapshot);
+      Alert.alert('Error', 'Could not change that role.');
+    }
+  }, [members, spaceId]);
+
+  // Live travel times. Without a real fix the origin is a fallback guess, and an
+  // ETA from the wrong city is worse than none.
+  useEffect(() => {
+    if (!hasFix || places.length === 0) return;
+    let alive = true;
+    fetchEtas(origin, places.map(p => ({id: p.id, lat: p.lat, lng: p.lng}))).then(result => {
+      if (alive) setEtas(prev => ({...prev, ...result}));
+    });
+    return () => {
+      alive = false;
+    };
+  }, [places, origin, hasFix]);
+
+  const distKm = (p: ApiSpacePlace) => haversineKm(origin.lat, origin.lng, p.lat, p.lng);
+  const sortedPlaces = [...places].sort((a, b) => distKm(a) - distKm(b));
+  const hero = sortedPlaces[0] ?? null;
+
+  const availableTags = Array.from(new Set(places.flatMap(p => p.tags))).sort();
+  const availableRegions = regionsOf(places.map(p => p.address));
+  const chips: Array<{key: PlaceChip; label: string}> = [
+    {key: 'all', label: 'All'},
+    ...availableRegions.map(r => ({key: `region:${r}` as PlaceChip, label: r})),
+    ...availableTags.map(t => ({key: `tag:${t}` as PlaceChip, label: capitalise(t)})),
+    {key: 'visited', label: 'Visited'},
+  ];
+  const visiblePlaces = sortedPlaces.filter(p => {
+    if (chip === 'all') return true;
+    if (chip === 'visited') return p.visited;
+    if (chip.startsWith('tag:')) return p.tags.includes(chip.slice(4));
+    return regionOf(p.address) === chip.slice(7);
   });
 
-  const applyFilters = useCallback(
-    (f: PlaceFilters): ApiSpacePlace[] => {
-      const matched = places.filter(p => {
-        if (f.status === 'unvisited' && p.visited) return false;
-        if (f.status === 'visited' && !p.visited) return false;
-        if (f.tags.length > 0 && !f.tags.some(t => p.tags.includes(t))) return false;
-        return true;
-      });
+  const travelLine = (p: ApiSpacePlace) =>
+    [
+      p.tags[0] ? capitalise(p.tags[0]) : null,
+      etas[p.id] !== undefined ? fmtEta(etas[p.id]) : null,
+      fmtDistance(distKm(p)),
+    ]
+      .filter(Boolean)
+      .join(' · ');
 
-      return matched.sort((a, b) => {
-        if (f.sort === 'name') return a.name.localeCompare(b.name);
-        // Higher ids were added later — no created_at on the payload.
-        if (f.sort === 'recent') return b.id - a.id;
-        return (
-          haversineKm(origin.lat, origin.lng, a.lat, a.lng) -
-          haversineKm(origin.lat, origin.lng, b.lat, b.lng)
-        );
-      });
-    },
-    [places, origin],
-  );
+  // Memories grouped per place, nearest place first.
+  const memGroups = sortedPlaces
+    .map(place => ({place, items: memories.filter(m => m.place_id === place.id)}))
+    .filter(g => g.items.length > 0);
+  const memGroupsVisible = memGroups.filter(g => {
+    if (memPlace !== null && g.place.id !== memPlace) return false;
+    if (memStatus === 'visited' && !g.place.visited) return false;
+    if (memStatus === 'unvisited' && g.place.visited) return false;
+    return true;
+  });
+  const memFilterCount = (memPlace !== null ? 1 : 0) + (memStatus !== 'all' ? 1 : 0);
 
-  const filteredPlaces = applyFilters(filters);
-  const topPlaces = showAllPlaces ? filteredPlaces : filteredPlaces.slice(0, 3);
-  const filterCount = activeFilterCount(filters);
+  const openPlace = (p: ApiSpacePlace) =>
+    navigation.navigate('PlaceDetail', {placeId: p.id, placeName: p.name, fromSpaceId: spaceId});
 
-  // Tags present on this space's places — filtering by an absent tag is useless.
-  const availableTags = Array.from(new Set(places.flatMap(p => p.tags))).sort();
+  const openDirections = (p: ApiSpacePlace) =>
+    Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}`);
 
-  // Build memory map keyed by place_id
-  const memoriesByPlace: Record<number, ApiSpaceMemory[]> = {};
-  for (const m of memories) {
-    if (!memoriesByPlace[m.place_id]) memoriesByPlace[m.place_id] = [];
-    memoriesByPlace[m.place_id].push(m);
-  }
-
-  // Keep the selected memory place valid as the space changes.
-  useEffect(() => {
-    if (sortedPlaces.length === 0) {
-      if (memTabPlaceId !== null) setMemTabPlaceId(null);
-      return;
-    }
-
-    if (!sortedPlaces.some(place => place.id === memTabPlaceId)) {
-      setMemTabPlaceId(sortedPlaces[0].id);
-    }
-  }, [sortedPlaces, memTabPlaceId]);
-
-  const activeMemPlace = sortedPlaces.find(p => p.id === memTabPlaceId) ?? sortedPlaces[0] ?? null;
-  const activeMemories = activeMemPlace ? (memoriesByPlace[activeMemPlace.id] ?? []) : [];
-  const activeMemDistance = activeMemPlace
-    ? haversineKm(origin.lat, origin.lng, activeMemPlace.lat, activeMemPlace.lng)
-    : null;
-  const quickMemoryPlaces = buildQuickMemoryPlaces(sortedPlaces, activeMemPlace?.id ?? null);
-
-  const pressFab = () => {
-    Animated.sequence([
-      Animated.timing(fabScale, {toValue: 0.88, duration: 80, useNativeDriver: true}),
-      Animated.spring(fabScale, {toValue: 1, friction: 4, useNativeDriver: true}),
-    ]).start();
-    // Collect unique tags already used in this space to offer as suggestions
+  const addPlace = () => {
+    // Tags already used in this space are offered as suggestions.
     const spaceTags = Array.from(new Set(places.flatMap(p => p.tags)));
     navigation.navigate('CreatePlace', {spaceId, spaceTags});
   };
 
-  const ACCENT_COLORS = [colors.sage, colors.primary, colors.primaryDeep, colors.catDeli];
-  const accentColor = ACCENT_COLORS[spaceId % ACCENT_COLORS.length];
-
   return (
-    <View style={s.root}>
-
-      {/* ── Header ─────────────────────────────────────────────────────── */}
-      <View style={[s.headerWrap, {paddingTop: insets.top}]}>
-        {bannerUrl ? (
-          /* Banner photo: fill behind + single readable overlay */
-          <>
-            <Image source={{uri: bannerUrl}} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
-            <View style={s.bannerOverlay} />
-          </>
-        ) : (
-          /* Solid accent: NO overlay — just a clean single colour */
-          <View style={[StyleSheet.absoluteFillObject, {backgroundColor: accentColor}]} />
-        )}
-
-        {/* Top bar: back button */}
-        <View style={s.headerBar}>
-          <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()} hitSlop={12}>
-            <Text style={s.backIcon}>‹</Text>
+    <View style={[s.root, {paddingTop: insets.top}]}>
+      <View style={s.header}>
+        <TouchableOpacity style={s.back} accessibilityLabel="Back" onPress={() => navigation.goBack()}>
+          <Text style={s.backIcon}>‹</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={s.flex} activeOpacity={0.7} onPress={() => setShowMembers(true)}>
+          <Text style={s.title} numberOfLines={1}>
+            {spaceName}
+          </Text>
+          <Text style={s.mut}>
+            {plural(members.length, 'member')} · {plural(places.length, 'place')}
+          </Text>
+        </TouchableOpacity>
+        {isOwner && (
+          <TouchableOpacity hitSlop={10} onPress={() => setShowEdit(true)}>
+            <Text style={s.link}>Edit</Text>
           </TouchableOpacity>
-          {isOwner && (
-            <TouchableOpacity style={s.editBtn} onPress={() => setShowEdit(true)} hitSlop={12}>
-              <Text style={s.editBtnText}>Edit</Text>
-            </TouchableOpacity>
+        )}
+        <View style={s.spaceAvatar}>
+          {bannerUrl ? (
+            <Image source={{uri: bannerUrl}} style={StyleSheet.absoluteFill} />
+          ) : (
+            <Text style={s.spaceAvatarEmoji}>{spaceIcon}</Text>
           )}
-        </View>
-
-        {/* Icon + title row */}
-        <View style={s.headerMeta}>
-          <View style={[s.iconCircle, {backgroundColor: bannerUrl ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.2)'}]}>
-            <Text style={s.iconEmoji}>{spaceIcon}</Text>
-          </View>
-          <View style={s.headerTitleBlock}>
-            <Text style={s.headerName} numberOfLines={1}>{spaceName}</Text>
-            {!loading && (
-              <TouchableOpacity
-                style={s.metaRow}
-                onPress={() => setShowMembers(true)}
-                activeOpacity={0.75}>
-                {members.slice(0, 3).map((m, i) => (
-                  <View
-                    key={m.user_id}
-                    style={[s.metaAvatar, {backgroundColor: avatarColor(m.name), marginLeft: i === 0 ? 0 : -6}]}>
-                    <Text style={s.metaAvatarText}>{initials(m.name)}</Text>
-                  </View>
-                ))}
-                <Text style={s.metaText}>
-                  {members.length} member{members.length !== 1 ? 's' : ''}
-                </Text>
-                <Text style={s.metaChevron}>›</Text>
-              </TouchableOpacity>
-            )}
-          </View>
         </View>
       </View>
 
-      {/* ── Body ───────────────────────────────────────────────────────── */}
-      <ScrollView
-        style={s.body}
-        contentContainerStyle={s.bodyContent}
-        showsVerticalScrollIndicator={false}>
-
+      <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
         {loading ? (
-          <ActivityIndicator color={colors.primary} style={{marginTop: spacing.xl}} />
+          <WaypointLoader size={72} style={s.loader} />
+        ) : places.length === 0 ? (
+          <Text style={s.emptyNote}>No places yet. Tap Add place to put the first one in this space.</Text>
         ) : (
           <>
-            {/* ── Nearest Places ──────────────────────────────────────── */}
-            <View style={s.sectionHeader}>
-              <Text style={s.sectionTitle}>NEAREST PLACES</Text>
-              {filteredPlaces.length > 3 && (
-                <TouchableOpacity
-                  onPress={() => setShowAllPlaces(v => !v)}
-                  hitSlop={8}>
-                  <Text style={s.sectionLink}>
-                    {showAllPlaces ? 'Show less' : `See all ${filteredPlaces.length}`}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {places.length > 0 && (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={s.filterRow}
-                contentContainerStyle={s.filterRowContent}>
-                <TouchableOpacity
-                  style={s.filterBtn}
-                  activeOpacity={0.85}
-                  onPress={() => setShowFilters(true)}>
-                  <Text style={s.filterBtnIcon}>≡</Text>
-                  <Text style={s.filterBtnText}>Filters</Text>
-                  {filterCount > 0 && (
-                    <View style={s.filterBadge}>
-                      <Text style={s.filterBadgeText}>{filterCount}</Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-
-                {STATUS_OPTIONS.map(opt => {
-                  const active = filters.status === opt.key;
-                  return (
-                    <TouchableOpacity
-                      key={opt.key}
-                      style={[s.filterChip, active && s.filterChipActive]}
-                      activeOpacity={0.8}
-                      onPress={() => setFilters(f => ({...f, status: opt.key}))}>
-                      <Text style={[s.filterChipText, active && s.filterChipTextActive]}>
-                        {opt.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-
-                {availableTags.map(tag => {
-                  const active = filters.tags.includes(tag);
-                  return (
-                    <TouchableOpacity
-                      key={tag}
-                      style={[s.filterChip, active && s.filterChipActive]}
-                      activeOpacity={0.8}
-                      onPress={() =>
-                        setFilters(f => ({
-                          ...f,
-                          tags: active
-                            ? f.tags.filter(t => t !== tag)
-                            : [...f.tags, tag],
-                        }))
-                      }>
-                      <Text style={s.filterChipEmoji}>{tagEmoji(tag)}</Text>
-                      <Text style={[s.filterChipText, active && s.filterChipTextActive]}>
-                        {tag}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
+            <Text style={s.eyebrow}>Closest to you</Text>
+            {hero && (
+              <TouchableOpacity style={s.hero} activeOpacity={0.9} onPress={() => openPlace(hero)}>
+                <MapView
+                  provider={PROVIDER_GOOGLE}
+                  style={StyleSheet.absoluteFill}
+                  pointerEvents="none"
+                  liteMode
+                  scrollEnabled={false}
+                  zoomEnabled={false}
+                  rotateEnabled={false}
+                  pitchEnabled={false}
+                  initialRegion={{
+                    latitude: hero.lat,
+                    longitude: hero.lng,
+                    latitudeDelta: 0.012,
+                    longitudeDelta: 0.012,
+                  }}>
+                  <Marker coordinate={{latitude: hero.lat, longitude: hero.lng}} />
+                </MapView>
+                <View style={s.heroShade} pointerEvents="none" />
+                <View style={s.heroFoot}>
+                  <View style={s.flex}>
+                    <Text style={s.heroName} numberOfLines={1}>
+                      {hero.name}
+                    </Text>
+                    <Text style={s.heroMeta} numberOfLines={1}>
+                      {travelLine(hero)}
+                    </Text>
+                  </View>
+                  <TouchableOpacity style={s.directions} activeOpacity={0.85} onPress={() => openDirections(hero)}>
+                    <Text style={s.directionsText}>Directions</Text>
+                  </TouchableOpacity>
+                </View>
+              </TouchableOpacity>
             )}
 
-            {places.length === 0 ? (
-              <View style={s.emptyCard}>
-                <Text style={s.emptyEmoji}>📍</Text>
-                <Text style={s.emptyTitle}>No places yet</Text>
-                <Text style={s.emptySub}>
-                  Tap ＋ to add your first saved place to this space.
-                </Text>
-              </View>
-            ) : filteredPlaces.length === 0 ? (
-              <View style={s.emptyCard}>
-                <Text style={s.emptyEmoji}>🔎</Text>
-                <Text style={s.emptyTitle}>No places match</Text>
-                <Text style={s.emptySub}>
-                  Try clearing a filter to see more of this space.
-                </Text>
-                <TouchableOpacity
-                  style={s.emptyResetBtn}
-                  activeOpacity={0.8}
-                  onPress={() => setFilters(DEFAULT_FILTERS)}>
-                  <Text style={s.emptyResetText}>Reset filters</Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              topPlaces.map(place => {
-                const distKm = haversineKm(origin.lat, origin.lng, place.lat, place.lng);
-                const emoji = placeEmoji(place.tags);
-                return (
-                  <TouchableOpacity
-                    key={place.id}
-                    style={[s.placeRow, place.visited && s.placeRowVisited]}
-                    activeOpacity={0.75}
-                    onPress={() =>
-                      navigation.navigate('PlaceDetail', {
-                        placeId: place.id,
-                        placeName: place.name,
-                        fromSpaceId: spaceId,
-                      })
-                    }
-                    onLongPress={() => openPlaceActions(place)}
-                    delayLongPress={400}>
-                    <View style={[s.placeIconWrap, {backgroundColor: categoryTint(place.tags[0] ?? '')}]}>
-                      <Text style={s.placeEmoji}>{emoji}</Text>
-                      {place.visited && (
-                        <View style={s.visitedBadge}>
-                          <Text style={s.visitedCheck}>✓</Text>
-                        </View>
-                      )}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={s.chipScroll}
+              contentContainerStyle={s.chipRow}>
+              {chips.map(c => (
+                <Chip key={c.key} label={c.label} on={chip === c.key} onPress={() => setChip(c.key)} />
+              ))}
+            </ScrollView>
+
+            <View style={s.rows}>
+              {visiblePlaces.length === 0 ? (
+                <Text style={s.noMatch}>No places match this filter.</Text>
+              ) : (
+                visiblePlaces.map(place => (
+                  <View key={place.id} style={s.row}>
+                    <View style={s.thumb}>
+                      <Text style={s.thumbEmoji}>{placeEmoji(place.tags)}</Text>
                     </View>
-                    <View style={s.placeInfo}>
-                      <Text
-                        style={[s.placeName, place.visited && s.placeNameVisited]}
-                        numberOfLines={1}>
+                    <TouchableOpacity
+                      style={s.flex}
+                      activeOpacity={0.7}
+                      onPress={() => openPlace(place)}
+                      onLongPress={() => removePlace(place)}
+                      delayLongPress={400}>
+                      <Text style={s.rowName} numberOfLines={1}>
                         {place.name}
                       </Text>
-                      {!!displayAddress(place.address) && (
-                        <Text style={s.placeAddr} numberOfLines={1}>
-                          {displayAddress(place.address)}
-                        </Text>
-                      )}
-                      {place.tags.length > 0 && (
-                        <View style={s.tagRow}>
-                          {place.tags.slice(0, 2).map(t => (
-                            <View key={t} style={s.tag}>
-                              <Text style={s.tagText}>{t}</Text>
-                            </View>
-                          ))}
-                        </View>
-                      )}
-                    </View>
-                    {place.visited ? (
-                      <View style={s.visitedPill}>
-                        <Text style={s.visitedPillText}>Visited</Text>
-                      </View>
-                    ) : (
-                      <View style={s.distPill}>
-                        <Text style={s.distText}>{fmtDistance(distKm)}</Text>
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                );
-              })
-            )}
-
-            {/* ── Memories ────────────────────────────────────────────── */}
-            <View style={[s.sectionHeader, {marginTop: spacing.lg}]}>
-              <Text style={s.sectionTitle}>MEMORIES</Text>
-              {places.length > 0 && (
-                <View style={s.memHeaderActions}>
-                  <TouchableOpacity
-                    style={s.memPickerBtn}
-                    activeOpacity={0.8}
-                    onPress={() => setShowMemoryPlacePicker(true)}>
-                    <Text style={s.memPickerBtnText}>Choose place</Text>
-                  </TouchableOpacity>
-                  {activeMemPlace && (
-                    <TouchableOpacity
-                      style={s.memAddBtn}
-                      activeOpacity={0.8}
-                      onPress={() => setMemoryTargetPlace(activeMemPlace)}>
-                      <Text style={s.memAddBtnText}>＋ Memory</Text>
+                      <Text style={[s.mut, s.mt3]} numberOfLines={1}>
+                        {travelLine(place)}
+                      </Text>
                     </TouchableOpacity>
-                  )}
-                </View>
+                    <TouchableOpacity
+                      style={s.beenHere}
+                      accessibilityRole="checkbox"
+                      accessibilityLabel="Been here"
+                      accessibilityState={{checked: place.visited}}
+                      onPress={() => toggleVisited(place.id)}>
+                      <View style={[s.beenRing, place.visited && s.beenOn]}>
+                        <Text style={[s.beenGlyph, place.visited && s.beenGlyphOn]}>
+                          {place.visited ? '✓' : '⌖'}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                ))
               )}
             </View>
 
-            {places.length === 0 ? (
-              <View style={s.emptyCard}>
-                <Text style={s.emptyEmoji}>📷</Text>
-                <Text style={s.emptyTitle}>No places yet</Text>
-                <Text style={s.emptySub}>
-                  Add places to this space first, then capture memories for each one.
-                </Text>
+            <View style={s.secHead}>
+              <Text style={s.sec}>Memories</Text>
+              <View style={s.secLinks}>
+                <TouchableOpacity hitSlop={8} onPress={() => setShowMemoryPlacePicker(true)}>
+                  <Text style={s.link}>＋ Add</Text>
+                </TouchableOpacity>
+                {memGroups.length > 0 && (
+                  <TouchableOpacity hitSlop={8} onPress={() => setShowMemFilters(true)}>
+                    <Text style={s.link}>
+                      {memFilterCount > 0 ? `Filters (${memFilterCount})` : 'Filters'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
+            </View>
+
+            {memGroups.length === 0 ? (
+              <Text style={s.emptyNote}>No memories yet. Add photos from a visit and they collect here.</Text>
+            ) : memGroupsVisible.length === 0 ? (
+              <Text style={s.noMatch}>No memories match this filter.</Text>
             ) : (
-              <View style={s.memBlock}>
-                {activeMemPlace && (
-                  <>
-                    <View style={s.memFocusCard}>
-                      <View
-                        style={[
-                          s.memFocusIconWrap,
-                          {backgroundColor: categoryTint(activeMemPlace.tags[0] ?? '')},
-                        ]}>
-                        <Text style={s.memFocusEmoji}>{placeEmoji(activeMemPlace.tags)}</Text>
-                      </View>
-
-                      <View style={s.memFocusInfo}>
-                        <Text style={s.memFocusLabel}>Selected place</Text>
-                        <Text style={s.memFocusName}>{activeMemPlace.name}</Text>
-                        {!!displayAddress(activeMemPlace.address) && (
-                          <Text style={s.memFocusAddr} numberOfLines={1}>
-                            {displayAddress(activeMemPlace.address)}
+              <View style={s.memList}>
+                {memGroupsVisible.map(g => (
+                  <View key={g.place.id} style={s.memCard}>
+                    <View style={s.memHead}>
+                      <Text style={s.memPlace} numberOfLines={1}>
+                        {g.place.name}
+                      </Text>
+                      <View style={s.mtags}>
+                        {g.place.tags.slice(0, 2).map(t => (
+                          <Text key={t} style={s.mtag}>
+                            {t}
                           </Text>
-                        )}
-                        <View style={s.memFocusMetaRow}>
-                          <View style={s.memFocusMetaPill}>
-                            <Text style={s.memFocusMetaText}>
-                              {activeMemories.length}{' '}
-                              {activeMemories.length === 1 ? 'memory' : 'memories'}
-                            </Text>
-                          </View>
-                          {activeMemDistance !== null && (
-                            <View style={s.memFocusMetaPill}>
-                              <Text style={s.memFocusMetaText}>{fmtDistance(activeMemDistance)}</Text>
-                            </View>
-                          )}
-                        </View>
+                        ))}
                       </View>
-
+                    </View>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={s.photoRow}>
+                      {g.items.map(m => (
+                        <Image key={m.id} source={{uri: m.image_url}} style={s.photo} />
+                      ))}
                       <TouchableOpacity
-                        style={s.memSwapBtn}
-                        activeOpacity={0.8}
-                        onPress={() => setShowMemoryPlacePicker(true)}>
-                        <Text style={s.memSwapBtnText}>Change</Text>
+                        style={s.photoAdd}
+                        accessibilityLabel={`Add a memory at ${g.place.name}`}
+                        onPress={() => setMemoryTargetPlace(g.place)}>
+                        <Text style={s.photoAddPlus}>＋</Text>
                       </TouchableOpacity>
-                    </View>
-
-                    <View style={s.memQuickList}>
-                      {quickMemoryPlaces.map(place => {
-                        const active = place.id === activeMemPlace.id;
-                        const count = (memoriesByPlace[place.id] ?? []).length;
-
-                        return (
-                          <TouchableOpacity
-                            key={place.id}
-                            style={[s.memQuickCard, active && s.memQuickCardActive]}
-                            activeOpacity={0.85}
-                            onPress={() => setMemTabPlaceId(place.id)}>
-                            <View style={s.memQuickTopRow}>
-                              <Text style={s.memQuickEmoji}>{placeEmoji(place.tags)}</Text>
-                              <Text style={[s.memQuickCount, active && s.memQuickCountActive]}>
-                                {count}
-                              </Text>
-                            </View>
-                            <Text
-                              style={[s.memQuickName, active && s.memQuickNameActive]}
-                              numberOfLines={1}>
-                              {place.name}
-                            </Text>
-                            <Text
-                              style={[s.memQuickHint, active && s.memQuickHintActive]}
-                              numberOfLines={1}>
-                              {active ? 'Currently open' : 'Tap to switch'}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-
-                      {sortedPlaces.length > quickMemoryPlaces.length && (
-                        <TouchableOpacity
-                          style={s.memBrowseCard}
-                          activeOpacity={0.85}
-                          onPress={() => setShowMemoryPlacePicker(true)}>
-                          <Text style={s.memBrowseIcon}>⌕</Text>
-                          <Text style={s.memBrowseTitle}>Browse all places</Text>
-                          <Text style={s.memBrowseHint}>{sortedPlaces.length} places in this space</Text>
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                  </>
-                )}
-
-                {/* Photo strip for the active place */}
-                {activeMemories.length === 0 ? (
-                  <TouchableOpacity
-                    style={s.memEmptyPrompt}
-                    activeOpacity={0.7}
-                    onPress={() => activeMemPlace && setMemoryTargetPlace(activeMemPlace)}>
-                    <Text style={s.memEmptyIcon}>＋</Text>
-                    <Text style={s.memEmptyText}>
-                      Add the first memory for {activeMemPlace?.name}
-                    </Text>
-                  </TouchableOpacity>
-                ) : (
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={s.memStrip}>
-                    {/* Add card at start */}
-                    <TouchableOpacity
-                      style={s.memAddCard}
-                      activeOpacity={0.75}
-                      onPress={() => activeMemPlace && setMemoryTargetPlace(activeMemPlace)}>
-                      <Text style={s.memAddCardIcon}>＋</Text>
-                      <Text style={s.memAddCardText}>Add</Text>
-                    </TouchableOpacity>
-
-                    {activeMemories.map(memory => (
-                      <View key={memory.id} style={s.memCard}>
-                        <Image
-                          source={{uri: memory.image_url}}
-                          style={s.memImage}
-                          resizeMode="cover"
-                        />
-                        {memory.caption && (
-                          <View style={s.memCaptionWrap}>
-                            <Text style={s.memCaption} numberOfLines={2}>
-                              {memory.caption}
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-                    ))}
-                  </ScrollView>
-                )}
+                    </ScrollView>
+                    {g.items
+                      .filter(m => m.caption)
+                      .slice(0, 2)
+                      .map(m => (
+                        <Text key={m.id} style={s.caption} numberOfLines={2}>
+                          “{m.caption}”
+                        </Text>
+                      ))}
+                  </View>
+                ))}
               </View>
-            )}
-
-            {/* ── Members strip ───────────────────────────────────────── */}
-            {members.length > 0 && (
-              <>
-                <View style={[s.sectionHeader, {marginTop: spacing.lg}]}>
-                  <Text style={s.sectionTitle}>MEMBERS</Text>
-                  <TouchableOpacity onPress={() => setShowMembers(true)} hitSlop={8}>
-                    <Text style={s.sectionLink}>See all</Text>
-                  </TouchableOpacity>
-                </View>
-
-                <View style={s.membersStrip}>
-                  {members.slice(0, 6).map((m, idx) => (
-                    <TouchableOpacity
-                      key={m.user_id}
-                      style={[s.memberChip, {marginLeft: idx === 0 ? 0 : -10}]}
-                      onPress={() => setShowMembers(true)}
-                      activeOpacity={0.8}>
-                      <View
-                        style={[
-                          s.memberAvatar,
-                          {backgroundColor: avatarColor(m.name)},
-                        ]}>
-                        <Text style={s.memberAvatarText}>{initials(m.name)}</Text>
-                      </View>
-                    </TouchableOpacity>
-                  ))}
-                  {members.length > 6 && (
-                    <View style={[s.memberChip, s.memberOverflow, {marginLeft: -10}]}>
-                      <Text style={s.memberOverflowText}>+{members.length - 6}</Text>
-                    </View>
-                  )}
-                  <TouchableOpacity
-                    style={s.membersLabel}
-                    onPress={() => setShowMembers(true)}
-                    activeOpacity={0.7}>
-                    <Text style={s.membersLabelText}>
-                      {members.length} {members.length === 1 ? 'member' : 'members'}  ›
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </>
             )}
           </>
         )}
 
-        {/* ── Suggestions for this Space ────────────────────────── */}
         {spaceRecs.length > 0 && (
-          <View style={s.suggestionsSection}>
-            <View style={s.suggestionHeader}>
-              <Text style={s.suggestionTitle}>SUGGESTED NEARBY</Text>
-              <Text style={s.suggestionSub}>Places near this space you haven't added yet</Text>
+          <>
+            <View style={s.secHead}>
+              <Text style={s.sec}>Suggested near this space</Text>
             </View>
-            {spaceRecs.map((rec, idx) => (
-              <View key={rec.google_place_id || idx} style={s.suggestionRow}>
-                <View style={s.suggestionLeft}>
-                  <View style={s.suggestionEmoji}>
-                    <Text style={s.suggestionEmojiText}>{rec.emoji}</Text>
+            <View style={s.rows}>
+              {spaceRecs.map((rec, idx) => (
+                <View key={rec.google_place_id || idx} style={s.row}>
+                  <View style={s.thumb}>
+                    <Text style={s.thumbEmoji}>{rec.emoji}</Text>
                   </View>
-                  <View style={s.suggestionInfo}>
-                    <Text style={s.suggestionName} numberOfLines={1}>{rec.name}</Text>
-                    <Text style={s.suggestionAddress} numberOfLines={1}>{rec.address}</Text>
+                  <View style={s.flex}>
+                    <Text style={s.rowName} numberOfLines={1}>
+                      {rec.name}
+                    </Text>
+                    <Text style={[s.mut, s.mt3]} numberOfLines={1}>
+                      {displayAddress(rec.address) ?? rec.address}
+                    </Text>
                   </View>
+                  <TouchableOpacity
+                    style={s.saveChip}
+                    activeOpacity={0.8}
+                    onPress={() =>
+                      navigation.navigate('CreatePlace', {
+                        spaceId,
+                        prefillName: rec.name,
+                        prefillAddress: rec.address,
+                        prefillLat: rec.lat,
+                        prefillLng: rec.lng,
+                      })
+                    }>
+                    <Text style={s.saveChipText}>Save</Text>
+                  </TouchableOpacity>
                 </View>
-                <TouchableOpacity
-                  style={s.suggestionSaveBtn}
-                  activeOpacity={0.8}
-                  onPress={() =>
-                    navigation.navigate('CreatePlace', {
-                      spaceId,
-                      prefillName: rec.name,
-                      prefillAddress: rec.address,
-                      prefillLat: rec.lat,
-                      prefillLng: rec.lng,
-                    })
-                  }>
-                  <Text style={s.suggestionSaveBtnText}>+ Save</Text>
-                </TouchableOpacity>
-              </View>
-            ))}
-          </View>
+              ))}
+            </View>
+          </>
         )}
 
-        <View style={{height: 100}} />
+        <View style={s.bottomPad} />
       </ScrollView>
 
-      {/* ── FAB — Add Place ─────────────────────────────────────────────── */}
-      <Animated.View
-        style={[
-          s.fab,
-          {bottom: insets.bottom + 24, transform: [{scale: fabScale}]},
-        ]}>
-        <TouchableOpacity style={s.fabInner} onPress={pressFab} activeOpacity={1}>
-          <Text style={s.fabIcon}>＋</Text>
-          <Text style={s.fabLabel}>Add Place</Text>
-        </TouchableOpacity>
-      </Animated.View>
+      <TouchableOpacity
+        style={[s.fab, {bottom: insets.bottom + 20}]}
+        activeOpacity={0.85}
+        onPress={addPlace}>
+        <Text style={s.fabPlus}>＋</Text>
+        <Text style={s.fabLabel}>Add place</Text>
+      </TouchableOpacity>
 
-      {/* ── Sheets / Modals ─────────────────────────────────────────────── */}
-      {showFilters && (
-        <FilterPlacesSheet
-          filters={filters}
-          availableTags={availableTags}
-          resultCount={f => applyFilters(f).length}
-          onApply={next => {
-            setFilters(next);
-            setShowAllPlaces(false);
-            setShowFilters(false);
-          }}
-          onClose={() => setShowFilters(false)}
-        />
-      )}
+      <Modal
+        visible={showMemFilters}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowMemFilters(false)}>
+        <Pressable style={sheet.backdrop} onPress={() => setShowMemFilters(false)} />
+        <View style={sheet.container}>
+          <View style={sheet.handle} />
+          <View style={s.sheetHead}>
+            <Text style={s.sheetT}>Filter memories</Text>
+            <TouchableOpacity
+              hitSlop={8}
+              onPress={() => {
+                setMemPlace(null);
+                setMemStatus('all');
+              }}>
+              <Text style={s.link}>Clear</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={s.groupT}>Place</Text>
+          <View style={s.wrap}>
+            {memGroups.map(g => (
+              <Chip
+                key={g.place.id}
+                label={g.place.name}
+                on={memPlace === g.place.id}
+                onPress={() => setMemPlace(memPlace === g.place.id ? null : g.place.id)}
+              />
+            ))}
+          </View>
+          <Text style={s.groupT}>Status</Text>
+          <View style={s.wrap}>
+            {([
+              ['all', 'All'],
+              ['visited', 'Visited'],
+              ['unvisited', 'Not visited'],
+            ] as const).map(([k, label]) => (
+              <Chip key={k} label={label} on={memStatus === k} onPress={() => setMemStatus(k)} />
+            ))}
+          </View>
+          <TouchableOpacity style={s.btnP} activeOpacity={0.85} onPress={() => setShowMemFilters(false)}>
+            <Text style={s.btnPText}>Show results</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
 
       {showEdit && (
         <EditSpaceSheet
@@ -2112,8 +1527,10 @@ export default function SpaceScreen({route, navigation}: Props) {
       {showMembers && (
         <MembersModal
           members={members}
-          canManage={isOwner}
+          myRole={members.find(m => m.user_id === user?.id)?.role}
+          myId={user?.id}
           onRemove={removeMember}
+          onToggleLeader={toggleLeader}
           onClose={() => setShowMembers(false)}
         />
       )}
@@ -2121,15 +1538,14 @@ export default function SpaceScreen({route, navigation}: Props) {
       {showMemoryPlacePicker && (
         <MemoryPlacePickerModal
           places={sortedPlaces}
-          activePlaceId={activeMemPlace?.id ?? null}
-          memoriesByPlace={memoriesByPlace}
+          activePlaceId={null}
+          memoriesByPlace={Object.fromEntries(memGroups.map(g => [g.place.id, g.items]))}
           onClose={() => setShowMemoryPlacePicker(false)}
           onSelect={place => {
-            setMemTabPlaceId(place.id);
             setShowMemoryPlacePicker(false);
+            openPlace(place);
           }}
           onAddMemory={place => {
-            setMemTabPlaceId(place.id);
             setShowMemoryPlacePicker(false);
             setMemoryTargetPlace(place);
           }}
@@ -2143,7 +1559,7 @@ export default function SpaceScreen({route, navigation}: Props) {
           onDismiss={() => setMemoryTargetPlace(null)}
           onUploaded={() => {
             setMemoryTargetPlace(null);
-            load(); // refresh memories
+            load();
           }}
         />
       )}
@@ -2151,478 +1567,260 @@ export default function SpaceScreen({route, navigation}: Props) {
   );
 }
 
+function Chip({label, on, onPress}: {label: string; on: boolean; onPress: () => void}) {
+  return (
+    <TouchableOpacity
+      style={[s.chip, on && s.chipOn]}
+      activeOpacity={0.8}
+      accessibilityState={{selected: on}}
+      onPress={onPress}>
+      <Text style={[s.chipText, on && s.chipTextOn]} numberOfLines={1}>
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
 // ── Styles ────────────────────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
   root: {flex: 1, backgroundColor: colors.background},
+  flex: {flex: 1, minWidth: 0},
+  mt3: {marginTop: 3},
+  mut: {fontFamily: fonts.regular, fontSize: 11.5, color: colors.textSecondary},
+  link: {fontFamily: fonts.bold, fontSize: 12, color: colors.primaryDeep},
+  loader: {marginTop: spacing.xl},
 
-  // ── Header ──────────────────────────────────────────────────────────────
-  headerWrap: {paddingBottom: spacing.lg, overflow: 'hidden'},
-  bannerOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(45,42,36,0.42)',
-  },
-  headerBar: {
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
+    gap: 10,
+    paddingHorizontal: 15,
+    paddingTop: 4,
+    paddingBottom: 14,
   },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(45,42,36,0.28)',
+  back: {width: 44, height: 44, alignItems: 'center', justifyContent: 'center'},
+  backIcon: {fontSize: 30, color: colors.text, lineHeight: 32},
+  title: {fontFamily: fonts.bold, fontSize: 17, color: colors.text},
+  spaceAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    overflow: 'hidden',
+    backgroundColor: colors.accentSoft,
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: 5,
   },
-  backIcon: {fontSize: 26, color: colors.white, lineHeight: 28},
+  spaceAvatarEmoji: {fontSize: 15},
 
-  headerMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    gap: spacing.md,
-  },
-  iconCircle: {
-    width: 62,
-    height: 62,
-    borderRadius: 31,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconEmoji: {fontSize: 28},
-  headerTitleBlock: {flex: 1},
-  headerName: {fontFamily: fonts.display, fontSize: 25, color: colors.white},
-  metaRow: {flexDirection: 'row', alignItems: 'center', marginTop: 8},
-  metaAvatar: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.7)',
-  },
-  metaAvatarText: {fontFamily: fonts.semibold, fontSize: 9, color: colors.white},
-  metaText: {
-    fontFamily: fonts.regular,
-    fontSize: 15,
-    color: colors.white,
-    marginLeft: spacing.sm,
-  },
-  metaChevron: {fontSize: 18, color: 'rgba(255,255,255,0.75)', marginLeft: 6},
+  content: {paddingHorizontal: 20},
 
-  editBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: radius.full,
-    backgroundColor: 'rgba(255,255,255,0.22)',
-  },
-  editBtnText: {fontFamily: fonts.semibold, fontSize: 14, color: colors.white},
-
-  // ── Body ────────────────────────────────────────────────────────────────
-  body: {flex: 1, backgroundColor: colors.background},
-  bodyContent: {paddingHorizontal: spacing.lg, paddingTop: spacing.lg},
-
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.md,
-  },
-  sectionTitle: {
-    fontFamily: fonts.semibold,
-    fontSize: 12.5,
-    letterSpacing: 1.3,
-    color: colors.textSecondary,
-  },
-  sectionLink: {fontFamily: fonts.semibold, fontSize: 14, color: colors.primary},
-
-  emptyCard: {
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingVertical: spacing.xl,
-    paddingHorizontal: spacing.lg,
-    alignItems: 'center',
-  },
-  emptyEmoji: {fontSize: 30, marginBottom: 10},
-  emptyResetBtn: {
-    marginTop: spacing.lg,
-    borderWidth: 1.5,
-    borderColor: colors.primary,
-    borderRadius: radius.full,
-    paddingVertical: 10,
-    paddingHorizontal: spacing.lg,
-  },
-  emptyResetText: {fontFamily: fonts.semibold, fontSize: 15, color: colors.primary},
-
-  // ── Filter chip row ─────────────────────────────────────────────────────
-  filterRow: {marginBottom: spacing.md, marginHorizontal: -spacing.lg},
-  filterRowContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: spacing.lg,
-  },
-  filterBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: colors.headerBg,
-    borderRadius: radius.full,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-  },
-  filterBtnIcon: {fontSize: 15, color: colors.white},
-  filterBtnText: {fontFamily: fonts.semibold, fontSize: 14.5, color: colors.white},
-  filterBadge: {
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
-    paddingHorizontal: 6,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  filterBadgeText: {fontFamily: fonts.semibold, fontSize: 12, color: colors.white},
-  filterChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    backgroundColor: colors.sand,
-    borderRadius: radius.full,
-    borderWidth: 1.5,
-    borderColor: 'transparent',
-    paddingVertical: 9,
-    paddingHorizontal: 16,
-  },
-  filterChipActive: {
-    backgroundColor: colors.surface,
-    borderColor: colors.primary,
-  },
-  filterChipEmoji: {fontSize: 14},
-  filterChipText: {fontFamily: fonts.medium, fontSize: 14.5, color: colors.textSecondary},
-  filterChipTextActive: {fontFamily: fonts.semibold, color: colors.primary},
-  emptyTitle: {fontFamily: fonts.display, fontSize: 18, color: colors.text, marginBottom: 6},
-  emptySub: {
-    fontFamily: fonts.regular,
-    fontSize: 14,
-    lineHeight: 21,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-
-  // ── Place rows ──────────────────────────────────────────────────────────
-  placeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  placeRowVisited: {opacity: 0.72},
-  placeIconWrap: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing.md,
-  },
-  placeEmoji: {fontSize: 24},
-  visitedBadge: {
-    position: 'absolute',
-    right: -2,
-    bottom: -2,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: colors.sage,
-    borderWidth: 2,
-    borderColor: colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  visitedCheck: {fontSize: 9, color: colors.white},
-  placeInfo: {flex: 1},
-  placeName: {fontFamily: fonts.semibold, fontSize: 16, color: colors.text},
-  placeNameVisited: {
-    color: colors.textSecondary,
-    textDecorationLine: 'line-through',
-  },
-  placeAddr: {
-    fontFamily: fonts.regular,
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginTop: 3,
-  },
-  tagRow: {flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8},
-  tag: {
-    backgroundColor: colors.primaryLight,
-    borderRadius: radius.full,
-    paddingVertical: 5,
-    paddingHorizontal: 12,
-  },
-  tagText: {fontFamily: fonts.regular, fontSize: 13, color: colors.primaryDeep},
-
-  visitedPill: {
-    backgroundColor: colors.sageSoft,
-    borderRadius: radius.full,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    marginLeft: spacing.sm,
-  },
-  visitedPillText: {fontFamily: fonts.medium, fontSize: 13, color: colors.sage},
-  distPill: {
-    backgroundColor: colors.sand,
-    borderRadius: radius.full,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    marginLeft: spacing.sm,
-  },
-  distText: {fontFamily: fonts.medium, fontSize: 13, color: colors.textSecondary},
-
-  // ── Memories ────────────────────────────────────────────────────────────
-  memHeaderActions: {flexDirection: 'row', alignItems: 'center', gap: 10},
-  memPickerBtn: {
-    borderRadius: radius.full,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingVertical: 9,
-    paddingHorizontal: 16,
-  },
-  memPickerBtnText: {fontFamily: fonts.medium, fontSize: 14, color: colors.text},
-  memAddBtn: {
-    borderRadius: radius.full,
-    backgroundColor: colors.primary,
-    paddingVertical: 9,
-    paddingHorizontal: 16,
-  },
-  memAddBtnText: {fontFamily: fonts.semibold, fontSize: 14, color: colors.white},
-
-  memBlock: {},
-  memFocusCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    marginBottom: spacing.md,
-  },
-  memFocusIconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  memFocusEmoji: {fontSize: 22},
-  memFocusInfo: {flex: 1},
-  memFocusLabel: {
-    fontFamily: fonts.semibold,
-    fontSize: 11.5,
-    letterSpacing: 1.2,
-    color: colors.textMuted,
-    marginBottom: 3,
-  },
-  memFocusName: {fontFamily: fonts.display, fontSize: 18, color: colors.text},
-  memFocusAddr: {
-    fontFamily: fonts.regular,
-    fontSize: 13.5,
-    color: colors.textSecondary,
-    marginTop: 3,
-  },
-  memFocusMetaRow: {flexDirection: 'row', gap: 6, marginTop: 8},
-  memFocusMetaPill: {
-    backgroundColor: colors.sand,
-    borderRadius: radius.full,
-    paddingVertical: 5,
-    paddingHorizontal: 12,
-  },
-  memFocusMetaText: {fontFamily: fonts.regular, fontSize: 12.5, color: colors.textSecondary},
-  memSwapBtn: {
-    borderRadius: radius.full,
-    backgroundColor: colors.sand,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-  },
-  memSwapBtnText: {fontFamily: fonts.medium, fontSize: 14, color: colors.text},
-
-  memQuickList: {flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md},
-  memQuickCard: {
-    width: '47.5%',
-    borderRadius: radius.lg,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    padding: 12,
-  },
-  memQuickCardActive: {
-    borderColor: colors.primaryBorder,
-    backgroundColor: colors.primaryLight,
-  },
-  memQuickTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  eyebrow: {
+    fontFamily: fonts.bold,
+    fontSize: 11,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    color: colors.primaryDeep,
     marginBottom: 8,
   },
-  memQuickEmoji: {fontSize: 20},
-  memQuickCount: {fontFamily: fonts.semibold, fontSize: 14, color: colors.textSecondary},
-  memQuickCountActive: {color: colors.primaryDeep},
-  memQuickName: {fontFamily: fonts.semibold, fontSize: 14.5, color: colors.text},
-  memQuickNameActive: {color: colors.primaryDeep},
-  memQuickHint: {fontFamily: fonts.regular, fontSize: 12, color: colors.textMuted, marginTop: 3},
-  memQuickHintActive: {color: colors.primary},
-
-  memBrowseCard: {
-    width: '47.5%',
-    borderRadius: radius.lg,
-    borderWidth: 1.5,
-    borderStyle: 'dashed',
-    borderColor: colors.sandDeep,
-    padding: 12,
-    justifyContent: 'center',
+  hero: {
+    height: 170,
+    borderRadius: 18,
+    overflow: 'hidden',
+    backgroundColor: colors.surfaceDim,
+    marginBottom: 22,
   },
-  memBrowseIcon: {fontSize: 18, color: colors.textMuted, marginBottom: 6},
-  memBrowseTitle: {fontFamily: fonts.semibold, fontSize: 14.5, color: colors.text},
-  memBrowseHint: {fontFamily: fonts.regular, fontSize: 12, color: colors.textMuted, marginTop: 3},
+  heroShade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 72,
+    backgroundColor: 'rgba(20,20,30,0.62)',
+  },
+  heroFoot: {
+    position: 'absolute',
+    left: 14,
+    right: 14,
+    bottom: 12,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 10,
+  },
+  heroName: {fontFamily: fonts.bold, fontSize: 17, color: colors.white},
+  heroMeta: {fontFamily: fonts.regular, fontSize: 12, color: 'rgba(255,255,255,0.9)', marginTop: 2},
+  directions: {backgroundColor: colors.primary, borderRadius: 20, paddingVertical: 7, paddingHorizontal: 14},
+  directionsText: {fontFamily: fonts.bold, fontSize: 12, color: colors.white},
 
-  memEmptyPrompt: {
+  chipScroll: {marginHorizontal: -20, marginBottom: 18},
+  chipRow: {paddingHorizontal: 20, gap: 8},
+  chip: {
+    minHeight: 36,
+    justifyContent: 'center',
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    maxWidth: 220,
+  },
+  chipOn: {backgroundColor: colors.primary, borderColor: colors.primary},
+  chipText: {fontFamily: fonts.semibold, fontSize: 12.5, color: colors.text},
+  chipTextOn: {color: colors.white},
+
+  rows: {gap: 10, marginBottom: 26},
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: 10,
-    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  thumb: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.sm,
+    backgroundColor: colors.surfaceDim,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  thumbEmoji: {fontSize: 20},
+  rowName: {fontFamily: fonts.semibold, fontSize: 13.5, color: colors.text},
+  noMatch: {
+    fontFamily: fonts.regular,
+    fontSize: 12.5,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    paddingVertical: 20,
+  },
+  emptyNote: {
+    fontFamily: fonts.regular,
+    fontSize: 12.5,
+    lineHeight: 18,
+    color: colors.textSecondary,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    padding: 14,
+    marginBottom: 26,
+  },
+
+  // A 30px mark inside a 44px target: quiet ring when not visited, green disc when you have been.
+  beenHere: {width: 44, height: 44, marginRight: -8, alignItems: 'center', justifyContent: 'center'},
+  beenRing: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  beenOn: {backgroundColor: colors.success, borderColor: colors.success},
+  beenGlyph: {fontSize: 14, color: colors.textSecondary},
+  beenGlyphOn: {fontFamily: fonts.bold, color: colors.white},
+
+  secHead: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  sec: {fontFamily: fonts.bold, fontSize: 14, color: colors.text},
+  secLinks: {flexDirection: 'row', gap: 14},
+
+  memList: {gap: 14, marginBottom: 26},
+  memCard: {backgroundColor: colors.surface, borderRadius: radius.lg, padding: 10},
+  memHead: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: 6,
+    marginBottom: 8,
+  },
+  memPlace: {flex: 1, fontFamily: fonts.bold, fontSize: 13.5, color: colors.text},
+  mtags: {flexDirection: 'row', gap: 5},
+  mtag: {
+    fontFamily: fonts.semibold,
+    fontSize: 11,
+    color: colors.textSecondary,
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    overflow: 'hidden',
+  },
+  photoRow: {gap: 7},
+  photo: {width: 72, height: 72, borderRadius: 9, backgroundColor: colors.surfaceDim},
+  photoAdd: {
+    width: 72,
+    height: 72,
+    borderRadius: 9,
     borderWidth: 1.5,
     borderStyle: 'dashed',
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoAddPlus: {fontSize: 20, color: colors.textSecondary},
+  caption: {
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    color: colors.textSecondary,
+    backgroundColor: colors.background,
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    marginTop: 8,
+    overflow: 'hidden',
+  },
+
+  saveChip: {
+    minHeight: 36,
+    justifyContent: 'center',
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    borderWidth: 1,
     borderColor: colors.primary,
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.md,
   },
-  memEmptyIcon: {fontSize: 18, color: colors.primary},
-  memEmptyText: {fontFamily: fonts.semibold, fontSize: 15, color: colors.primary},
+  saveChipText: {fontFamily: fonts.bold, fontSize: 12, color: colors.primaryDeep},
 
-  memStrip: {gap: spacing.md, paddingRight: spacing.lg},
-  memAddCard: {
-    width: 150,
-    height: 150,
-    borderRadius: radius.lg,
-    borderWidth: 1.5,
-    borderStyle: 'dashed',
-    borderColor: colors.primary,
-    backgroundColor: colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  memAddCardIcon: {fontSize: 24, color: colors.primary},
-  memAddCardText: {fontFamily: fonts.semibold, fontSize: 14, color: colors.primary, marginTop: 4},
-  memCard: {width: 150},
-  memImage: {
-    width: 150,
-    height: 150,
-    borderRadius: radius.lg,
-    backgroundColor: colors.sand,
-  },
-  memCaptionWrap: {marginTop: 8},
-  memCaption: {fontFamily: fonts.regular, fontSize: 13, color: colors.textSecondary},
+  bottomPad: {height: 110},
 
-  // ── Members ─────────────────────────────────────────────────────────────
-  membersStrip: {flexDirection: 'row', alignItems: 'center'},
-  memberChip: {},
-  memberAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: colors.background,
-  },
-  memberAvatarText: {fontFamily: fonts.semibold, fontSize: 13, color: colors.white},
-  memberOverflow: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.sand,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: colors.background,
-  },
-  memberOverflowText: {fontFamily: fonts.semibold, fontSize: 12, color: colors.textSecondary},
-  membersLabel: {marginLeft: spacing.md},
-  membersLabelText: {fontFamily: fonts.regular, fontSize: 15, color: colors.text},
-
-  // ── FAB ─────────────────────────────────────────────────────────────────
-  fab: {position: 'absolute', right: spacing.lg},
-  fabInner: {
+  fab: {
+    position: 'absolute',
+    right: 20,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     backgroundColor: colors.primary,
-    borderRadius: radius.full,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
+    borderRadius: 999,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
     ...shadows.primaryGlow,
   },
-  fabIcon: {fontSize: 17, color: colors.white},
-  fabLabel: {fontFamily: fonts.display, fontSize: 16, color: colors.white},
+  fabPlus: {fontSize: 17, color: colors.white},
+  fabLabel: {fontFamily: fonts.bold, fontSize: 15, color: colors.white},
 
-  // ── Suggestions ─────────────────────────────────────────────────────────
-  suggestionsSection: {marginTop: spacing.xl},
-  suggestionHeader: {marginBottom: spacing.md},
-  suggestionTitle: {
-    fontFamily: fonts.semibold,
-    fontSize: 12.5,
-    letterSpacing: 1.3,
-    color: colors.textSecondary,
-  },
-  suggestionSub: {
-    fontFamily: fonts.regular,
-    fontSize: 14,
-    color: colors.textMuted,
-    marginTop: 4,
-  },
-  suggestionRow: {
+  sheetHead: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
+    marginBottom: 16,
   },
-  suggestionLeft: {flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.md},
-  suggestionEmoji: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.sand,
+  sheetT: {fontFamily: fonts.bold, fontSize: 16, color: colors.text},
+  groupT: {fontFamily: fonts.bold, fontSize: 11.5, color: colors.textSecondary, marginBottom: 8},
+  wrap: {flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginBottom: 18},
+  btnP: {
+    minHeight: 48,
+    borderRadius: radius.lg,
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  suggestionEmojiText: {fontSize: 22},
-  suggestionInfo: {flex: 1},
-  suggestionName: {fontFamily: fonts.semibold, fontSize: 16, color: colors.text},
-  suggestionAddress: {
-    fontFamily: fonts.regular,
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginTop: 3,
-  },
-  suggestionSaveBtn: {
-    borderRadius: radius.full,
-    borderWidth: 1.5,
-    borderColor: colors.primary,
-    paddingVertical: 9,
-    paddingHorizontal: 16,
-    marginLeft: spacing.sm,
-  },
-  suggestionSaveBtnText: {fontFamily: fonts.semibold, fontSize: 14, color: colors.primary},
+  btnPText: {fontFamily: fonts.bold, fontSize: 15, color: colors.white},
 });

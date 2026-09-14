@@ -1,0 +1,139 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400..800&display=swap">
+  <style>
+    :root { --board:oklch(13% 0.012 255);--pageBg:oklch(18% 0.012 255);--text:oklch(94% 0.006 250);--muted:oklch(65% 0.01 255);--rowBg:oklch(24% 0.014 255);--border:oklch(28% 0.014 255);--stripeA:oklch(24% 0.014 255);--stripeB:oklch(28% 0.014 255);--tabDot:oklch(35% 0.014 255);--ringIdle:oklch(45% 0.01 255);--a1:oklch(62% 0.15 200);--a2:oklch(60% 0.17 280); }
+    body { margin: 0; }
+    a { color: var(--a1); }
+    .wrap { width: 430px; box-sizing: border-box; padding: 20px; background: var(--board); font-family: 'Inter', Helvetica, Arial, sans-serif; display: flex; flex-direction: column; gap: 16px; }
+    .phone { width: 390px; height: 844px; border-radius: 44px; overflow: hidden; position: relative; background: var(--pageBg); box-shadow: 0 24px 60px rgba(0,0,0,0.22); }
+    .scroll { position: absolute; inset: 0; padding: 40px 20px 100px; overflow: hidden; box-sizing: border-box; }
+    .tabb { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 0; }
+    .stripe4 { background: repeating-linear-gradient(45deg, var(--stripeA), var(--stripeA) 4px, var(--stripeB) 4px, var(--stripeB) 8px); }
+    .stripe6 { background: repeating-linear-gradient(45deg, var(--stripeA), var(--stripeA) 6px, var(--stripeB) 6px, var(--stripeB) 12px); }
+    .stripe8 { background: repeating-linear-gradient(45deg, var(--stripeA), var(--stripeA) 8px, var(--stripeB) 8px, var(--stripeB) 16px); }
+    .cap .num { font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
+    .cap .h { font-size: 21px; font-weight: 700; color: var(--text); margin-top: 3px; }
+    .cap .p { font-size: 13px; line-height: 1.5; color: var(--muted); margin-top: 7px; }
+    .cap .t { font-size: 12px; line-height: 1.5; color: var(--text); border-left: 3px solid var(--a1); padding-left: 10px; margin-top: 9px; }
+  </style>
+</helmet>
+<div class="wrap">
+  <div class="phone">
+    <div class="scroll">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div style="position: relative; width: 30px; height: 30px; border-radius: 9px; background: var(--a1); flex-shrink: 0;">
+            <div style="position: absolute; right: -4px; bottom: -4px; width: 16px; height: 16px; border-radius: 50%; background: var(--a2); border: 2px solid var(--pageBg);"></div>
+          </div>
+          <div style="font-size: 19px; font-weight: 800; color: var(--text); letter-spacing: -0.01em;">Waypoint</div>
+        </div>
+        <div class="stripe4" style="width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;"></div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 16px;">
+        <div style="width: 16px; height: 16px; border-radius: 50% 50% 50% 0; background: var(--a1); transform: rotate(-45deg); flex-shrink: 0;"></div>
+        <div style="font-size: 14px; font-weight: 700; color: var(--text);">Lisbon, Portugal</div>
+        <div style="font-size: 10px; color: var(--muted);">▾</div>
+      </div>
+
+      <div style="width: 100%; display: flex; align-items: center; gap: 12px; background: var(--rowBg); border-radius: 14px; padding: 12px 14px; margin-bottom: 22px; box-sizing: border-box;">
+        <div style="width: 34px; height: 34px; border-radius: 10px; background: var(--a1); flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 17px; font-weight: 700;">+</div>
+        <div>
+          <div style="font-size: 13.5px; font-weight: 700; color: var(--text);">Add a place</div>
+          <div style="font-size: 11.5px; color: var(--muted); margin-top: 1px;">Paste a TikTok/Instagram link, or search</div>
+        </div>
+      </div>
+
+      <div style="font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 12px;">Recommended for you</div>
+      <div style="display: flex; gap: 14px; margin: 0 -20px; padding: 0 20px 6px; margin-bottom: 26px; overflow: hidden;">
+        <div style="flex-shrink: 0; width: 200px;">
+          <div class="stripe8" style="width: 200px; height: 150px; border-radius: 16px;"></div>
+          <div style="font-size: 15px; font-weight: 700; color: var(--text); margin-top: 8px;">Pastéis de Belém</div>
+          <div style="font-size: 12px; color: var(--muted); margin: 2px 0 8px;">Popular near Lisbon</div>
+          <div style="display: inline-block; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 12px; border: 1px solid var(--a1); color: var(--a1);">Save</div>
+        </div>
+        <div style="flex-shrink: 0; width: 200px;">
+          <div class="stripe8" style="width: 200px; height: 150px; border-radius: 16px;"></div>
+          <div style="font-size: 15px; font-weight: 700; color: var(--text); margin-top: 8px;">Alfama Miradouro</div>
+          <div style="font-size: 12px; color: var(--muted); margin: 2px 0 8px;">Matches your interests</div>
+          <div style="display: inline-block; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 12px; border: 1px solid var(--a1); color: var(--a1);">Save</div>
+        </div>
+      </div>
+
+      <div style="font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 10px;">Your spaces</div>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 24px;">
+        <div>
+          <div class="stripe6" style="height: 106px; border-radius: 12px;"></div>
+          <div style="font-size: 13px; font-weight: 600; color: var(--text); margin-top: 6px;">Weekend in Lisbon</div>
+          <div style="display: inline-block; font-size: 10.5px; font-weight: 600; color: #fff; background: var(--a2); border-radius: 10px; padding: 2px 8px; margin-top: 4px;">4 members</div>
+        </div>
+        <div>
+          <div class="stripe6" style="height: 106px; border-radius: 12px;"></div>
+          <div style="font-size: 13px; font-weight: 600; color: var(--text); margin-top: 6px;">Tokyo Bucket List</div>
+          <div style="display: inline-block; font-size: 10.5px; font-weight: 600; color: #fff; background: var(--a2); border-radius: 10px; padding: 2px 8px; margin-top: 4px;">6 members</div>
+        </div>
+        <div>
+          <div class="stripe6" style="height: 106px; border-radius: 12px;"></div>
+          <div style="font-size: 13px; font-weight: 600; color: var(--text); margin-top: 6px;">Hometown Faves</div>
+          <div style="display: inline-block; font-size: 10.5px; font-weight: 600; color: #fff; background: var(--a2); border-radius: 10px; padding: 2px 8px; margin-top: 4px;">2 members</div>
+        </div>
+        <div>
+          <div style="height: 106px; border-radius: 12px; border: 1.5px dashed var(--border); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;">
+            <div style="font-size: 20px; color: var(--muted); line-height: 1;">+</div>
+            <div style="font-size: 11.5px; font-weight: 600; color: var(--muted);">New space</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 10px;">Recently saved</div>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 10px; background: var(--rowBg); border-radius: 12px; padding: 10px 12px;">
+          <div class="stripe4" style="width: 44px; height: 44px; border-radius: 9px; flex-shrink: 0;"></div>
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 13.5px; font-weight: 600; color: var(--text);">Time Out Market</div>
+            <div style="display: flex; align-items: center; gap: 5px; margin-top: 3px;">
+              <div style="width: 7px; height: 7px; border-radius: 50%; background: oklch(64% 0.19 40); flex-shrink: 0;"></div>
+              <div style="font-size: 11.5px; color: var(--muted);">Food · Lisbon · saved by Mia</div>
+            </div>
+          </div>
+          <div style="width: 26px; height: 26px; border-radius: 50%; border: 2px solid oklch(60% 0.14 155); background: oklch(60% 0.14 155); color: #fff; font-size: 13px; font-weight: 800; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">✓</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; background: var(--rowBg); border-radius: 12px; padding: 10px 12px;">
+          <div class="stripe4" style="width: 44px; height: 44px; border-radius: 9px; flex-shrink: 0;"></div>
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 13.5px; font-weight: 600; color: var(--text);">Jardim da Estrela</div>
+            <div style="display: flex; align-items: center; gap: 5px; margin-top: 3px;">
+              <div style="width: 7px; height: 7px; border-radius: 50%; background: oklch(62% 0.15 150); flex-shrink: 0;"></div>
+              <div style="font-size: 11.5px; color: var(--muted);">Nature · Lisbon · saved by you</div>
+            </div>
+          </div>
+          <div style="width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--ringIdle); flex-shrink: 0;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="position: absolute; left: 0; right: 0; bottom: 0; background: var(--pageBg); border-top: 1px solid var(--border); display: flex; padding: 8px 6px 26px;">
+      <div class="tabb"><div style="width: 20px; height: 20px; border-radius: 50%; background: var(--a1);"></div><div style="font-size: 10.5px; font-weight: 600; color: var(--a1);">Home</div></div>
+      <div class="tabb"><div style="width: 20px; height: 20px; border-radius: 50%; background: var(--tabDot);"></div><div style="font-size: 10.5px; font-weight: 600; color: var(--muted);">Discover</div></div>
+      <div class="tabb"><div style="width: 20px; height: 20px; border-radius: 50%; background: var(--tabDot);"></div><div style="font-size: 10.5px; font-weight: 600; color: var(--muted);">Spaces</div></div>
+      <div class="tabb"><div style="width: 20px; height: 20px; border-radius: 50%; background: var(--tabDot);"></div><div style="font-size: 10.5px; font-weight: 600; color: var(--muted);">Profile</div></div>
+    </div>
+  </div>
+  <div class="cap">
+    <div class="num">Your design · dark</div>
+    <div class="h">Same grid, dark mode</div>
+    <div class="p">The dark theme values from your file, unchanged. The dashed &ldquo;New space&rdquo; tile uses the border token, which is the only new colour decision the grid required.</div>
+    <div class="t">Grid tiles read better in dark than the rail did — the stripe placeholder tiles now form a regular rhythm instead of trailing off the right edge.</div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

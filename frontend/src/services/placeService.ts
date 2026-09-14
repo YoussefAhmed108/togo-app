@@ -1,4 +1,5 @@
 import api from './api';
+import {ApiDish} from './memoryService';
 
 export interface ApiPlace {
   id: number;
@@ -11,6 +12,8 @@ export interface ApiPlace {
   lng: number;
   /** Venue identity. Null for a pin the user dropped by hand. */
   google_place_id: string | null;
+  /** The TikTok this place was found in. Null when added by hand. */
+  source_url: string | null;
   tags: string[];
   created_at: string;
   updated_at: string;
@@ -23,6 +26,7 @@ export interface ApiMemoryWithSpace {
   space_name: string | null;
   image_url: string;
   caption: string | null;
+  dishes: ApiDish[];
   created_at: string;
 }
 
@@ -39,6 +43,7 @@ export const placeService = {
     address?: string,
     saved: boolean = true,
     googlePlaceId?: string | null,
+    sourceUrl?: string | null,
   ): Promise<ApiPlace> => {
     const res = await api.post<{data: ApiPlace}>('/places', {
       name,
@@ -47,6 +52,7 @@ export const placeService = {
       address: address ?? null,
       saved,
       google_place_id: googlePlaceId ?? null,
+      source_url: sourceUrl ?? null,
     });
     return res.data.data;
   },

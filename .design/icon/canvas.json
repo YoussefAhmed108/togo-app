@@ -1,0 +1,12 @@
+{
+  "artboards": [
+    {"file": "Main.dc.html", "x": 0, "y": 0, "w": 560, "h": 640, "title": "A · Play pin"},
+    {"file": "RouteW.dc.html", "x": 640, "y": 0, "w": 560, "h": 640, "title": "B · Route W"},
+    {"file": "TwoPins.dc.html", "x": 0, "y": 760, "w": 560, "h": 640, "title": "C · Two pins"},
+    {"file": "SavePin.dc.html", "x": 640, "y": 760, "w": 560, "h": 640, "title": "D · Save pin"}
+  ],
+  "annotations": [
+    {"id": "brief", "x": 0, "y": -190, "w": 1200, "text": "Waypoint app icon — four marks to replace the teal square + violet dot. Each: the icon at home-screen, settings and notification sizes, then the in-app lockup on light and dark. Same app colours (teal #00838E, violet #6A69DB).\nA · Play pin — a pin whose eye is a play button: a place found in a video. Most on-message for TikTok capture; pins are common in map apps.\nB · Route W — the W drawn as a route through stops, ending in a violet waypoint. Most ownable monogram; reads as a letter first, a map second.\nC · Two pins — your place and a friend's, overlapping. Says 'shared'; the only light icon, which stands out on a busy home screen but is busier at small sizes.\nD · Save pin — a bookmark with a pin's eye: saving a place. Violet leads, so it breaks from the teal UI.\nPick one and I'll make it the app icon and the in-app logo."}
+  ],
+  "launch": {"view": "canvas"}
+}

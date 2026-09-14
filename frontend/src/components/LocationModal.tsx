@@ -1,12 +1,14 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   Modal,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import {savedLocationService, StartingPoint} from '../services/savedLocationService';
 import {LocationMapPicker, PickedLocation} from './LocationMapPicker';
 import {LocationMode, LocationState} from '../context/LocationContext';
 import {colors, fonts, radius, spacing, typography} from '../theme';
@@ -23,6 +25,13 @@ interface Props {
 export function LocationModal({visible, location, onConfirm, onClose}: Props) {
   const [mode, setMode] = useState<LocationMode>(location.mode);
   const [mapPickerOpen, setMapPickerOpen] = useState(false);
+  const [saved, setSaved] = useState<StartingPoint[]>([]);
+
+  // Refetched per open so a point added on the Account screen shows up here.
+  useEffect(() => {
+    if (!visible) return;
+    savedLocationService.list().then(setSaved).catch(() => setSaved([]));
+  }, [visible]);
 
   function handleCurrentConfirm() {
     onConfirm({mode: 'current', label: 'Current Location'});
@@ -88,6 +97,28 @@ export function LocationModal({visible, location, onConfirm, onClose}: Props) {
             </View>
           </TouchableOpacity>
 
+          {/* Saved starting points — one tap picks one */}
+          {mode === 'custom' && saved.length > 0 && (
+            <ScrollView style={styles.savedList} keyboardShouldPersistTaps="handled">
+              {saved.map(p => (
+                <TouchableOpacity
+                  key={p.id}
+                  style={styles.savedRow}
+                  activeOpacity={0.7}
+                  onPress={() =>
+                    onConfirm({mode: 'custom', label: p.label, lat: p.lat, lng: p.lng})
+                  }>
+                  <View style={styles.optionText}>
+                    <Text style={styles.optionLabel}>{p.label}</Text>
+                    <Text style={styles.optionHint} numberOfLines={1}>
+                      {p.address}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
+
           {/* Action button */}
           {mode === 'current' ? (
             <TouchableOpacity
@@ -101,7 +132,9 @@ export function LocationModal({visible, location, onConfirm, onClose}: Props) {
               style={styles.mapBtn}
               onPress={() => setMapPickerOpen(true)}
               activeOpacity={0.85}>
-              <Text style={styles.mapBtnText}>Choose on Map</Text>
+              <Text style={styles.mapBtnText}>
+                {saved.length > 0 ? 'Choose on Map Instead' : 'Choose on Map'}
+              </Text>
             </TouchableOpacity>
           )}
         </View>
@@ -182,6 +215,17 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   optionHint: {fontFamily: fonts.regular, fontSize: 14, color: colors.textSecondary},
+
+  savedList: {maxHeight: 200},
+  savedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.sand,
+    borderRadius: radius.lg,
+    paddingVertical: 14,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+  },
 
   confirmBtn: {
     backgroundColor: colors.primary,
