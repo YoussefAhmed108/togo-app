@@ -1,164 +1,124 @@
-// Organic design system — warm cream ground, terracotta + sage accents,
-// Caprasimo (display) / Figtree (text).
+// Waypoint design system — neutral ground, white cards, teal identity (a1),
+// violet for people and spaces (a2). Source: .design/proto (oklch tokens,
+// converted to hex because RN cannot parse oklch).
+//
+// Every legacy key (sand, sage, blush, …) is kept and remapped onto the new
+// palette so screens that still read them pick up the new look unchanged.
 
-const ORGANIC_EXTRAS = {
-  sand: '#EADCC4',
-  sandDeep: '#E2D4B9',
-  sage: '#7A8A5E',
-  sageTint: '#E0ECCB',
-  blush: '#FFE1D0',
-  primaryBorder: '#EDC9B3',
-  primaryDeep: '#985B31',
-  inkInput: '#544E45',
-  sageSoft: '#EDF3DE',
+const LIGHT = {
+  // Brand: a1Fill for fills and text, a1Text where text must be darker.
+  primary: '#00838E',
+  primaryDark: '#00717C',
+  primaryLight: '#D5F2F3',
+  primaryBorder: '#7CCED2',
+  primaryDeep: '#006873',
+  accent: '#6A69DB', // a2Fill — people and spaces
+  accentSoft: '#DBDBFF',
+  accentSoftB: '#E8E8FF',
+
+  // Home header block the page rises over.
+  headerBg: '#00828E',
+  headerMid: '#00717C',
+  headerDeep: '#005F68',
+  cardDark: '#00717C',
+  cardDarkBorder: 'rgba(255,255,255,0.12)',
+
+  secondary: '#1C1C25',
+  background: '#F0F0F3',
+  surface: '#FDFDFF',
+  surfaceDim: '#E7E7EC',
+  sunken: '#F0F0F3',
+  border: '#DCDCE0',
+  ringIdle: '#BABAC1',
+  stripeA: '#DADAE0',
+  stripeB: '#E7E7EC',
+
+  text: '#1C1C25',
+  textSecondary: '#5C5C69',
+  textMuted: '#5C5C69',
+  textOnDark: '#FFFFFF',
+  textOnDarkSub: 'rgba(255,255,255,0.72)',
+
+  placeholder: '#5C5C69',
+  error: '#D33A3C',
+  errorLight: '#FFE8E6',
+  success: '#00884B',
+  white: '#FFFFFF',
+  black: '#000000',
+  overlay: 'rgba(20,20,30,0.45)',
+  disabledBg: '#DADADF',
+  disabledFg: '#54545E',
+
+  // Category pin colours.
+  catRestaurant: '#E65719',
+  catPark: '#2E9E52',
+  catDeli: '#7C63D6',
+  catDefault: '#009FAA',
+  catShop: '#DB5392',
+
+  reasonFav: '#006873',
+  reasonSpace: '#6A69DB',
+
+  glass: 'rgba(255,255,255,0.12)',
+  glassBorder: 'rgba(255,255,255,0.2)',
+
+  // Legacy organic keys → Waypoint equivalents.
+  sand: '#F0F0F3',
+  sandDeep: '#DCDCE0',
+  sage: '#00884B',
+  sageTint: '#D7F4E0',
+  sageSoft: '#D7F4E0',
+  blush: '#DBDBFF',
+  inkInput: '#1C1C25',
 };
 
-const THEME_PRESETS = {
-  sunrise: {
-    // Brand
-    primary: '#C67139',
-    primaryDark: '#A85A28',
-    primaryLight: '#FFF2EB',
+type Palette = typeof LIGHT;
 
-    // Header / dark surfaces
-    headerBg: '#2D2A24',
-    headerMid: '#35322C',
-    headerDeep: '#474238',
+const DARK: Palette = {
+  ...LIGHT,
+  primary: '#00A3AD',
+  primaryDark: '#00838E',
+  primaryLight: '#0B2F31',
+  primaryBorder: '#005459',
+  primaryDeep: '#00BCC5',
+  accentSoft: '#2B2A44',
+  accentSoftB: '#222232',
 
-    // Card surfaces
-    cardDark: '#474238',
-    cardDarkBorder: 'rgba(255,255,255,0.08)',
+  headerBg: '#0E1217',
+  headerMid: '#1B2026',
+  headerDeep: '#242930',
+  cardDark: '#1B2026',
 
-    // Light surfaces
-    secondary: '#2D2A24',
-    background: '#F3E8D6',
-    surface: '#F9F4ED',
-    surfaceDim: '#EADCC4',
-    border: '#E6DBCB',
+  secondary: '#E8EBEF',
+  background: '#0E1217',
+  surface: '#1B2026',
+  surfaceDim: '#242930',
+  sunken: '#1B2026',
+  border: '#242930',
+  ringIdle: '#52565B',
+  stripeA: '#1B2026',
+  stripeB: '#242930',
 
-    // Text
-    text: '#2D2A24',
-    textSecondary: '#7B7367',
-    textMuted: '#9A9184',
-    textOnDark: '#FFFFFF',
-    textOnDarkSub: 'rgba(255,255,255,0.62)',
+  text: '#E8EBEF',
+  textSecondary: '#8B9095',
+  textMuted: '#8B9095',
+  placeholder: '#8B9095',
+  error: '#EA6A64',
+  errorLight: '#3E1E1C',
+  overlay: 'rgba(0,0,0,0.62)',
+  disabledBg: '#2A2E34',
+  disabledFg: '#81878D',
+  reasonFav: '#00BCC5',
 
-    // Misc
-    placeholder: '#B3A895',
-    error: '#B3261E',
-    errorLight: '#F7E6E2',
-    success: '#7A8A5E',
-    white: '#FFFFFF',
-    black: '#000000',
-    overlay: 'rgba(45,42,36,0.5)',
+  sand: '#1B2026',
+  sandDeep: '#242930',
+  sageTint: '#182F20',
+  sageSoft: '#182F20',
+  blush: '#2B2A44',
+  inkInput: '#E8EBEF',
+};
 
-    // Category accent colors
-    catRestaurant: '#C67139',
-    catPark: '#7A8A5E',
-    catDeli: '#A8724C',
-    catDefault: '#7B7367',
-
-    // Reason colors
-    reasonFav: '#C67139',
-    reasonSpace: '#7A8A5E',
-
-    // Glass
-    glass: 'rgba(255,255,255,0.08)',
-    glassBorder: 'rgba(255,255,255,0.18)',
-
-    ...ORGANIC_EXTRAS,
-  },
-  midnight: {
-    primary: '#7DD3FC',
-    primaryDark: '#38BDF8',
-    primaryLight: 'rgba(125,211,252,0.16)',
-    headerBg: '#050816',
-    headerMid: '#0D1328',
-    headerDeep: '#172554',
-    cardDark: '#10192E',
-    cardDarkBorder: 'rgba(255,255,255,0.10)',
-    secondary: '#DDE7FF',
-    background: '#09111F',
-    surface: '#10192B',
-    surfaceDim: '#162238',
-    border: '#22314D',
-    text: '#F6FAFF',
-    textSecondary: '#9EB0CA',
-    textMuted: '#6F85A5',
-    textOnDark: '#FFFFFF',
-    textOnDarkSub: 'rgba(255,255,255,0.72)',
-    placeholder: '#60748F',
-    error: '#F87171',
-    errorLight: 'rgba(248,113,113,0.14)',
-    success: '#34D399',
-    white: '#FFFFFF',
-    black: '#000000',
-    overlay: 'rgba(0,0,0,0.58)',
-    catRestaurant: '#FB7185',
-    catPark: '#34D399',
-    catDeli: '#A78BFA',
-    catDefault: '#60A5FA',
-    reasonFav: '#F97316',
-    reasonSpace: '#38BDF8',
-    glass: 'rgba(255,255,255,0.10)',
-    glassBorder: 'rgba(255,255,255,0.14)',
-
-    sand: '#162238',
-    sandDeep: '#1B2B44',
-    sage: '#34D399',
-    sageTint: 'rgba(52,211,153,0.16)',
-    blush: 'rgba(125,211,252,0.16)',
-    primaryBorder: 'rgba(125,211,252,0.45)',
-    primaryDeep: '#7DD3FC',
-    inkInput: '#1B2B44',
-    sageSoft: 'rgba(52,211,153,0.12)',
-  },
-  grove: {
-    primary: '#2F855A',
-    primaryDark: '#276749',
-    primaryLight: 'rgba(47,133,90,0.14)',
-    headerBg: '#11261D',
-    headerMid: '#19382B',
-    headerDeep: '#24503D',
-    cardDark: '#1D3A2C',
-    cardDarkBorder: 'rgba(255,255,255,0.08)',
-    secondary: '#173528',
-    background: '#F3F1E8',
-    surface: '#FFFDF7',
-    surfaceDim: '#E7E1D0',
-    border: '#D3CCB7',
-    text: '#1E2A20',
-    textSecondary: '#667564',
-    textMuted: '#8C9584',
-    textOnDark: '#FFFFFF',
-    textOnDarkSub: 'rgba(255,255,255,0.7)',
-    placeholder: '#A49F90',
-    error: '#C05621',
-    errorLight: 'rgba(192,86,33,0.12)',
-    success: '#2F855A',
-    white: '#FFFFFF',
-    black: '#000000',
-    overlay: 'rgba(18,28,20,0.42)',
-    catRestaurant: '#C05621',
-    catPark: '#2F855A',
-    catDeli: '#B7791F',
-    catDefault: '#2B6CB0',
-    reasonFav: '#C05621',
-    reasonSpace: '#2F855A',
-    glass: 'rgba(255,255,255,0.09)',
-    glassBorder: 'rgba(255,255,255,0.2)',
-
-    sand: '#E7E1D0',
-    sandDeep: '#DCD4BE',
-    sage: '#2F855A',
-    sageTint: 'rgba(47,133,90,0.14)',
-    blush: 'rgba(192,86,33,0.12)',
-    primaryBorder: 'rgba(47,133,90,0.4)',
-    primaryDeep: '#276749',
-    inkInput: '#24503D',
-    sageSoft: 'rgba(47,133,90,0.10)',
-  },
-} as const;
+const THEME_PRESETS = {light: LIGHT, dark: DARK};
 
 export type AppThemeName = keyof typeof THEME_PRESETS;
 
@@ -168,83 +128,76 @@ export const THEME_OPTIONS: Array<{
   description: string;
   /** Preview swatches shown on the Settings theme card. */
   swatches: [string, string, string];
-}> = (['sunrise', 'midnight', 'grove'] as const).map(id => ({
+}> = (['light', 'dark'] as const).map(id => ({
   id,
-  name: {sunrise: 'Sunrise', midnight: 'Midnight', grove: 'Grove'}[id],
-  description: {
-    sunrise: 'Warm and bright',
-    midnight: 'Dark and crisp',
-    grove: 'Soft and earthy',
-  }[id],
+  name: {light: 'Light', dark: 'Dark'}[id],
+  description: {light: 'Neutral and bright', dark: 'Easy at night'}[id],
   swatches: [
     THEME_PRESETS[id].primary,
     THEME_PRESETS[id].surface,
-    THEME_PRESETS[id].headerDeep,
+    THEME_PRESETS[id].accent,
   ],
 }));
 
 // PostScript names of the linked font files (src/assets/fonts).
 // Never pair these with fontWeight — the family already carries the weight.
+// ponytail: the design is set in Inter; Figtree (already bundled) is the
+// nearest geometric sans. Drop Inter TTFs into assets/fonts and repoint here.
 export const fonts = {
-  display: 'Caprasimo-Regular',
+  display: 'Figtree-Bold',
   regular: 'Figtree-Regular',
   medium: 'Figtree-Medium',
   semibold: 'Figtree-SemiBold',
   bold: 'Figtree-Bold',
 };
 
-function buildTypography(themeColors: typeof THEME_PRESETS.sunrise) {
+function buildTypography(themeColors: Palette) {
   return {
-    display: {fontFamily: fonts.display, fontSize: 30, color: themeColors.text},
-    h1: {fontFamily: fonts.display, fontSize: 28, color: themeColors.text},
-    h2: {fontFamily: fonts.display, fontSize: 22, color: themeColors.text},
-    h3: {fontFamily: fonts.semibold, fontSize: 18, color: themeColors.text},
-    body: {fontFamily: fonts.regular, fontSize: 16, color: themeColors.text},
-    bodySmall: {fontFamily: fonts.regular, fontSize: 14, color: themeColors.textSecondary},
-    label: {fontFamily: fonts.medium, fontSize: 13, color: themeColors.textSecondary},
+    display: {fontFamily: fonts.bold, fontSize: 28, color: themeColors.text, letterSpacing: -0.5},
+    h1: {fontFamily: fonts.bold, fontSize: 24, color: themeColors.text, letterSpacing: -0.5},
+    h2: {fontFamily: fonts.bold, fontSize: 19, color: themeColors.text},
+    h3: {fontFamily: fonts.bold, fontSize: 16, color: themeColors.text},
+    body: {fontFamily: fonts.regular, fontSize: 15, color: themeColors.text},
+    bodySmall: {fontFamily: fonts.regular, fontSize: 13, color: themeColors.textSecondary},
+    label: {fontFamily: fonts.bold, fontSize: 11, color: themeColors.textSecondary, letterSpacing: 0.7},
     caption: {fontFamily: fonts.regular, fontSize: 12, color: themeColors.textSecondary},
-    sectionTitle: {
-      fontFamily: fonts.semibold,
-      fontSize: 12,
-      color: themeColors.textMuted,
-      letterSpacing: 1.2,
-    },
+    sectionTitle: {fontFamily: fonts.bold, fontSize: 14, color: themeColors.text},
   };
 }
 
-export const colors = {...THEME_PRESETS.sunrise};
+export const colors = {...THEME_PRESETS.light};
 
+// 4-base scale: tight inside a group, generous between topics.
 export const spacing = {xs: 4, sm: 8, md: 16, lg: 24, xl: 32, xxl: 48};
-export const radius = {sm: 10, md: 14, lg: 18, xl: 22, xxl: 28, full: 9999};
+export const radius = {sm: 9, md: 12, lg: 14, xl: 16, xxl: 20, full: 9999};
 
 export const shadows = {
   card: {
-    shadowColor: '#4A3B28',
-    shadowOffset: {width: 0, height: 2},
+    shadowColor: '#14141E',
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 2,
+    shadowRadius: 3,
+    elevation: 1,
   },
   cardStrong: {
-    shadowColor: '#4A3B28',
-    shadowOffset: {width: 0, height: 6},
-    shadowOpacity: 0.1,
-    shadowRadius: 18,
-    elevation: 6,
+    shadowColor: '#14141E',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    elevation: 5,
   },
   primaryGlow: {
-    shadowColor: '#C67139',
-    shadowOffset: {width: 0, height: 4},
-    shadowOpacity: 0.28,
-    shadowRadius: 12,
-    elevation: 5,
+    shadowColor: '#14141E',
+    shadowOffset: {width: 0, height: 8},
+    shadowOpacity: 0.26,
+    shadowRadius: 20,
+    elevation: 6,
   },
 };
 
 export const typography = buildTypography(colors);
 
 export function applyTheme(themeName: AppThemeName) {
-  const nextTheme = THEME_PRESETS[themeName];
-  Object.assign(colors, nextTheme);
+  Object.assign(colors, THEME_PRESETS[themeName]);
   Object.assign(typography, buildTypography(colors));
 }

@@ -4,8 +4,12 @@
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Waypoint uses your photos for space banners and memories.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Waypoint uses the camera to take photos of your memories.</string>
 	<key>CFBundleDisplayName</key>
-	<string>ToGo</string>
+	<string>Waypoint</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>

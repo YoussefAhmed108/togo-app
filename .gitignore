@@ -1,1 +1,6 @@
 .DS_Store
+# Bundled design canvases: each embeds a ~2 MB editor and is rebuilt from the
+# .dc.html sources beside it (and lives on as a published artifact).
+.design/**/waypoint-*.html
+.design/**/togo-*.html
+.design/togo-*.html

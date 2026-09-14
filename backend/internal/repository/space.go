@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"strings"
+	"time"
 
 	"app/backend/internal/models"
 )
@@ -241,14 +242,17 @@ func (r *SpaceRepository) ListMembersWithNames(ctx context.Context, spaceID uint
 	return out, rows.Err()
 }
 
-// ListSpaceMemories returns all memories from places that belong to the space,
-// enriched with the place name, ordered newest first.
+// ListSpaceMemories returns the memories posted IN this space, for places still
+// in it, enriched with the place name, newest first. A memory belongs to one
+// place + space pair: the same place shared into another space, or kept
+// personal, has its own memories that this space must not see.
 func (r *SpaceRepository) ListSpaceMemories(ctx context.Context, spaceID uint64) ([]*models.SpaceMemory, error) {
 	rows, err := r.DB.QueryContext(ctx, `
 		SELECT m.id, m.place_id, p.name, m.uploader_id, m.image_key, m.caption, m.created_at
 		FROM memories m
 		JOIN places p ON p.id = m.place_id
-		JOIN space_places sp ON sp.place_id = m.place_id AND sp.space_id = ?
+		JOIN space_places sp ON sp.place_id = m.place_id AND sp.space_id = m.space_id
+		WHERE m.space_id = ?
 		ORDER BY m.created_at DESC`, spaceID)
 	if err != nil {
 		return nil, err
@@ -317,34 +321,71 @@ func (r *SpaceRepository) ListSpacePlaceIDs(ctx context.Context, spaceID uint64)
 	return ids, rows.Err()
 }
 
-func (r *SpaceRepository) GetOrCreateInviteToken(ctx context.Context, spaceID, createdBy uint64) (string, error) {
-	// Check if a token already exists for this space
+// InviteTTL is how long an invite link works. The SQL below says the same
+// thing as "INTERVAL 7 DAY" — the database's clock decides, not ours.
+const InviteTTL = 7 * 24 * time.Hour
+
+// GetOrCreateInviteToken returns the space's live invite token and when it
+// expires, minting a fresh one once the old one is past its week.
+func (r *SpaceRepository) GetOrCreateInviteToken(ctx context.Context, spaceID, createdBy uint64) (string, time.Time, error) {
 	var existing string
+	var createdAt time.Time
 	err := r.DB.QueryRowContext(ctx,
-		`SELECT token FROM space_invites WHERE space_id = ? LIMIT 1`, spaceID,
-	).Scan(&existing)
+		`SELECT token, created_at FROM space_invites
+		 WHERE space_id = ? AND created_at > NOW() - INTERVAL 7 DAY
+		 ORDER BY created_at DESC LIMIT 1`, spaceID,
+	).Scan(&existing, &createdAt)
 	if err == nil {
-		return existing, nil
+		return existing, createdAt.Add(InviteTTL), nil
 	}
 	if err != sql.ErrNoRows {
-		return "", err
+		return "", time.Time{}, err
 	}
 
 	// Generate a new random token (32 bytes = 64 hex chars)
 	buf := make([]byte, 32)
 	if _, err := rand.Read(buf); err != nil {
-		return "", err
+		return "", time.Time{}, err
 	}
 	token := hex.EncodeToString(buf)
 
-	_, err = r.DB.ExecContext(ctx,
-		`INSERT INTO space_invites (space_id, token, created_by) VALUES (?, ?, ?)`,
-		spaceID, token, createdBy,
+	err = withTx(ctx, r.DB, func(tx *sql.Tx) error {
+		// Expired tokens can never be used again; don't keep them around.
+		if _, err := tx.ExecContext(ctx, `DELETE FROM space_invites WHERE space_id = ?`, spaceID); err != nil {
+			return err
+		}
+		_, err := tx.ExecContext(ctx,
+			`INSERT INTO space_invites (space_id, token, created_by) VALUES (?, ?, ?)`,
+			spaceID, token, createdBy,
+		)
+		return err
+	})
+	if err != nil {
+		return "", time.Time{}, err
+	}
+	return token, time.Now().Add(InviteTTL), nil
+}
+
+// SetMemberRole switches a member between 'leader' and 'member'. The owner row
+// is never touched. Reports false when no such (non-owner) member exists.
+func (r *SpaceRepository) SetMemberRole(ctx context.Context, spaceID, userID uint64, role string) (bool, error) {
+	res, err := r.DB.ExecContext(ctx,
+		`UPDATE space_members SET role = ? WHERE space_id = ? AND user_id = ? AND role != 'owner'`,
+		role, spaceID, userID,
 	)
 	if err != nil {
-		return "", err
+		return false, err
 	}
-	return token, nil
+	// RowsAffected is 0 for an unchanged row too, so check existence separately.
+	if n, err := res.RowsAffected(); err != nil || n > 0 {
+		return n > 0, err
+	}
+	var count int
+	err = r.DB.QueryRowContext(ctx,
+		`SELECT COUNT(*) FROM space_members WHERE space_id = ? AND user_id = ? AND role != 'owner'`,
+		spaceID, userID,
+	).Scan(&count)
+	return count > 0, err
 }
 
 // IsPlaceInSpace returns true if the given place has been added to the given space.
@@ -362,7 +403,7 @@ func (r *SpaceRepository) FindSpaceByInviteToken(ctx context.Context, token stri
 		`SELECT s.id, s.name, s.icon, s.banner_key, s.owner_id, s.created_at, s.updated_at
 		 FROM spaces s
 		 JOIN space_invites si ON si.space_id = s.id
-		 WHERE si.token = ?`, token,
+		 WHERE si.token = ? AND si.created_at > NOW() - INTERVAL 7 DAY`, token,
 	).Scan(&s.ID, &s.Name, &s.Icon, &s.BannerKey, &s.OwnerID, &s.CreatedAt, &s.UpdatedAt)
 	if err != nil {
 		return nil, err

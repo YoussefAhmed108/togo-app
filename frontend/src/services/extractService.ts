@@ -10,7 +10,8 @@ export interface PlaceCandidate {
   maps_url: string;
 }
 
-export interface ExtractResult {
+/** One venue read off the video, with its Google matches. */
+export interface ExtractedPlace {
   /** Canonical name to seed the form — Google's spelling when matched. */
   name: string;
   /** Top candidate, or null when nothing matched. */
@@ -21,8 +22,16 @@ export interface ExtractResult {
   area: string;
   /** Where the name was seen — overlay, signage, menu, caption. */
   evidence: string;
-  caption: string;
   note?: string;
+}
+
+/**
+ * The top-level fields repeat the first matched venue; `places` lists every
+ * venue the video features (a roundup yields several).
+ */
+export interface ExtractResult extends ExtractedPlace {
+  places: ExtractedPlace[];
+  caption: string;
 }
 
 export const extractService = {
@@ -31,13 +40,14 @@ export const extractService = {
    * The backend downloads the video and reads its frames, so this takes
    * ~15s — always show a progress state while it runs.
    */
-  extract: async (url: string): Promise<ExtractResult> => {
+  extract: async (url: string, near?: {lat: number; lng: number}): Promise<ExtractResult> => {
     // The default 10s client timeout is far too short here: the backend
     // downloads the video, samples frames and makes two API calls — measured
     // at 13s, and up to ~150s when yt-dlp has to retry TikTok.
     const res = await api.post<{data: ExtractResult}>(
       '/places/extract',
-      {url},
+      // Where the sharer is, so a chain resolves to the nearby branch.
+      near ? {url, lat: near.lat, lng: near.lng} : {url},
       {timeout: 180000},
     );
     return res.data.data;

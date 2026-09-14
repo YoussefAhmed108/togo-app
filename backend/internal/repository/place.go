@@ -201,14 +201,20 @@ func (r *PlaceRepository) CreateMemory(ctx context.Context, placeID, uploaderID 
 	return uint64(id), err
 }
 
-func (r *PlaceRepository) ListMemories(ctx context.Context, placeID uint64) ([]*models.Memory, error) {
+// ListMemories returns the place's memories that viewerID may see: personal
+// ones (no space) only for the place's owner, and space ones only for members
+// of that space. A memory belongs to its place + space pair, never the place alone.
+func (r *PlaceRepository) ListMemories(ctx context.Context, placeID, viewerID uint64) ([]*models.Memory, error) {
 	rows, err := r.DB.QueryContext(ctx, `
 		SELECT m.id, m.place_id, m.space_id, s.name, m.uploader_id, m.image_key, m.caption, m.created_at
 		FROM memories m
+		JOIN places p ON p.id = m.place_id
 		LEFT JOIN spaces s ON s.id = m.space_id
 		WHERE m.place_id = ?
+		  AND ((m.space_id IS NULL AND p.owner_id = ?)
+		       OR m.space_id IN (SELECT space_id FROM space_members WHERE user_id = ?))
 		ORDER BY m.created_at DESC`,
-		placeID,
+		placeID, viewerID, viewerID,
 	)
 	if err != nil {
 		return nil, err
@@ -223,7 +229,67 @@ func (r *PlaceRepository) ListMemories(ctx context.Context, placeID uint64) ([]*
 		}
 		memories = append(memories, m)
 	}
-	return memories, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if err := r.attachDishes(ctx, memories); err != nil {
+		return nil, err
+	}
+	return memories, nil
+}
+
+// attachDishes fills Dishes on every memory with ONE extra query rather than
+// one per memory.
+func (r *PlaceRepository) attachDishes(ctx context.Context, memories []*models.Memory) error {
+	if len(memories) == 0 {
+		return nil
+	}
+	byID := make(map[uint64]*models.Memory, len(memories))
+	args := make([]any, 0, len(memories))
+	placeholders := make([]string, 0, len(memories))
+	for _, m := range memories {
+		byID[m.ID] = m
+		args = append(args, m.ID)
+		placeholders = append(placeholders, "?")
+	}
+
+	rows, err := r.DB.QueryContext(ctx,
+		`SELECT memory_id, id, name, rating FROM memory_dishes
+		 WHERE memory_id IN (`+strings.Join(placeholders, ",")+`) ORDER BY id`, args...)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var memoryID uint64
+		var d models.Dish
+		if err := rows.Scan(&memoryID, &d.ID, &d.Name, &d.Rating); err != nil {
+			return err
+		}
+		if m := byID[memoryID]; m != nil {
+			m.Dishes = append(m.Dishes, d)
+		}
+	}
+	return rows.Err()
+}
+
+// AddDishes stores the dishes rated on a memory.
+func (r *PlaceRepository) AddDishes(ctx context.Context, memoryID uint64, dishes []models.Dish) error {
+	if len(dishes) == 0 {
+		return nil
+	}
+	return withTx(ctx, r.DB, func(tx *sql.Tx) error {
+		for _, d := range dishes {
+			if _, err := tx.ExecContext(ctx,
+				`INSERT INTO memory_dishes (memory_id, name, rating) VALUES (?, ?, ?)`,
+				memoryID, d.Name, d.Rating,
+			); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }
 
 func (r *PlaceRepository) GetMemory(ctx context.Context, memoryID uint64) (*models.Memory, error) {
@@ -235,6 +301,9 @@ func (r *PlaceRepository) GetMemory(ctx context.Context, memoryID uint64) (*mode
 		WHERE m.id = ?`, memoryID,
 	).Scan(&m.ID, &m.PlaceID, &m.SpaceID, &m.SpaceName, &m.UploaderID, &m.ImageKey, &m.Caption, &m.CreatedAt)
 	if err != nil {
+		return nil, err
+	}
+	if err := r.attachDishes(ctx, []*models.Memory{m}); err != nil {
 		return nil, err
 	}
 	return m, nil

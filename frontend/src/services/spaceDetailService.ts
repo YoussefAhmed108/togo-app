@@ -15,7 +15,7 @@ export interface ApiSpacePlace {
 export interface ApiSpaceMember {
   user_id: number;
   name: string;
-  role: 'owner' | 'member';
+  role: 'owner' | 'leader' | 'member';
   avatar_url: string | null;
   joined_at: string;
 }
@@ -62,6 +62,11 @@ export const spaceDetailService = {
 
   removeMember: async (spaceId: number, userId: number): Promise<void> => {
     await api.delete(`/spaces/${spaceId}/members/${userId}`);
+  },
+
+  /** Owner only. */
+  setMemberRole: async (spaceId: number, userId: number, role: 'leader' | 'member'): Promise<void> => {
+    await api.patch(`/spaces/${spaceId}/members/${userId}`, {role});
   },
 
   removePlace: async (spaceId: number, placeId: number): Promise<void> => {

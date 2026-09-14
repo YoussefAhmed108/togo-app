@@ -1,0 +1,13 @@
+    body { margin: 0; }
+    a { color: var(--a1); }
+    .wrap { width: 430px; box-sizing: border-box; padding: 20px; background: var(--board); font-family: 'Inter', Helvetica, Arial, sans-serif; display: flex; flex-direction: column; gap: 16px; }
+    .phone { width: 390px; height: 844px; border-radius: 44px; overflow: hidden; position: relative; background: var(--pageBg); box-shadow: 0 24px 60px rgba(0,0,0,0.22); }
+    .scroll { position: absolute; inset: 0; padding: 40px 20px 100px; overflow: hidden; box-sizing: border-box; }
+    .tabb { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 0; }
+    .stripe4 { background: repeating-linear-gradient(45deg, var(--stripeA), var(--stripeA) 4px, var(--stripeB) 4px, var(--stripeB) 8px); }
+    .stripe6 { background: repeating-linear-gradient(45deg, var(--stripeA), var(--stripeA) 6px, var(--stripeB) 6px, var(--stripeB) 12px); }
+    .stripe8 { background: repeating-linear-gradient(45deg, var(--stripeA), var(--stripeA) 8px, var(--stripeB) 8px, var(--stripeB) 16px); }
+    .cap .num { font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
+    .cap .h { font-size: 21px; font-weight: 700; color: var(--text); margin-top: 3px; }
+    .cap .p { font-size: 13px; line-height: 1.5; color: var(--muted); margin-top: 7px; }
+    .cap .t { font-size: 12px; line-height: 1.5; color: var(--text); border-left: 3px solid var(--a1); padding-left: 10px; margin-top: 9px; }

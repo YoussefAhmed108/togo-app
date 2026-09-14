@@ -1,0 +1,8 @@
+    .wrap { height: 1110px; }
+    .rc { border-radius: 20px; overflow: hidden; background: var(--chipBg); border: 1px solid var(--line); }
+    .why { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 800; letter-spacing: 0.9px; text-transform: uppercase; color: var(--primary); }
+    .btnP { flex-grow: 1; text-align: center; background: var(--primary); color: var(--onPrimary); font-size: 14px; font-weight: 800; border-radius: 13px; padding: 14px 0; }
+    .btnG { flex-grow: 1; text-align: center; color: var(--ink2); border: 1px solid var(--line); font-size: 14px; font-weight: 800; border-radius: 13px; padding: 13px 0; }
+    .zone { padding: 0 24px; }
+    .seg { flex-grow: 1; text-align: center; font-size: 13px; font-weight: 700; color: var(--muted); padding: 9px 0; border-radius: 9px; }
+    .segOn { background: var(--sheet); color: var(--ink); box-shadow: 0 2px 8px rgba(0,0,0,0.3); }

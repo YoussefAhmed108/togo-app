@@ -31,13 +31,34 @@ const searchTextURL = "https://places.googleapis.com/v1/places:searchText"
 // create-place form actually shows those fields.
 const fieldMask = "places.id,places.displayName,places.formattedAddress,places.location,places.googleMapsUri"
 
+// LatLng is where the sharer is. It biases the search, it never restricts it:
+// a video filmed in another city must still resolve there.
+type LatLng struct {
+	Lat float64
+	Lng float64
+}
+
+// biasRadiusM is the Places API (New) maximum for a circle bias — city scale.
+const biasRadiusM = 50000.0
+
 // SearchText returns up to 5 candidates. Billing is per request, not per
 // result, so extra candidates are free — the form shows a picker when the top
 // hit is wrong, which matters for chains with many branches.
-func SearchText(ctx context.Context, apiKey, query, languageCode string) ([]Candidate, error) {
+//
+// near, when set, ranks results around the sharer. Without it "Fresh Noodles"
+// resolves to whichever branches Google ranks first worldwide (NYC, Paris…).
+func SearchText(ctx context.Context, apiKey, query, languageCode string, near *LatLng) ([]Candidate, error) {
 	payload := map[string]any{
 		"textQuery":      query,
 		"maxResultCount": 5,
+	}
+	if near != nil {
+		payload["locationBias"] = map[string]any{
+			"circle": map[string]any{
+				"center": map[string]float64{"latitude": near.Lat, "longitude": near.Lng},
+				"radius": biasRadiusM,
+			},
+		}
 	}
 	// Omit rather than guess: with no languageCode Google infers one from the
 	// query script, which beats sending a code the model was unsure about.
@@ -57,11 +78,15 @@ func SearchText(ctx context.Context, apiKey, query, languageCode string) ([]Cand
 	req.Header.Set("X-Goog-Api-Key", apiKey)
 	req.Header.Set("X-Goog-FieldMask", fieldMask)
 
+	logf(ctx, "places: query=%q lang=%q biased=%t", query, languageCode, near != nil)
 	resp, err := (&http.Client{Timeout: 15 * time.Second}).Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("places: %w", err)
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		logf(ctx, "places: HTTP %d", resp.StatusCode)
+	}
 
 	var out struct {
 		Places []struct {
@@ -85,6 +110,8 @@ func SearchText(ctx context.Context, apiKey, query, languageCode string) ([]Cand
 	if out.Error != nil {
 		return nil, fmt.Errorf("places %s: %s", out.Error.Status, out.Error.Message)
 	}
+
+	logf(ctx, "places: %d result(s)", len(out.Places))
 
 	cands := make([]Candidate, 0, len(out.Places))
 	for _, p := range out.Places {

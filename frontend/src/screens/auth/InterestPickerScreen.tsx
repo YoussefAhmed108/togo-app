@@ -70,12 +70,10 @@ export function InterestPickerScreen() {
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}>
 
-        {/* Header */}
         <View style={styles.header}>
+          <Text style={styles.sparkle}>✨</Text>
           <Text style={styles.heading}>What do you love?</Text>
-          <Text style={styles.sub}>
-            Pick your interests — you can change this any time.
-          </Text>
+          <Text style={styles.sub}>We'll use this to recommend places.</Text>
         </View>
 
         {/* Grid of category pills */}
@@ -111,8 +109,10 @@ export function InterestPickerScreen() {
           })}
         </View>
 
-        {/* Actions */}
-        <View style={styles.actions}>
+      </ScrollView>
+
+      {/* Pinned footer: the choice is always one tap away however far you scroll. */}
+      <View style={styles.actions}>
           <TouchableOpacity
             style={[styles.continueBtn, selected.size === 0 && styles.continueBtnDisabled]}
             onPress={handleContinue}
@@ -121,10 +121,10 @@ export function InterestPickerScreen() {
             {loading ? (
               <ActivityIndicator color={colors.white} />
             ) : (
-              <Text style={styles.continueBtnText}>
+              <Text style={[styles.continueBtnText, selected.size === 0 && styles.continueBtnTextOff]}>
                 {selected.size === 0
-                  ? 'Select interests to continue'
-                  : `Continue with ${selected.size} interest${selected.size > 1 ? 's' : ''}`}
+                  ? 'Continue'
+                  : `Continue with ${selected.size} selected`}
               </Text>
             )}
           </TouchableOpacity>
@@ -136,93 +136,48 @@ export function InterestPickerScreen() {
             disabled={loading}>
             <Text style={styles.skipBtnText}>Skip for now</Text>
           </TouchableOpacity>
-        </View>
-
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: {flex: 1, backgroundColor: colors.background},
-  scroll: {
-    flexGrow: 1,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.lg,
-  },
+  scroll: {flexGrow: 1, paddingHorizontal: 20, paddingTop: 48, paddingBottom: spacing.lg},
 
-  header: {alignItems: 'center', marginBottom: spacing.lg},
-  heading: {...typography.h1, textAlign: 'center', marginBottom: 6},
-  sub: {
-    fontFamily: fonts.regular,
-    fontSize: 15,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 21,
-  },
+  header: {alignItems: 'flex-start', marginBottom: 22},
+  sparkle: {fontSize: 30},
+  heading: {...typography.h1, marginTop: 12, marginBottom: 6},
+  sub: {fontFamily: fonts.regular, fontSize: 13, color: colors.textSecondary},
 
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    marginBottom: spacing.lg,
-  },
-  card: {
-    width: '48.4%',
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    overflow: 'hidden',
-    borderWidth: 1.5,
-    borderColor: 'transparent',
-    minHeight: 128,
-  },
-  cardSelected: {borderColor: colors.primaryBorder},
+  grid: {flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12},
+  card: {width: '48.4%', borderRadius: radius.lg, paddingVertical: 14, paddingHorizontal: 12, overflow: 'hidden', borderWidth: 1.5, borderColor: 'transparent'},
+  cardSelected: {borderColor: colors.primary},
   cardBg: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
   },
   cardBgSelected: {backgroundColor: colors.primaryLight},
-  checkBadge: {
-    position: 'absolute',
-    top: spacing.sm,
-    right: spacing.sm,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1,
-  },
-  checkText: {color: colors.white, fontSize: 13, fontFamily: fonts.bold},
-  catEmoji: {fontSize: 26, marginBottom: 12},
-  catLabel: {
-    fontFamily: fonts.semibold,
-    fontSize: 15,
-    color: colors.text,
-    marginBottom: 4,
-  },
-  catLabelSelected: {color: colors.primaryDeep},
-  catDesc: {
-    fontFamily: fonts.regular,
-    fontSize: 12,
-    color: colors.textSecondary,
-    lineHeight: 17,
-  },
+  checkBadge: {position: 'absolute', top: 10, right: 10, width: 20, height: 20, borderRadius: 10, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', zIndex: 1},
+  checkText: {color: colors.white, fontSize: 11, fontFamily: fonts.bold},
+  catEmoji: {fontSize: 22, marginBottom: 8},
+  catLabel: {fontFamily: fonts.bold, fontSize: 13.5, color: colors.text, marginBottom: 2},
+  catLabelSelected: {color: colors.text},
+  catDesc: {fontFamily: fonts.regular, fontSize: 11.5, color: colors.textSecondary, lineHeight: 16},
   catDescSelected: {color: colors.textSecondary},
 
-  actions: {gap: 2},
+  actions: {paddingHorizontal: 20, paddingTop: 14, paddingBottom: 12, backgroundColor: colors.background, borderTopWidth: 1, borderTopColor: colors.border},
   continueBtn: {
     backgroundColor: colors.primary,
-    borderRadius: radius.full,
-    height: 56,
+    borderRadius: radius.lg,
+    minHeight: 48,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  continueBtnDisabled: {backgroundColor: colors.sandDeep},
-  continueBtnText: {fontFamily: fonts.display, fontSize: 17, color: colors.white},
-  skipBtn: {alignItems: 'center', paddingVertical: 14},
-  skipBtnText: {fontFamily: fonts.regular, fontSize: 15, color: colors.textSecondary},
+  continueBtnDisabled: {backgroundColor: colors.disabledBg},
+  continueBtnTextOff: {color: colors.disabledFg},
+  continueBtnText: {fontFamily: fonts.bold, fontSize: 15, color: colors.white},
+  skipBtn: {alignItems: 'center', paddingTop: 12, minHeight: 40},
+  skipBtnText: {fontFamily: fonts.semibold, fontSize: 13, color: colors.textSecondary},
 });

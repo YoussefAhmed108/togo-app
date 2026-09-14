@@ -1,0 +1,425 @@
+<title>Add Place Motion Review</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;700;800&display=swap">
+<style>
+  :root {
+    --ground: #F0F0F3; --surface: #FDFDFF; --ink: #1C1C25; --muted: #5C5C69;
+    --line: #DCDCE0; --teal: #00838E; --teal-ink: #006873; --violet: #6A69DB;
+    --shadow: 0 18px 44px rgba(20,20,30,0.14);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0E1217; --surface: #1B2026; --ink: #E8EBEF; --muted: #8B9095;
+      --line: #242930; --teal: #00A3AD; --teal-ink: #00BCC5; --violet: #8B8AF0;
+      --shadow: 0 18px 44px rgba(0,0,0,0.5);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #0E1217; --surface: #1B2026; --ink: #E8EBEF; --muted: #8B9095;
+    --line: #242930; --teal: #00A3AD; --teal-ink: #00BCC5; --violet: #8B8AF0;
+    --shadow: 0 18px 44px rgba(0,0,0,0.5);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ground); color: var(--ink);
+    font-family: 'Figtree', 'Avenir Next', 'Helvetica Neue', sans-serif; -webkit-font-smoothing: antialiased; }
+  main { max-width: 1120px; margin: 0 auto; padding: 40px 24px 72px; display: flex; flex-direction: column; gap: 56px; }
+  .top { display: flex; flex-direction: column; gap: 8px; max-width: 62ch; }
+  .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--teal-ink); }
+  h1 { margin: 0; font-size: clamp(28px, 4vw, 38px); font-weight: 800; letter-spacing: -0.03em; line-height: 1.05; text-wrap: balance; }
+  .top p { margin: 0; font-size: 15px; line-height: 1.55; color: var(--muted); }
+  section { display: flex; flex-direction: column; gap: 20px; }
+  .sec { display: flex; flex-direction: column; gap: 4px; border-bottom: 1px solid var(--line); padding-bottom: 12px; }
+  .sec h2 { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.01em; }
+  .sec p { margin: 0; font-size: 13.5px; color: var(--muted); }
+  .row { display: flex; flex-wrap: wrap; gap: 28px; }
+  .frame { margin: 0; width: 312px; display: flex; flex-direction: column; gap: 14px; }
+  /* 390×844 phone screens shown at 80% */
+  .phone { width: 312px; height: 675px; border-radius: 34px; overflow: hidden; box-shadow: var(--shadow); background: #F0F0F3; }
+  .phone iframe { width: 390px; height: 844px; border: 0; transform: scale(0.8); transform-origin: 0 0; display: block; }
+  figcaption { display: flex; gap: 12px; align-items: flex-start; }
+  .tag { flex-shrink: 0; width: 28px; height: 28px; border-radius: 8px; background: var(--teal); color: #fff;
+    font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+  figcaption h3 { margin: 0 0 3px; font-size: 15px; font-weight: 700; }
+  figcaption p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--muted); }
+  @media (prefers-reduced-motion: reduce) { .phone { outline: 1px solid var(--line); } }
+</style>
+<main>
+  <div class="top">
+    <span class="eyebrow">Waypoint · Add a place</span>
+    <h1>Pick a wait and a layout</h1>
+    <p>Live previews of each direction, animations running. Mix and match: any wait works with either Add a place layout. Place name and address are samples.</p>
+  </div>
+  <section>
+    <header class="sec"><h2>TikTok wait</h2><p>Loops every 6 seconds so you can watch it; the real wait is about 20.</p></header>
+    <div class="row">
+      <figure class="frame">
+        <div class="phone"><iframe title="A · Route W" srcdoc="&lt;!doctype html&gt;&lt;html&gt;&lt;head&gt;&lt;meta charset=&quot;utf-8&quot;&gt;
+  &lt;link rel=&quot;stylesheet&quot; href=&quot;https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&amp;display=swap&quot;&gt;
+  &lt;style&gt;
+    body { margin: 0; font-family: &#x27;Figtree&#x27;, &#x27;Avenir Next&#x27;, &#x27;Helvetica Neue&#x27;, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #006873; } a:hover { color: #00838E; }
+    /* One 6s loop stands in for the ~20s pipeline: the route draws, a video rides it, each stop lands. */
+    @keyframes draw { 0% { stroke-dashoffset: 160; } 88%, 100% { stroke-dashoffset: 0; } }
+    @keyframes ride { 0% { offset-distance: 0%; } 88%, 100% { offset-distance: 100%; } }
+    @keyframes s1 { 0%, 2% { transform: scale(0); } 8% { transform: scale(1.35); } 13%, 100% { transform: scale(1); } }
+    @keyframes s2 { 0%, 40% { transform: scale(0); } 46% { transform: scale(1.35); } 51%, 100% { transform: scale(1); } }
+    @keyframes s3 { 0%, 84% { transform: scale(0); } 90% { transform: scale(1.4); } 95%, 100% { transform: scale(1); } }
+    @keyframes ring { 0%, 88% { transform: scale(0.6); opacity: 0; } 92% { opacity: 0.55; } 100% { transform: scale(2.1); opacity: 0; } }
+    @keyframes bar { 0% { width: 4%; } 44% { width: 38%; } 86% { width: 78%; } 100% { width: 100%; } }
+    @keyframes on1 { 0%, 44% { color: #1C1C25; font-weight: 700; } 45%, 100% { color: #5C5C69; font-weight: 500; } }
+    @keyframes on2 { 0%, 44% { color: #5C5C69; font-weight: 500; } 45%, 86% { color: #1C1C25; font-weight: 700; } 87%, 100% { color: #5C5C69; font-weight: 500; } }
+    @keyframes on3 { 0%, 86% { color: #5C5C69; font-weight: 500; } 87%, 100% { color: #1C1C25; font-weight: 700; } }
+    @keyframes done1 { 0%, 44% { background: transparent; border-color: #00838E; } 45%, 100% { background: #00884B; border-color: #00884B; } }
+    @keyframes done2 { 0%, 44% { background: transparent; border-color: #DCDCE0; } 45%, 86% { background: transparent; border-color: #00838E; } 87%, 100% { background: #00884B; border-color: #00884B; } }
+    @keyframes done3 { 0%, 86% { background: transparent; border-color: #DCDCE0; } 87%, 100% { background: transparent; border-color: #00838E; } }
+    @keyframes tick1 { 0%, 44% { opacity: 0; transform: scale(0.4); } 50%, 100% { opacity: 1; transform: scale(1); } }
+    @keyframes tick2 { 0%, 86% { opacity: 0; transform: scale(0.4); } 92%, 100% { opacity: 1; transform: scale(1); } }
+    .loop { animation-duration: 6s; animation-iteration-count: infinite; animation-timing-function: cubic-bezier(0.45, 0, 0.3, 1); }
+    .pop { transform-box: fill-box; transform-origin: center; animation-duration: 6s; animation-iteration-count: infinite; animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
+  &lt;/style&gt;
+&lt;style&gt;html,body{margin:0;background:#F0F0F3}&lt;/style&gt;&lt;/head&gt;&lt;body&gt;
+&lt;!-- A · Route W: the logo&#x27;s route draws itself, a video rides it, and every stop is a stage. --&gt;
+&lt;div style=&quot;position: relative; width: 390px; height: 844px; overflow: hidden; background: #F0F0F3; color: #1C1C25;&quot;&gt;
+  &lt;div style=&quot;position: absolute; left: 12px; top: 56px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;&quot;&gt;
+    &lt;svg width=&quot;20&quot; height=&quot;20&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#1C1C25&quot; stroke-width=&quot;2.2&quot; stroke-linecap=&quot;round&quot;&gt;&lt;path d=&quot;M6 6l12 12M18 6L6 18&quot;&gt;&lt;/path&gt;&lt;/svg&gt;
+  &lt;/div&gt;
+
+  &lt;div style=&quot;position: absolute; left: 55px; top: 150px; width: 280px; height: 280px;&quot;&gt;
+    &lt;svg width=&quot;280&quot; height=&quot;280&quot; viewBox=&quot;0 0 100 100&quot; style=&quot;position: absolute; inset: 0;&quot;&gt;
+      &lt;path d=&quot;M16 30L33 72 50 42 67 72 84 30&quot; fill=&quot;none&quot; stroke=&quot;#DCDCE0&quot; stroke-width=&quot;9&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;&gt;&lt;/path&gt;
+      &lt;path class=&quot;loop&quot; d=&quot;M16 30L33 72 50 42 67 72 84 30&quot; fill=&quot;none&quot; stroke=&quot;#00838E&quot; stroke-width=&quot;9&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot; stroke-dasharray=&quot;160&quot; style=&quot;animation-name: draw;&quot;&gt;&lt;/path&gt;
+      &lt;circle class=&quot;pop&quot; cx=&quot;16&quot; cy=&quot;30&quot; r=&quot;8&quot; fill=&quot;#00838E&quot; style=&quot;animation-name: s1;&quot;&gt;&lt;/circle&gt;
+      &lt;circle class=&quot;pop&quot; cx=&quot;50&quot; cy=&quot;42&quot; r=&quot;8&quot; fill=&quot;#00838E&quot; style=&quot;animation-name: s2;&quot;&gt;&lt;/circle&gt;
+      &lt;circle class=&quot;pop&quot; cx=&quot;84&quot; cy=&quot;30&quot; r=&quot;17&quot; fill=&quot;#6A69DB&quot; style=&quot;animation-name: ring; animation-duration: 6s; animation-iteration-count: infinite;&quot;&gt;&lt;/circle&gt;
+      &lt;circle class=&quot;pop&quot; cx=&quot;84&quot; cy=&quot;30&quot; r=&quot;11&quot; fill=&quot;#DBDBFF&quot; style=&quot;animation-name: s3;&quot;&gt;&lt;/circle&gt;
+      &lt;circle class=&quot;pop&quot; cx=&quot;84&quot; cy=&quot;30&quot; r=&quot;4.5&quot; fill=&quot;#6A69DB&quot; style=&quot;animation-name: s3;&quot;&gt;&lt;/circle&gt;
+    &lt;/svg&gt;
+    &lt;!-- the video, riding the route --&gt;
+    &lt;div class=&quot;loop&quot; style=&quot;position: absolute; left: 0; top: 0; width: 34px; height: 46px; margin: -23px 0 0 -17px; border-radius: 9px; background: #1C1C25; box-shadow: 0 8px 18px rgba(20,20,30,0.28); display: flex; align-items: center; justify-content: center; offset-path: path(&#x27;M44.8 84 L92.4 201.6 L140 117.6 L187.6 201.6 L235.2 84&#x27;); offset-rotate: 0deg; animation-name: ride;&quot;&gt;
+      &lt;svg width=&quot;14&quot; height=&quot;14&quot; viewBox=&quot;0 0 24 24&quot;&gt;&lt;path d=&quot;M8 5.5v13l10-6.5z&quot; fill=&quot;#FFFFFF&quot;&gt;&lt;/path&gt;&lt;/svg&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;div style=&quot;position: absolute; left: 32px; right: 32px; top: 470px; display: flex; flex-direction: column;&quot;&gt;
+    &lt;div style=&quot;font-size: 22px; font-weight: 800; letter-spacing: -0.02em;&quot;&gt;Analysing TikTok…&lt;/div&gt;
+    &lt;div style=&quot;height: 4px; border-radius: 2px; background: #DCDCE0; overflow: hidden; margin: 20px 0 22px;&quot;&gt;
+      &lt;div class=&quot;loop&quot; style=&quot;height: 100%; border-radius: 2px; background: #00838E; animation-name: bar;&quot;&gt;&lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div style=&quot;display: flex; flex-direction: column; gap: 16px;&quot;&gt;
+      &lt;div style=&quot;display: flex; align-items: center; gap: 12px;&quot;&gt;
+        &lt;div class=&quot;loop&quot; style=&quot;width: 20px; height: 20px; box-sizing: border-box; border-radius: 50%; border: 2px solid #00838E; display: flex; align-items: center; justify-content: center; animation-name: done1;&quot;&gt;
+          &lt;svg class=&quot;loop&quot; width=&quot;10&quot; height=&quot;10&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#FFFFFF&quot; stroke-width=&quot;4&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot; style=&quot;animation-name: tick1;&quot;&gt;&lt;path d=&quot;M5 13l4.5 4.5L19 7&quot;&gt;&lt;/path&gt;&lt;/svg&gt;
+        &lt;/div&gt;
+        &lt;div class=&quot;loop&quot; style=&quot;font-size: 14px; animation-name: on1;&quot;&gt;Reading the video&lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div style=&quot;display: flex; align-items: center; gap: 12px;&quot;&gt;
+        &lt;div class=&quot;loop&quot; style=&quot;width: 20px; height: 20px; box-sizing: border-box; border-radius: 50%; border: 2px solid #DCDCE0; display: flex; align-items: center; justify-content: center; animation-name: done2;&quot;&gt;
+          &lt;svg class=&quot;loop&quot; width=&quot;10&quot; height=&quot;10&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#FFFFFF&quot; stroke-width=&quot;4&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot; style=&quot;animation-name: tick2;&quot;&gt;&lt;path d=&quot;M5 13l4.5 4.5L19 7&quot;&gt;&lt;/path&gt;&lt;/svg&gt;
+        &lt;/div&gt;
+        &lt;div class=&quot;loop&quot; style=&quot;font-size: 14px; animation-name: on2;&quot;&gt;Finding the place&lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div style=&quot;display: flex; align-items: center; gap: 12px;&quot;&gt;
+        &lt;div class=&quot;loop&quot; style=&quot;width: 20px; height: 20px; box-sizing: border-box; border-radius: 50%; border: 2px solid #DCDCE0; animation-name: done3;&quot;&gt;&lt;/div&gt;
+        &lt;div class=&quot;loop&quot; style=&quot;font-size: 14px; animation-name: on3;&quot;&gt;Matching it on the map&lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div style=&quot;font-size: 12px; color: #5C5C69; margin-top: 28px;&quot;&gt;This usually takes about 20 seconds.&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;/body&gt;&lt;/html&gt;" loading="eager" scrolling="no"></iframe></div>
+        <figcaption><span class="tag">A</span><div><h3>Route W</h3><p>The icon's W draws itself while a video rides it; each stop lights a stage. Ties the wait to the new logo.</p></div></figcaption>
+      </figure>
+      <figure class="frame">
+        <div class="phone"><iframe title="B · Scan the video" srcdoc="&lt;!doctype html&gt;&lt;html&gt;&lt;head&gt;&lt;meta charset=&quot;utf-8&quot;&gt;
+  &lt;link rel=&quot;stylesheet&quot; href=&quot;https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&amp;display=swap&quot;&gt;
+  &lt;style&gt;
+    body { margin: 0; font-family: &#x27;Figtree&#x27;, &#x27;Avenir Next&#x27;, &#x27;Helvetica Neue&#x27;, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #006873; } a:hover { color: #00838E; }
+    /* The video is scanned; the words it read peel off as chips; they fold into a pin. */
+    @keyframes scan { 0% { top: -8%; } 50% { top: 100%; } 100% { top: -8%; } }
+    @keyframes peel { 0% { transform: translate(0, 0) scale(0.6); opacity: 0; } 12% { transform: translate(0, 0) scale(1); opacity: 1; } 62% { transform: translate(var(--dx), var(--dy)) scale(1); opacity: 1; } 76%, 100% { transform: translate(var(--tx), var(--ty)) scale(0.3); opacity: 0; } }
+    @keyframes drop { 0%, 72% { transform: translateY(-60px) scale(0.6); opacity: 0; } 82% { transform: translateY(6px) scale(1.08); opacity: 1; } 88% { transform: translateY(-4px) scale(1); } 94%, 100% { transform: translateY(0) scale(1); opacity: 1; } }
+    @keyframes shadow { 0%, 72% { transform: scale(0.2); opacity: 0; } 84%, 100% { transform: scale(1); opacity: 1; } }
+    @keyframes dim { 0%, 70% { opacity: 1; } 80%, 100% { opacity: 0.35; } }
+    @keyframes bar { 0% { width: 6%; } 70% { width: 72%; } 100% { width: 100%; } }
+    .loop6 { animation-duration: 6s; animation-iteration-count: infinite; animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
+  &lt;/style&gt;
+&lt;style&gt;html,body{margin:0;background:#F0F0F3}&lt;/style&gt;&lt;/head&gt;&lt;body&gt;
+&lt;!-- B · Scan the video: a teal line scans the clip, the words it read fly out, then fold into a pin. --&gt;
+&lt;div style=&quot;position: relative; width: 390px; height: 844px; overflow: hidden; background: #F0F0F3; color: #1C1C25;&quot;&gt;
+  &lt;div style=&quot;position: absolute; left: 12px; top: 56px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;&quot;&gt;
+    &lt;svg width=&quot;20&quot; height=&quot;20&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#1C1C25&quot; stroke-width=&quot;2.2&quot; stroke-linecap=&quot;round&quot;&gt;&lt;path d=&quot;M6 6l12 12M18 6L6 18&quot;&gt;&lt;/path&gt;&lt;/svg&gt;
+  &lt;/div&gt;
+
+  &lt;!-- the clip --&gt;
+  &lt;div class=&quot;loop6&quot; style=&quot;position: absolute; left: 115px; top: 128px; width: 160px; height: 272px; border-radius: 22px; overflow: hidden; background: #1C1C25; box-shadow: 0 22px 50px rgba(20,20,30,0.28); animation-name: dim;&quot;&gt;
+    &lt;div style=&quot;position: absolute; inset: 0; background: repeating-linear-gradient(45deg, #26263A, #26263A 9px, #2E2E44 9px, #2E2E44 18px);&quot;&gt;&lt;/div&gt;
+    &lt;div style=&quot;position: absolute; left: 50%; top: 50%; width: 48px; height: 48px; margin: -24px 0 0 -24px; border-radius: 50%; background: rgba(255,255,255,0.16); display: flex; align-items: center; justify-content: center;&quot;&gt;
+      &lt;svg width=&quot;20&quot; height=&quot;20&quot; viewBox=&quot;0 0 24 24&quot;&gt;&lt;path d=&quot;M8 5.5v13l10-6.5z&quot; fill=&quot;#FFFFFF&quot;&gt;&lt;/path&gt;&lt;/svg&gt;
+    &lt;/div&gt;
+    &lt;div style=&quot;position: absolute; left: 0; right: 0; height: 26px; background: linear-gradient(to bottom, rgba(0,159,170,0), rgba(0,159,170,0.55)); border-bottom: 2px solid #3FD0D8; animation: scan 2s linear infinite;&quot;&gt;&lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;!-- words the scan read, peeling off, then folding into the pin --&gt;
+  &lt;div class=&quot;loop6&quot; style=&quot;--dx: -96px; --dy: -30px; --tx: 10px; --ty: 90px; position: absolute; left: 150px; top: 190px; background: #FDFDFF; border-radius: 999px; padding: 7px 12px; font-size: 12.5px; font-weight: 700; box-shadow: 0 8px 20px rgba(20,20,30,0.14); white-space: nowrap; animation-name: peel; animation-delay: 0.1s;&quot;&gt;“best koshary”&lt;/div&gt;
+  &lt;div class=&quot;loop6&quot; style=&quot;--dx: 104px; --dy: -14px; --tx: -20px; --ty: 70px; position: absolute; left: 160px; top: 250px; background: #FDFDFF; border-radius: 999px; padding: 7px 12px; font-size: 12.5px; font-weight: 700; color: #006873; box-shadow: 0 8px 20px rgba(20,20,30,0.14); white-space: nowrap; animation-name: peel; animation-delay: 0.5s;&quot;&gt;downtown&lt;/div&gt;
+  &lt;div class=&quot;loop6&quot; style=&quot;--dx: -90px; --dy: 40px; --tx: 20px; --ty: 0px; position: absolute; left: 150px; top: 310px; background: #DBDBFF; color: #3B3A8F; border-radius: 999px; padding: 7px 12px; font-size: 12.5px; font-weight: 700; box-shadow: 0 8px 20px rgba(20,20,30,0.14); white-space: nowrap; animation-name: peel; animation-delay: 0.9s;&quot;&gt;@ the caption&lt;/div&gt;
+
+  &lt;!-- the pin it lands on --&gt;
+  &lt;div style=&quot;position: absolute; left: 175px; top: 408px; width: 40px; height: 10px; border-radius: 50%; background: rgba(20,20,30,0.22); animation: shadow 6s cubic-bezier(0.16,1,0.3,1) infinite;&quot;&gt;&lt;/div&gt;
+  &lt;div style=&quot;position: absolute; left: 172px; top: 356px; animation: drop 6s cubic-bezier(0.16,1,0.3,1) infinite;&quot;&gt;
+    &lt;svg width=&quot;46&quot; height=&quot;56&quot; viewBox=&quot;0 0 24 30&quot;&gt;&lt;path d=&quot;M12 1c5 0 9 4 9 9 0 6.5-9 19-9 19S3 16.5 3 10c0-5 4-9 9-9z&quot; fill=&quot;#00838E&quot;&gt;&lt;/path&gt;&lt;circle cx=&quot;12&quot; cy=&quot;10&quot; r=&quot;3.4&quot; fill=&quot;#FFFFFF&quot;&gt;&lt;/circle&gt;&lt;/svg&gt;
+  &lt;/div&gt;
+
+  &lt;div style=&quot;position: absolute; left: 32px; right: 32px; top: 500px; display: flex; flex-direction: column;&quot;&gt;
+    &lt;div style=&quot;font-size: 22px; font-weight: 800; letter-spacing: -0.02em;&quot;&gt;Reading the video…&lt;/div&gt;
+    &lt;div style=&quot;font-size: 13.5px; color: #5C5C69; margin-top: 6px;&quot;&gt;Pulling the place out of what’s said and shown.&lt;/div&gt;
+    &lt;div style=&quot;height: 4px; border-radius: 2px; background: #DCDCE0; overflow: hidden; margin-top: 22px;&quot;&gt;
+      &lt;div class=&quot;loop6&quot; style=&quot;height: 100%; border-radius: 2px; background: #00838E; animation-name: bar; animation-timing-function: linear;&quot;&gt;&lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div style=&quot;font-size: 12px; color: #5C5C69; margin-top: 12px;&quot;&gt;This usually takes about 20 seconds.&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;/body&gt;&lt;/html&gt;" loading="eager" scrolling="no"></iframe></div>
+        <figcaption><span class="tag">B</span><div><h3>Scan the video</h3><p>A teal line scans the clip, the words it read fly out, then fold into a pin. Shows what's really happening.</p></div></figcaption>
+      </figure>
+      <figure class="frame">
+        <div class="phone"><iframe title="C · Search the map" srcdoc="&lt;!doctype html&gt;&lt;html&gt;&lt;head&gt;&lt;meta charset=&quot;utf-8&quot;&gt;
+  &lt;link rel=&quot;stylesheet&quot; href=&quot;https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&amp;display=swap&quot;&gt;
+  &lt;style&gt;
+    body { margin: 0; font-family: &#x27;Figtree&#x27;, &#x27;Avenir Next&#x27;, &#x27;Helvetica Neue&#x27;, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #006873; } a:hover { color: #00838E; }
+    /* The map is searched: a sweep turns, candidates blink up, one wins and drops. */
+    @keyframes sweep { to { transform: rotate(360deg); } }
+    @keyframes ripple { 0% { transform: scale(0.15); opacity: 0.6; } 100% { transform: scale(1); opacity: 0; } }
+    @keyframes blink { 0%, 100% { transform: scale(0); opacity: 0; } 12% { transform: scale(1.2); opacity: 1; } 20%, 55% { transform: scale(1); opacity: 1; } 65% { transform: scale(0); opacity: 0; } }
+    @keyframes win { 0%, 60% { transform: translateY(-50px) scale(0.5); opacity: 0; } 72% { transform: translateY(4px) scale(1.1); opacity: 1; } 78% { transform: translateY(-3px) scale(1); } 84%, 100% { transform: translateY(0) scale(1); opacity: 1; } }
+    @keyframes found { 0%, 76% { transform: translateY(10px); opacity: 0; } 86%, 100% { transform: translateY(0); opacity: 1; } }
+    .cand { position: absolute; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%; background: #FDFDFF; border: 3px solid #6A69DB; box-sizing: border-box; animation: blink 6s cubic-bezier(0.16,1,0.3,1) infinite; }
+  &lt;/style&gt;
+&lt;style&gt;html,body{margin:0;background:#F0F0F3}&lt;/style&gt;&lt;/head&gt;&lt;body&gt;
+&lt;!-- C · Search the map: a radar sweep over the city; candidate spots blink up, the match drops in. --&gt;
+&lt;div style=&quot;position: relative; width: 390px; height: 844px; overflow: hidden; background: #F0F0F3; color: #1C1C25;&quot;&gt;
+  &lt;div style=&quot;position: absolute; left: 12px; top: 56px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;&quot;&gt;
+    &lt;svg width=&quot;20&quot; height=&quot;20&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#1C1C25&quot; stroke-width=&quot;2.2&quot; stroke-linecap=&quot;round&quot;&gt;&lt;path d=&quot;M6 6l12 12M18 6L6 18&quot;&gt;&lt;/path&gt;&lt;/svg&gt;
+  &lt;/div&gt;
+
+  &lt;div style=&quot;position: absolute; left: 45px; top: 130px; width: 300px; height: 300px; border-radius: 50%; overflow: hidden; background: #E6E7EC; box-shadow: 0 20px 50px rgba(20,20,30,0.14), inset 0 0 0 6px #FDFDFF;&quot;&gt;
+    &lt;svg width=&quot;300&quot; height=&quot;300&quot; viewBox=&quot;0 0 300 300&quot; style=&quot;position: absolute; inset: 0;&quot;&gt;
+      &lt;path d=&quot;M120 -10 C95 80 170 130 140 210 C120 270 170 300 160 320 L195 320 C205 300 160 270 180 210 C210 130 135 80 160 -10 Z&quot; fill=&quot;#CFE0EF&quot;&gt;&lt;/path&gt;
+      &lt;ellipse cx=&quot;235&quot; cy=&quot;95&quot; rx=&quot;40&quot; ry=&quot;30&quot; fill=&quot;#D6ECDD&quot;&gt;&lt;/ellipse&gt;
+      &lt;path d=&quot;M-10 70 L310 40 M-10 170 L310 150 M-10 250 L310 230 M60 -10 L90 310 M220 -10 L200 310&quot; stroke=&quot;#FBFBFD&quot; stroke-width=&quot;9&quot; fill=&quot;none&quot;&gt;&lt;/path&gt;
+    &lt;/svg&gt;
+    &lt;!-- sweep --&gt;
+    &lt;div style=&quot;position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg, rgba(0,131,142,0) 0deg, rgba(0,131,142,0) 290deg, rgba(0,131,142,0.32) 360deg); animation: sweep 2s linear infinite;&quot;&gt;&lt;/div&gt;
+    &lt;!-- ripples from the centre --&gt;
+    &lt;div style=&quot;position: absolute; inset: 0; border-radius: 50%; border: 2px solid #00838E; animation: ripple 2s ease-out infinite;&quot;&gt;&lt;/div&gt;
+    &lt;div style=&quot;position: absolute; inset: 0; border-radius: 50%; border: 2px solid #00838E; animation: ripple 2s ease-out 1s infinite;&quot;&gt;&lt;/div&gt;
+    &lt;!-- candidates --&gt;
+    &lt;div class=&quot;cand&quot; style=&quot;left: 82px; top: 96px; animation-delay: 0.2s;&quot;&gt;&lt;/div&gt;
+    &lt;div class=&quot;cand&quot; style=&quot;left: 212px; top: 190px; animation-delay: 0.7s;&quot;&gt;&lt;/div&gt;
+    &lt;div class=&quot;cand&quot; style=&quot;left: 110px; top: 222px; animation-delay: 1.1s;&quot;&gt;&lt;/div&gt;
+    &lt;div class=&quot;cand&quot; style=&quot;left: 228px; top: 84px; animation-delay: 1.5s;&quot;&gt;&lt;/div&gt;
+    &lt;!-- the match --&gt;
+    &lt;div style=&quot;position: absolute; left: 127px; top: 104px; animation: win 6s cubic-bezier(0.16,1,0.3,1) infinite;&quot;&gt;
+      &lt;svg width=&quot;46&quot; height=&quot;56&quot; viewBox=&quot;0 0 24 30&quot;&gt;&lt;path d=&quot;M12 1c5 0 9 4 9 9 0 6.5-9 19-9 19S3 16.5 3 10c0-5 4-9 9-9z&quot; fill=&quot;#00838E&quot; stroke=&quot;#FFFFFF&quot; stroke-width=&quot;1.4&quot;&gt;&lt;/path&gt;&lt;circle cx=&quot;12&quot; cy=&quot;10&quot; r=&quot;3.4&quot; fill=&quot;#FFFFFF&quot;&gt;&lt;/circle&gt;&lt;/svg&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;div style=&quot;position: absolute; left: 95px; top: 404px; display: flex; align-items: center; gap: 8px; background: #FDFDFF; border-radius: 999px; padding: 8px 14px 8px 8px; box-shadow: 0 10px 26px rgba(20,20,30,0.14); animation: found 6s cubic-bezier(0.16,1,0.3,1) infinite;&quot;&gt;
+    &lt;div style=&quot;width: 22px; height: 22px; border-radius: 50%; background: #00884B; display: flex; align-items: center; justify-content: center;&quot;&gt;
+      &lt;svg width=&quot;12&quot; height=&quot;12&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#FFFFFF&quot; stroke-width=&quot;3.6&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;&gt;&lt;path d=&quot;M5 13l4.5 4.5L19 7&quot;&gt;&lt;/path&gt;&lt;/svg&gt;
+    &lt;/div&gt;
+    &lt;div style=&quot;font-size: 13px; font-weight: 700;&quot;&gt;Found it — 3 branches nearby&lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;div style=&quot;position: absolute; left: 32px; right: 32px; top: 500px; display: flex; flex-direction: column;&quot;&gt;
+    &lt;div style=&quot;font-size: 22px; font-weight: 800; letter-spacing: -0.02em;&quot;&gt;Searching the map…&lt;/div&gt;
+    &lt;div style=&quot;font-size: 13.5px; color: #5C5C69; margin-top: 6px;&quot;&gt;Checking every spot that matches the video.&lt;/div&gt;
+    &lt;div style=&quot;font-size: 12px; color: #5C5C69; margin-top: 24px;&quot;&gt;This usually takes about 20 seconds.&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;/body&gt;&lt;/html&gt;" loading="eager" scrolling="no"></iframe></div>
+        <figcaption><span class="tag">C</span><div><h3>Search the map</h3><p>A radar sweep over the city; candidates blink, the match drops in. Most playful, says least about the video.</p></div></figcaption>
+      </figure>
+    </div>
+  </section>
+  <section>
+    <header class="sec"><h2>Add a place</h2><p>The name leads; tags are coloured by kind — food orange, outdoors green, culture violet, shopping pink.</p></header>
+    <div class="row">
+      <figure class="frame">
+        <div class="phone"><iframe title="D · Name as the hero" srcdoc="&lt;!doctype html&gt;&lt;html&gt;&lt;head&gt;&lt;meta charset=&quot;utf-8&quot;&gt;
+  &lt;link rel=&quot;stylesheet&quot; href=&quot;https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&amp;display=swap&quot;&gt;
+  &lt;style&gt;
+    body { margin: 0; font-family: &#x27;Figtree&#x27;, &#x27;Avenir Next&#x27;, &#x27;Helvetica Neue&#x27;, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #006873; } a:hover { color: #00838E; }
+  &lt;/style&gt;
+&lt;style&gt;html,body{margin:0;background:#F0F0F3}&lt;/style&gt;&lt;/head&gt;&lt;body&gt;
+&lt;!-- D · Name as the hero: the place&#x27;s name leads, on a card that rises out of the map; tags come colour-coded by kind. --&gt;
+&lt;div style=&quot;position: relative; width: 390px; height: 844px; overflow: hidden; background: #F0F0F3; color: #1C1C25;&quot;&gt;
+  &lt;div style=&quot;position: absolute; left: 0; right: 0; top: 0; height: 290px;&quot;&gt;
+    &lt;svg width=&quot;390&quot; height=&quot;290&quot; viewBox=&quot;0 0 390 290&quot; style=&quot;position: absolute; inset: 0;&quot;&gt;
+      &lt;rect width=&quot;390&quot; height=&quot;290&quot; fill=&quot;#E6E7EC&quot;&gt;&lt;/rect&gt;
+      &lt;path d=&quot;M160 -10 C130 80 200 130 170 210 C150 260 200 290 190 300 L230 300 C240 290 190 260 210 210 C240 130 170 80 200 -10 Z&quot; fill=&quot;#CFE0EF&quot;&gt;&lt;/path&gt;
+      &lt;ellipse cx=&quot;320&quot; cy=&quot;90&quot; rx=&quot;50&quot; ry=&quot;36&quot; fill=&quot;#D6ECDD&quot;&gt;&lt;/ellipse&gt;
+      &lt;path d=&quot;M-10 70 L400 40 M-10 175 L400 150 M70 -10 L100 300 M290 -10 L270 300&quot; stroke=&quot;#FBFBFD&quot; stroke-width=&quot;10&quot; fill=&quot;none&quot;&gt;&lt;/path&gt;
+    &lt;/svg&gt;
+    &lt;div style=&quot;position: absolute; left: 12px; top: 54px; width: 44px; height: 44px; border-radius: 50%; background: rgba(253,253,255,0.94); box-shadow: 0 4px 14px rgba(20,20,30,0.12); display: flex; align-items: center; justify-content: center;&quot;&gt;
+      &lt;svg width=&quot;12&quot; height=&quot;18&quot; viewBox=&quot;0 0 10 16&quot; fill=&quot;none&quot;&gt;&lt;path d=&quot;M8 1L2 8l6 7&quot; stroke=&quot;#1C1C25&quot; stroke-width=&quot;2&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;&gt;&lt;/path&gt;&lt;/svg&gt;
+    &lt;/div&gt;
+    &lt;div style=&quot;position: absolute; left: 172px; top: 118px;&quot;&gt;
+      &lt;svg width=&quot;46&quot; height=&quot;56&quot; viewBox=&quot;0 0 24 30&quot;&gt;&lt;path d=&quot;M12 1c5 0 9 4 9 9 0 6.5-9 19-9 19S3 16.5 3 10c0-5 4-9 9-9z&quot; fill=&quot;#E65719&quot; stroke=&quot;#FFFFFF&quot; stroke-width=&quot;1.4&quot;&gt;&lt;/path&gt;&lt;circle cx=&quot;12&quot; cy=&quot;10&quot; r=&quot;3.4&quot; fill=&quot;#FFFFFF&quot;&gt;&lt;/circle&gt;&lt;/svg&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;!-- the name, loud --&gt;
+  &lt;div style=&quot;position: absolute; left: 16px; right: 16px; top: 236px; background: #FDFDFF; border-radius: 20px; padding: 18px; box-shadow: 0 18px 44px rgba(20,20,30,0.12); display: flex; flex-direction: column; gap: 10px;&quot;&gt;
+    &lt;div style=&quot;display: flex; align-items: center; gap: 8px;&quot;&gt;
+      &lt;div style=&quot;font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #C2410C; background: #FFE7DC; border-radius: 999px; padding: 4px 9px;&quot;&gt;Food &amp;amp; drink&lt;/div&gt;
+      &lt;div style=&quot;font-size: 11.5px; color: #5C5C69;&quot;&gt;Found from your TikTok&lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div style=&quot;display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;&quot;&gt;
+      &lt;div style=&quot;font-size: 28px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.05; text-wrap: balance;&quot;&gt;Koshary Abou Tarek&lt;/div&gt;
+      &lt;div style=&quot;width: 36px; height: 36px; flex-shrink: 0; border-radius: 50%; background: #F0F0F3; display: flex; align-items: center; justify-content: center;&quot;&gt;
+        &lt;svg width=&quot;16&quot; height=&quot;16&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#1C1C25&quot; stroke-width=&quot;2&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;&gt;&lt;path d=&quot;M4 20h4L19 9l-4-4L4 16z&quot;&gt;&lt;/path&gt;&lt;path d=&quot;M13.5 6.5l4 4&quot;&gt;&lt;/path&gt;&lt;/svg&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div style=&quot;display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #5C5C69;&quot;&gt;
+      &lt;svg width=&quot;13&quot; height=&quot;13&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#5C5C69&quot; stroke-width=&quot;2.2&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;&gt;&lt;path d=&quot;M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z&quot;&gt;&lt;/path&gt;&lt;circle cx=&quot;12&quot; cy=&quot;10&quot; r=&quot;2.3&quot;&gt;&lt;/circle&gt;&lt;/svg&gt;
+      &lt;span&gt;16 Champollion St, Downtown, Cairo&lt;/span&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;!-- tags, colour-coded by kind --&gt;
+  &lt;div style=&quot;position: absolute; left: 16px; right: 16px; top: 452px; display: flex; flex-direction: column; gap: 14px;&quot;&gt;
+    &lt;div style=&quot;display: flex; align-items: baseline; justify-content: space-between;&quot;&gt;
+      &lt;div style=&quot;font-size: 15px; font-weight: 800;&quot;&gt;What kind of place?&lt;/div&gt;
+      &lt;div style=&quot;font-size: 11.5px; color: #5C5C69;&quot;&gt;2 of 10&lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div style=&quot;display: flex; flex-direction: column; gap: 10px;&quot;&gt;
+      &lt;div style=&quot;display: flex; flex-wrap: wrap; gap: 7px;&quot;&gt;
+        &lt;div style=&quot;display: flex; align-items: center; gap: 6px; min-height: 36px; box-sizing: border-box; padding: 0 13px; border-radius: 999px; background: #E65719; color: #FFFFFF; font-size: 12.5px; font-weight: 700;&quot;&gt;
+          &lt;svg width=&quot;12&quot; height=&quot;12&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#FFFFFF&quot; stroke-width=&quot;3.4&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;&gt;&lt;path d=&quot;M5 13l4.5 4.5L19 7&quot;&gt;&lt;/path&gt;&lt;/svg&gt;restaurant
+        &lt;/div&gt;
+        &lt;div style=&quot;display: flex; align-items: center; gap: 6px; min-height: 36px; box-sizing: border-box; padding: 0 13px; border-radius: 999px; background: #E65719; color: #FFFFFF; font-size: 12.5px; font-weight: 700;&quot;&gt;
+          &lt;svg width=&quot;12&quot; height=&quot;12&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#FFFFFF&quot; stroke-width=&quot;3.4&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;&gt;&lt;path d=&quot;M5 13l4.5 4.5L19 7&quot;&gt;&lt;/path&gt;&lt;/svg&gt;egyptian
+        &lt;/div&gt;
+        &lt;div style=&quot;display: flex; align-items: center; min-height: 36px; box-sizing: border-box; padding: 0 13px; border-radius: 999px; background: #FFE7DC; color: #9A3412; font-size: 12.5px; font-weight: 600;&quot;&gt;cafe&lt;/div&gt;
+        &lt;div style=&quot;display: flex; align-items: center; min-height: 36px; box-sizing: border-box; padding: 0 13px; border-radius: 999px; background: #FFE7DC; color: #9A3412; font-size: 12.5px; font-weight: 600;&quot;&gt;bakery&lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div style=&quot;display: flex; flex-wrap: wrap; gap: 7px;&quot;&gt;
+        &lt;div style=&quot;display: flex; align-items: center; min-height: 36px; box-sizing: border-box; padding: 0 13px; border-radius: 999px; background: #DCF3E3; color: #166534; font-size: 12.5px; font-weight: 600;&quot;&gt;rooftop&lt;/div&gt;
+        &lt;div style=&quot;display: flex; align-items: center; min-height: 36px; box-sizing: border-box; padding: 0 13px; border-radius: 999px; background: #DCF3E3; color: #166534; font-size: 12.5px; font-weight: 600;&quot;&gt;park&lt;/div&gt;
+        &lt;div style=&quot;display: flex; align-items: center; min-height: 36px; box-sizing: border-box; padding: 0 13px; border-radius: 999px; background: #E8E6FB; color: #4338CA; font-size: 12.5px; font-weight: 600;&quot;&gt;museum&lt;/div&gt;
+        &lt;div style=&quot;display: flex; align-items: center; min-height: 36px; box-sizing: border-box; padding: 0 13px; border-radius: 999px; background: #E8E6FB; color: #4338CA; font-size: 12.5px; font-weight: 600;&quot;&gt;art&lt;/div&gt;
+        &lt;div style=&quot;display: flex; align-items: center; min-height: 36px; box-sizing: border-box; padding: 0 13px; border-radius: 999px; background: #FCE4EF; color: #9D174D; font-size: 12.5px; font-weight: 600;&quot;&gt;shopping&lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div style=&quot;display: flex; align-items: center; gap: 8px; height: 46px; box-sizing: border-box; background: #FDFDFF; border: 1px dashed #BABAC1; border-radius: 12px; padding: 0 6px 0 14px;&quot;&gt;
+      &lt;div style=&quot;flex-grow: 1; font-size: 13px; color: #5C5C69;&quot;&gt;Add your own tag…&lt;/div&gt;
+      &lt;div style=&quot;width: 34px; height: 34px; border-radius: 9px; background: #00838E; display: flex; align-items: center; justify-content: center;&quot;&gt;
+        &lt;svg width=&quot;16&quot; height=&quot;16&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#FFFFFF&quot; stroke-width=&quot;2.6&quot; stroke-linecap=&quot;round&quot;&gt;&lt;path d=&quot;M12 5v14M5 12h14&quot;&gt;&lt;/path&gt;&lt;/svg&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;div style=&quot;position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 16px 30px; background: #FDFDFF; border-top: 1px solid #DCDCE0;&quot;&gt;
+    &lt;div style=&quot;min-height: 48px; border-radius: 14px; background: #00838E; color: #FFFFFF; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center;&quot;&gt;Next — choose destination&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;/body&gt;&lt;/html&gt;" loading="eager" scrolling="no"></iframe></div>
+        <figcaption><span class="tag">D</span><div><h3>Name as the hero</h3><p>A big name card rises out of the map, editable with the pencil. Tinted tag chips; picked ones fill solid.</p></div></figcaption>
+      </figure>
+      <figure class="frame">
+        <div class="phone"><iframe title="E · Colour card" srcdoc="&lt;!doctype html&gt;&lt;html&gt;&lt;head&gt;&lt;meta charset=&quot;utf-8&quot;&gt;
+  &lt;link rel=&quot;stylesheet&quot; href=&quot;https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&amp;display=swap&quot;&gt;
+  &lt;style&gt;
+    body { margin: 0; font-family: &#x27;Figtree&#x27;, &#x27;Avenir Next&#x27;, &#x27;Helvetica Neue&#x27;, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #006873; } a:hover { color: #00838E; }
+  &lt;/style&gt;
+&lt;style&gt;html,body{margin:0;background:#F0F0F3}&lt;/style&gt;&lt;/head&gt;&lt;body&gt;
+&lt;!-- E · Colour card: the name sits on a block coloured by its kind; tags are icon tiles you tap on and off. --&gt;
+&lt;div style=&quot;position: relative; width: 390px; height: 844px; overflow: hidden; background: #F0F0F3; color: #1C1C25;&quot;&gt;
+  &lt;div style=&quot;position: absolute; left: 0; right: 0; top: 54px; display: flex; align-items: center; padding: 0 12px;&quot;&gt;
+    &lt;div style=&quot;width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;&quot;&gt;
+      &lt;svg width=&quot;12&quot; height=&quot;18&quot; viewBox=&quot;0 0 10 16&quot; fill=&quot;none&quot;&gt;&lt;path d=&quot;M8 1L2 8l6 7&quot; stroke=&quot;#1C1C25&quot; stroke-width=&quot;2&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;&gt;&lt;/path&gt;&lt;/svg&gt;
+    &lt;/div&gt;
+    &lt;div style=&quot;flex-grow: 1; text-align: center; font-size: 16px; font-weight: 800;&quot;&gt;Add a place&lt;/div&gt;
+    &lt;div style=&quot;width: 44px;&quot;&gt;&lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;!-- the name on its colour block, with a small map inset --&gt;
+  &lt;div style=&quot;position: absolute; left: 16px; right: 16px; top: 108px; border-radius: 22px; background: #E65719; padding: 18px; display: flex; gap: 14px; box-shadow: 0 16px 36px rgba(230,87,25,0.28);&quot;&gt;
+    &lt;div style=&quot;flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px;&quot;&gt;
+      &lt;div style=&quot;font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: rgba(255,255,255,0.8);&quot;&gt;Food &amp;amp; drink&lt;/div&gt;
+      &lt;div style=&quot;font-size: 30px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.02; color: #FFFFFF;&quot;&gt;Koshary Abou Tarek&lt;/div&gt;
+      &lt;div style=&quot;font-size: 12.5px; color: rgba(255,255,255,0.85);&quot;&gt;16 Champollion St, Downtown&lt;/div&gt;
+      &lt;div style=&quot;display: flex; gap: 6px; margin-top: 4px;&quot;&gt;
+        &lt;div style=&quot;font-size: 11.5px; font-weight: 700; color: #FFFFFF; background: rgba(255,255,255,0.22); border-radius: 999px; padding: 4px 10px;&quot;&gt;restaurant&lt;/div&gt;
+        &lt;div style=&quot;font-size: 11.5px; font-weight: 700; color: #FFFFFF; background: rgba(255,255,255,0.22); border-radius: 999px; padding: 4px 10px;&quot;&gt;egyptian&lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div style=&quot;position: relative; width: 92px; height: 120px; flex-shrink: 0; border-radius: 14px; overflow: hidden; background: #E6E7EC; box-shadow: 0 0 0 3px rgba(255,255,255,0.35);&quot;&gt;
+      &lt;svg width=&quot;92&quot; height=&quot;120&quot; viewBox=&quot;0 0 92 120&quot; style=&quot;position: absolute; inset: 0;&quot;&gt;
+        &lt;path d=&quot;M30 -5 C22 40 52 60 42 125 L58 125 C66 60 38 40 46 -5 Z&quot; fill=&quot;#CFE0EF&quot;&gt;&lt;/path&gt;
+        &lt;path d=&quot;M-5 38 L97 30 M-5 82 L97 72 M22 -5 L30 125 M72 -5 L66 125&quot; stroke=&quot;#FBFBFD&quot; stroke-width=&quot;6&quot; fill=&quot;none&quot;&gt;&lt;/path&gt;
+      &lt;/svg&gt;
+      &lt;div style=&quot;position: absolute; left: 34px; top: 38px;&quot;&gt;
+        &lt;svg width=&quot;24&quot; height=&quot;30&quot; viewBox=&quot;0 0 24 30&quot;&gt;&lt;path d=&quot;M12 1c5 0 9 4 9 9 0 6.5-9 19-9 19S3 16.5 3 10c0-5 4-9 9-9z&quot; fill=&quot;#E65719&quot; stroke=&quot;#FFFFFF&quot; stroke-width=&quot;1.6&quot;&gt;&lt;/path&gt;&lt;circle cx=&quot;12&quot; cy=&quot;10&quot; r=&quot;3.4&quot; fill=&quot;#FFFFFF&quot;&gt;&lt;/circle&gt;&lt;/svg&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;!-- tags as tiles --&gt;
+  &lt;div style=&quot;position: absolute; left: 16px; right: 16px; top: 330px; display: flex; flex-direction: column; gap: 12px;&quot;&gt;
+    &lt;div style=&quot;font-size: 15px; font-weight: 800;&quot;&gt;Tag it&lt;/div&gt;
+    &lt;div style=&quot;display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;&quot;&gt;
+      &lt;div style=&quot;position: relative; height: 84px; border-radius: 16px; background: #FFE7DC; border: 2px solid #E65719; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px;&quot;&gt;
+        &lt;svg width=&quot;24&quot; height=&quot;24&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#C2410C&quot; stroke-width=&quot;2&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;&gt;&lt;path d=&quot;M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10&quot;&gt;&lt;/path&gt;&lt;path d=&quot;M17 21V3c-2 1.5-3 4-3 7h3&quot;&gt;&lt;/path&gt;&lt;/svg&gt;
+        &lt;div style=&quot;font-size: 12.5px; font-weight: 700; color: #9A3412;&quot;&gt;restaurant&lt;/div&gt;
+        &lt;div style=&quot;position: absolute; top: 7px; right: 7px; width: 18px; height: 18px; border-radius: 50%; background: #E65719; display: flex; align-items: center; justify-content: center;&quot;&gt;&lt;svg width=&quot;10&quot; height=&quot;10&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#FFFFFF&quot; stroke-width=&quot;4&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;&gt;&lt;path d=&quot;M5 13l4.5 4.5L19 7&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div style=&quot;height: 84px; border-radius: 16px; background: #FDFDFF; border: 2px solid transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px;&quot;&gt;
+        &lt;svg width=&quot;24&quot; height=&quot;24&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#E65719&quot; stroke-width=&quot;2&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;&gt;&lt;path d=&quot;M4 9h12v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z&quot;&gt;&lt;/path&gt;&lt;path d=&quot;M16 11h1.5a2.5 2.5 0 0 1 0 5H16&quot;&gt;&lt;/path&gt;&lt;path d=&quot;M8 3v3M12 3v3&quot;&gt;&lt;/path&gt;&lt;/svg&gt;
+        &lt;div style=&quot;font-size: 12.5px; font-weight: 600;&quot;&gt;cafe&lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div style=&quot;height: 84px; border-radius: 16px; background: #FDFDFF; border: 2px solid transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px;&quot;&gt;
+        &lt;svg width=&quot;24&quot; height=&quot;24&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#E65719&quot; stroke-width=&quot;2&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;&gt;&lt;path d=&quot;M8 3h8l-1 7a3 3 0 0 1-6 0z&quot;&gt;&lt;/path&gt;&lt;path d=&quot;M12 13v8M8 21h8&quot;&gt;&lt;/path&gt;&lt;/svg&gt;
+        &lt;div style=&quot;font-size: 12.5px; font-weight: 600;&quot;&gt;bar&lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div style=&quot;height: 84px; border-radius: 16px; background: #FDFDFF; border: 2px solid transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px;&quot;&gt;
+        &lt;svg width=&quot;24&quot; height=&quot;24&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#2E9E52&quot; stroke-width=&quot;2&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;&gt;&lt;path d=&quot;M12 3l6 9h-3l4 6H5l4-6H6z&quot;&gt;&lt;/path&gt;&lt;path d=&quot;M12 18v3&quot;&gt;&lt;/path&gt;&lt;/svg&gt;
+        &lt;div style=&quot;font-size: 12.5px; font-weight: 600;&quot;&gt;park&lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div style=&quot;height: 84px; border-radius: 16px; background: #FDFDFF; border: 2px solid transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px;&quot;&gt;
+        &lt;svg width=&quot;24&quot; height=&quot;24&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#2E9E52&quot; stroke-width=&quot;2&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;&gt;&lt;path d=&quot;M4 21V10l8-6 8 6v11&quot;&gt;&lt;/path&gt;&lt;path d=&quot;M9 21v-6h6v6&quot;&gt;&lt;/path&gt;&lt;/svg&gt;
+        &lt;div style=&quot;font-size: 12.5px; font-weight: 600;&quot;&gt;rooftop&lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div style=&quot;height: 84px; border-radius: 16px; background: #FDFDFF; border: 2px solid transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px;&quot;&gt;
+        &lt;svg width=&quot;24&quot; height=&quot;24&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#6A69DB&quot; stroke-width=&quot;2&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;&gt;&lt;path d=&quot;M3 9l9-5 9 5&quot;&gt;&lt;/path&gt;&lt;path d=&quot;M5 9v9M9.5 9v9M14.5 9v9M19 9v9M3 21h18&quot;&gt;&lt;/path&gt;&lt;/svg&gt;
+        &lt;div style=&quot;font-size: 12.5px; font-weight: 600;&quot;&gt;museum&lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div style=&quot;height: 84px; border-radius: 16px; background: #FDFDFF; border: 2px solid transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px;&quot;&gt;
+        &lt;svg width=&quot;24&quot; height=&quot;24&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#6A69DB&quot; stroke-width=&quot;2&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;&gt;&lt;circle cx=&quot;12&quot; cy=&quot;12&quot; r=&quot;8.5&quot;&gt;&lt;/circle&gt;&lt;circle cx=&quot;9&quot; cy=&quot;9&quot; r=&quot;1.2&quot;&gt;&lt;/circle&gt;&lt;circle cx=&quot;14.5&quot; cy=&quot;8.5&quot; r=&quot;1.2&quot;&gt;&lt;/circle&gt;&lt;circle cx=&quot;16&quot; cy=&quot;13&quot; r=&quot;1.2&quot;&gt;&lt;/circle&gt;&lt;path d=&quot;M11 16.5a2 2 0 0 1-2-2&quot;&gt;&lt;/path&gt;&lt;/svg&gt;
+        &lt;div style=&quot;font-size: 12.5px; font-weight: 600;&quot;&gt;art&lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div style=&quot;height: 84px; border-radius: 16px; background: #FDFDFF; border: 2px solid transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px;&quot;&gt;
+        &lt;svg width=&quot;24&quot; height=&quot;24&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#DB5392&quot; stroke-width=&quot;2&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;&gt;&lt;path d=&quot;M5 8h14l-1 13H6z&quot;&gt;&lt;/path&gt;&lt;path d=&quot;M9 8V6a3 3 0 0 1 6 0v2&quot;&gt;&lt;/path&gt;&lt;/svg&gt;
+        &lt;div style=&quot;font-size: 12.5px; font-weight: 600;&quot;&gt;shopping&lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div style=&quot;height: 84px; border-radius: 16px; border: 2px dashed #BABAC1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px;&quot;&gt;
+        &lt;svg width=&quot;22&quot; height=&quot;22&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#5C5C69&quot; stroke-width=&quot;2.2&quot; stroke-linecap=&quot;round&quot;&gt;&lt;path d=&quot;M12 5v14M5 12h14&quot;&gt;&lt;/path&gt;&lt;/svg&gt;
+        &lt;div style=&quot;font-size: 12.5px; font-weight: 600; color: #5C5C69;&quot;&gt;Your own&lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;div style=&quot;position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 16px 30px; background: #FDFDFF; border-top: 1px solid #DCDCE0;&quot;&gt;
+    &lt;div style=&quot;min-height: 48px; border-radius: 14px; background: #00838E; color: #FFFFFF; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center;&quot;&gt;Next — choose destination&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;/body&gt;&lt;/html&gt;" loading="eager" scrolling="no"></iframe></div>
+        <figcaption><span class="tag">E</span><div><h3>Colour card</h3><p>The name sits on a block in its kind's colour with a map inset. Tags become icon tiles you tap on and off.</p></div></figcaption>
+      </figure>
+    </div>
+  </section>
+</main>

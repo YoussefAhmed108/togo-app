@@ -76,9 +76,15 @@ func (r *UserRepository) UpdateMe(ctx context.Context, id uint64, name string, a
 	return err
 }
 
+// StoreRefreshToken adds a session. It must not touch the user's other live
+// tokens: deleting them all signed a user out on every other device (their
+// phone went blank the moment they signed in on the simulator). Only this
+// user's expired rows are cleared, as housekeeping.
 func (r *UserRepository) StoreRefreshToken(ctx context.Context, userID uint64, tokenHash string, expiresAt time.Time) error {
 	return withTx(ctx, r.DB, func(tx *sql.Tx) error {
-		if _, err := tx.ExecContext(ctx, `DELETE FROM refresh_tokens WHERE user_id = ?`, userID); err != nil {
+		if _, err := tx.ExecContext(ctx,
+			`DELETE FROM refresh_tokens WHERE user_id = ? AND expires_at < ?`, userID, time.Now(),
+		); err != nil {
 			return err
 		}
 		_, err := tx.ExecContext(ctx,
@@ -137,4 +143,49 @@ func (r *UserRepository) GetInterests(ctx context.Context, userID uint64) ([]str
 		cats = append(cats, cat)
 	}
 	return cats, rows.Err()
+}
+
+// ── Saved starting points ───────────────────────────────────────────────────
+
+func (r *UserRepository) ListLocations(ctx context.Context, userID uint64) ([]*models.SavedLocation, error) {
+	rows, err := r.DB.QueryContext(ctx,
+		`SELECT id, label, address, lat, lng FROM user_locations WHERE user_id = ? ORDER BY created_at`, userID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	locs := []*models.SavedLocation{}
+	for rows.Next() {
+		l := &models.SavedLocation{}
+		if err := rows.Scan(&l.ID, &l.Label, &l.Address, &l.Lat, &l.Lng); err != nil {
+			return nil, err
+		}
+		locs = append(locs, l)
+	}
+	return locs, rows.Err()
+}
+
+func (r *UserRepository) CreateLocation(ctx context.Context, userID uint64, label, address string, lat, lng float64) (uint64, error) {
+	res, err := r.DB.ExecContext(ctx,
+		`INSERT INTO user_locations (user_id, label, address, lat, lng) VALUES (?, ?, ?, ?, ?)`,
+		userID, label, address, lat, lng,
+	)
+	if err != nil {
+		return 0, err
+	}
+	id, err := res.LastInsertId()
+	return uint64(id), err
+}
+
+// DeleteLocation is scoped by user_id so one user can never delete another's.
+func (r *UserRepository) DeleteLocation(ctx context.Context, userID, id uint64) (bool, error) {
+	res, err := r.DB.ExecContext(ctx,
+		`DELETE FROM user_locations WHERE id = ? AND user_id = ?`, id, userID)
+	if err != nil {
+		return false, err
+	}
+	n, err := res.RowsAffected()
+	return n > 0, err
 }

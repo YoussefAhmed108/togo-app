@@ -134,7 +134,7 @@ CREATE TABLE memories (
 CREATE TABLE space_members (
   space_id  BIGINT UNSIGNED NOT NULL,
   user_id   BIGINT UNSIGNED NOT NULL,
-  role      ENUM('owner', 'member') NOT NULL DEFAULT 'member',
+  role      ENUM('owner', 'leader', 'member') NOT NULL DEFAULT 'member',
   joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (space_id, user_id),
   CONSTRAINT fk_sm_space FOREIGN KEY (space_id) REFERENCES spaces(id) ON DELETE CASCADE,
@@ -230,4 +230,34 @@ CREATE TABLE place_lookups (
   results_json MEDIUMTEXT    NOT NULL,
   created_at   TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_place_lookups_age (created_at)
+);
+
+-- ----------------------------------------------------------
+-- Saved starting points (migration 010)
+-- Named origins ("Home", "Work") the user picks instead of GPS.
+-- ----------------------------------------------------------
+CREATE TABLE user_locations (
+  id         BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id    BIGINT UNSIGNED NOT NULL,
+  label      VARCHAR(60)     NOT NULL,
+  address    VARCHAR(512)    NOT NULL,
+  lat        DOUBLE          NOT NULL,
+  lng        DOUBLE          NOT NULL,
+  created_at TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_ul_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_user_locations_user (user_id)
+);
+
+-- ----------------------------------------------------------
+-- Dishes rated on a memory (migration 011)
+-- Rating is 1-5, enforced in the handler (TiDB ignores CHECK).
+-- ----------------------------------------------------------
+CREATE TABLE memory_dishes (
+  id         BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  memory_id  BIGINT UNSIGNED  NOT NULL,
+  name       VARCHAR(120)     NOT NULL,
+  rating     TINYINT UNSIGNED NOT NULL,
+  created_at TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_md_memory FOREIGN KEY (memory_id) REFERENCES memories(id) ON DELETE CASCADE,
+  INDEX idx_memory_dishes_memory (memory_id)
 );

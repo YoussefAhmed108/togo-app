@@ -20,6 +20,13 @@ type Place struct {
 	UpdatedAt     time.Time
 }
 
+// Dish is one item eaten on a memory, rated 1-5.
+type Dish struct {
+	ID     uint64
+	Name   string
+	Rating uint8
+}
+
 type Memory struct {
 	ID         uint64
 	PlaceID    uint64
@@ -28,5 +35,6 @@ type Memory struct {
 	UploaderID uint64
 	ImageKey   string
 	Caption    *string
+	Dishes     []Dish // populated by a second query, not a DB column
 	CreatedAt  time.Time
 }

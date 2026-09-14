@@ -171,6 +171,23 @@ components:
           type: string
           nullable: true
           example: "Best latte ever"
+        dishes:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                format: int64
+                example: 3
+              name:
+                type: string
+                example: "Koshary"
+              rating:
+                type: integer
+                minimum: 1
+                maximum: 5
+                example: 5
         created_at:
           type: string
           format: date-time
@@ -808,6 +825,22 @@ paths:
                   type: string
                   nullable: true
                   example: "Best latte I've ever had"
+                dishes:
+                  type: array
+                  description: Dishes eaten, each rated 1-5. Max 20.
+                  items:
+                    type: object
+                    required: [name, rating]
+                    properties:
+                      name:
+                        type: string
+                        maxLength: 120
+                        example: "Koshary"
+                      rating:
+                        type: integer
+                        minimum: 1
+                        maximum: 5
+                        example: 5
       responses:
         "201":
           description: Memory created
@@ -988,52 +1021,6 @@ paths:
       responses:
         "204":
           description: Deleted
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-
-  /spaces/{id}/members:
-    parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
-
-    post:
-      tags: [Spaces]
-      summary: Add a member to a space
-      description: Requires owner role.
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [user_id]
-              properties:
-                user_id:
-                  type: integer
-                  format: int64
-                  example: 3
-      responses:
-        "200":
-          description: Updated member list
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/SpaceMember"
-        "400":
-          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":

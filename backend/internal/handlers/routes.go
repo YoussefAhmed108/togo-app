@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"net/http"
+	"strings"
 
 	"app/backend/internal/config"
 	"app/backend/internal/middleware"
@@ -43,15 +44,21 @@ func RegisterRoutes(r *mux.Router, deps Dependencies) {
 	// /local-files/       — serves stored images back as a static file tree.
 	if deps.Storage.IsLocalMode() {
 		r.HandleFunc("/local-upload/{key:.*}", uploadH.LocalUpload).Methods(http.MethodPut)
-		r.PathPrefix("/local-files/").Handler(
-			http.StripPrefix("/local-files/", http.FileServer(http.Dir(deps.Config.LocalUploadDir))),
-		)
+		files := http.StripPrefix("/local-files/", http.FileServer(http.Dir(deps.Config.LocalUploadDir)))
+		r.PathPrefix("/local-files/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// FileServer lists directories, which would enumerate every user's uploads.
+			if strings.HasSuffix(r.URL.Path, "/") {
+				http.NotFound(w, r)
+				return
+			}
+			files.ServeHTTP(w, r)
+		})
 	}
 
 	authMiddleware := middleware.Auth(deps.Config.JWTSecret)
 
 	api := r.PathPrefix("/api/v1").Subrouter()
-	api.Use(middleware.Logger, middleware.JSON)
+	api.Use(middleware.Logger, middleware.JSON, middleware.BodyLimit)
 
 	// Health check (public)
 	api.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -74,9 +81,14 @@ func RegisterRoutes(r *mux.Router, deps Dependencies) {
 
 	// --- Auth routes (public) ---
 	auth := api.PathPrefix("/auth").Subrouter()
-	auth.HandleFunc("/register", authH.Register).Methods(http.MethodPost)
-	auth.HandleFunc("/login", authH.Login).Methods(http.MethodPost)
-	auth.HandleFunc("/refresh", authH.Refresh).Methods(http.MethodPost)
+	// Per-IP caps against password guessing and signup spam. Refresh gets its
+	// own, looser bucket: every device refreshes ~4x/hr and a household or
+	// office shares one IP.
+	loginLimiter := middleware.NewRateLimiter(20, 100)
+	refreshLimiter := middleware.NewRateLimiter(120, 1000)
+	auth.HandleFunc("/register", loginLimiter.LimitIP(authH.Register)).Methods(http.MethodPost)
+	auth.HandleFunc("/login", loginLimiter.LimitIP(authH.Login)).Methods(http.MethodPost)
+	auth.HandleFunc("/refresh", refreshLimiter.LimitIP(authH.Refresh)).Methods(http.MethodPost)
 
 	// Profile setup: Auth required, but NOT RequireProfile
 	authSetup := auth.NewRoute().Subrouter()
@@ -92,6 +104,9 @@ func RegisterRoutes(r *mux.Router, deps Dependencies) {
 	protected.HandleFunc("/users/me", userH.GetMe).Methods(http.MethodGet)
 	protected.HandleFunc("/users/me", userH.UpdateMe).Methods(http.MethodPut)
 	protected.HandleFunc("/users/me/interests", userH.SaveInterests).Methods(http.MethodPost)
+	protected.HandleFunc("/users/me/locations", userH.ListLocations).Methods(http.MethodGet)
+	protected.HandleFunc("/users/me/locations", userH.CreateLocation).Methods(http.MethodPost)
+	protected.HandleFunc("/users/me/locations/{id}", userH.DeleteLocation).Methods(http.MethodDelete)
 
 	// Places — /places/extract must be registered before /places/{id},
 	// or mux treats "extract" as a place id.
@@ -117,8 +132,8 @@ func RegisterRoutes(r *mux.Router, deps Dependencies) {
 	protected.HandleFunc("/spaces/{id}", spaceH.DeleteSpace).Methods(http.MethodDelete)
 	protected.HandleFunc("/spaces/{id}/invite-link", spaceH.GenerateInviteLink).Methods(http.MethodPost)
 	protected.HandleFunc("/spaces/{id}/members", spaceH.ListSpaceMembers).Methods(http.MethodGet)
-	protected.HandleFunc("/spaces/{id}/members", spaceH.AddMember).Methods(http.MethodPost)
 	protected.HandleFunc("/spaces/{id}/members/{userId}", spaceH.RemoveMember).Methods(http.MethodDelete)
+	protected.HandleFunc("/spaces/{id}/members/{userId}", spaceH.SetMemberRole).Methods(http.MethodPatch)
 	protected.HandleFunc("/spaces/{id}/memories", spaceH.ListSpaceMemories).Methods(http.MethodGet)
 	protected.HandleFunc("/spaces/{id}/places", spaceH.ListSpacePlaces).Methods(http.MethodGet)
 	protected.HandleFunc("/spaces/{id}/places", spaceH.AddPlaceToSpace).Methods(http.MethodPost)

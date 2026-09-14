@@ -1,0 +1,252 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400..800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: var(--a1Text); } a:hover { color: var(--a1Fill); }
+
+    .app {
+      /* Surfaces: a quiet neutral ground with white cards on it (option B). */
+      --pageBg: oklch(95.5% 0.004 285); --text: oklch(23% 0.018 285); --muted: oklch(48% 0.02 285);
+      --rowBg: oklch(99.5% 0.003 285); --border: oklch(89.5% 0.006 285);
+      --chrome: oklch(99.5% 0.003 285); --sunken: oklch(95.5% 0.004 285);
+      --stripeA: oklch(89% 0.008 285); --stripeB: oklch(93% 0.006 285);
+      --ringIdle: oklch(79% 0.01 285);
+      --land: oklch(93% 0.008 285); --road: oklch(99% 0.004 285); --water: oklch(87.5% 0.038 250); --park: oklch(92% 0.042 150);
+      --disabledBg: oklch(89% 0.006 285); --disabledFg: oklch(45% 0.015 285);
+      /* Home header (B1): the page rises over a teal block. Value chosen in the canvas. */
+      --bandBg: #00828E; --headInk: #fff;
+      /* Violet owns people and spaces: these are the space-tile grounds. */
+      --a2Soft: oklch(90.5% 0.062 285); --a2SoftB: oklch(94% 0.042 285);
+
+      /* Brand. --a1 is the identity hue and is only ever a non-text fill
+         (pins, dots, rules). Text and filled controls use the two variants
+         below, which are the same hue solved to 4.5:1. */
+      --a1: oklch(62% 0.15 200);
+      --a1Text: oklch(44% 0.15 200);
+      --a1Fill: oklch(53% 0.15 200);
+      --a2: oklch(60% 0.17 280);
+      --a2Fill: oklch(58% 0.17 280);
+      --ok: oklch(60% 0.14 155);
+      --okFill: oklch(55% 0.14 155);
+      --onA1: #fff;
+      --scrim: oklch(20% 0.01 250 / 45%);
+      --focus: oklch(44% 0.15 200);
+
+      /* 4-base spacing scale: tight inside a group, generous between topics. */
+      --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px;
+
+      font-family: 'Inter', Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app.dark {
+      --pageBg: oklch(18% 0.012 255); --text: oklch(94% 0.006 250); --muted: oklch(65% 0.01 255);
+      --rowBg: oklch(24% 0.014 255); --border: oklch(28% 0.014 255);
+      --chrome: oklch(18% 0.012 255); --sunken: oklch(24% 0.014 255);
+      --headInk: var(--text);
+      --stripeA: oklch(24% 0.014 255); --stripeB: oklch(28% 0.014 255);
+      --ringIdle: oklch(45% 0.01 255);
+      --land: oklch(24% 0.012 255); --road: oklch(30% 0.014 255); --water: oklch(22% 0.03 250); --park: oklch(26% 0.03 160);
+      --disabledBg: oklch(30% 0.012 255); --disabledFg: oklch(62% 0.012 255);
+      --a2Soft: oklch(30% 0.045 285); --a2SoftB: oklch(26% 0.030 285);
+      --a1Text: oklch(72% 0.13 200);
+      --scrim: oklch(8% 0.01 250 / 62%);
+      --focus: oklch(78% 0.12 200);
+    }
+    .app[dir="rtl"] { font-family: 'IBM Plex Sans Arabic', 'Inter', Helvetica, Arial, sans-serif; }
+
+    /* Browser surfaces the design still owns. */
+    .app ::selection { background: color-mix(in oklab, var(--a1) 26%, transparent); color: var(--text); }
+    .app :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
+    .app :focus:not(:focus-visible) { outline: none; }
+    .app button { caret-color: var(--a1Text); }
+
+    .phone {
+      width: 390px; height: 844px; border-radius: 44px; overflow: hidden; position: relative;
+      background: var(--pageBg); box-shadow: 0 18px 44px oklch(20% 0.02 250 / 20%), 0 3px 10px oklch(20% 0.02 250 / 10%);
+    }
+    .scroll {
+      position: absolute; inset: 0; z-index: 1; padding: 40px 20px 100px;
+      overflow-y: auto; overflow-x: hidden; box-sizing: border-box;
+      scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+    }
+    .scroll::-webkit-scrollbar { width: 4px; }
+    .scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .scroll::-webkit-scrollbar-track { background: transparent; }
+
+    /* Small controls are 44px boxes that draw something smaller inside, so the
+       touch target is real without a pseudo-element reaching over a neighbour. */
+    .visit { inline-size: 44px; block-size: 44px; flex-shrink: 0; border: none; background: none; padding: 0; margin-inline-end: -9px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: inherit; border-radius: 50%; transition: background 140ms ease; }
+    .visit:hover { background: color-mix(in oklab, var(--text) 7%, transparent); }
+    .visit > span { inline-size: 26px; block-size: 26px; border-radius: 50%; border: 2px solid var(--ringIdle); color: #fff; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+    /* Visited toggle: icon only. A 30px mark inside a 44px target — a quiet
+       pin ring when not visited, a green disc when you have been. */
+    .beenHere { inline-size: 44px; min-height: 44px; flex-shrink: 0; border: none; background: none; padding: 0; margin-inline-end: -8px; cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; }
+    .beenHere > span { inline-size: 30px; block-size: 30px; border-radius: 50%; border: 1.5px solid var(--border); color: var(--muted); display: flex; align-items: center; justify-content: center; transition: background 200ms cubic-bezier(0.16, 1, 0.3, 1), border-color 200ms ease, color 200ms ease; }
+    .beenHere:hover > span { border-color: var(--okFill); color: var(--okFill); }
+    .beenHere.on > span { background: var(--okFill); border-color: var(--okFill); color: #fff; }
+    /* The check draws itself in, only on the row just tapped. */
+    @keyframes draw { from { stroke-dashoffset: 22; } to { stroke-dashoffset: 0; } }
+    .draw path { stroke-dasharray: 22; animation: draw 300ms cubic-bezier(0.16, 1, 0.3, 1); }
+
+    .iconBtn { inline-size: 44px; block-size: 44px; margin-inline-end: -5px; border-radius: 50%; background: var(--a1Fill); border: none; color: #fff; cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 140ms ease; }
+    .iconBtn:hover { background: color-mix(in oklab, var(--a1Fill) 88%, black); }
+
+    .h1 { font-size: 24px; font-weight: 800; color: var(--text); letter-spacing: -0.02em; }
+    /* One section-label style: peer sections must not look ranked. */
+    .secHead { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s3); margin-bottom: var(--s3); }
+    .sec { font-size: 13.5px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+    .secCount { font-size: 12px; font-weight: 600; color: var(--muted); }
+    .section + .section { margin-top: var(--s6); }
+
+    /* Context and capture are one group: what you are adding, and where you are. */
+    .capture { background: var(--rowBg); border-radius: 16px; overflow: hidden; }
+    .captureRow { display: flex; align-items: center; gap: var(--s3); inline-size: 100%; box-sizing: border-box; background: none; border: none; padding: 13px 14px; text-align: start; cursor: pointer; font-family: inherit; color: inherit; min-height: 56px; transition: background 140ms ease; }
+    .captureRow:hover { background: color-mix(in oklab, var(--rowBg) 88%, var(--text)); }
+    .captureRow + .captureRow { border-top: 1px solid var(--border); }
+    .captureScope { min-height: 48px; padding-block: 10px; }
+    .emptyNote { font-size: 12.5px; line-height: 1.45; color: var(--muted); background: var(--rowBg); border-radius: 12px; padding: 14px; }
+    .mut { font-size: 11.5px; color: var(--muted); }
+    .clip { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .row {
+      display: flex; align-items: center; gap: 10px; background: var(--rowBg); border-radius: 12px;
+      padding: 10px 12px; border: none; inline-size: 100%; box-sizing: border-box; text-align: start;
+      cursor: pointer; font-family: inherit; color: inherit; transition: background 140ms ease;
+    }
+    .row:hover { background: color-mix(in oklab, var(--rowBg) 88%, var(--text)); }
+    .rowName { font-size: 13.5px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .mtag { font-size: 11px; font-weight: 600; color: var(--muted); background: var(--pageBg); border: 1px solid var(--border); border-radius: 8px; padding: 2px 7px; }
+    .stripe4 { background: repeating-linear-gradient(45deg, var(--stripeA), var(--stripeA) 4px, var(--stripeB) 4px, var(--stripeB) 8px); }
+    .stripe6 { background: repeating-linear-gradient(45deg, var(--stripeA), var(--stripeA) 6px, var(--stripeB) 6px, var(--stripeB) 12px); }
+    /* Space tiles wear the secondary, so "violet = people and spaces" is a rule. */
+    .stripeSpace { background: repeating-linear-gradient(45deg, var(--a2Soft), var(--a2Soft) 6px, var(--a2SoftB) 6px, var(--a2SoftB) 12px); }
+    .stripe8 { background: repeating-linear-gradient(45deg, var(--stripeA), var(--stripeA) 8px, var(--stripeB) 8px, var(--stripeB) 16px); }
+
+    .tabbar { position: absolute; inset-inline: 0; bottom: 0; background: var(--chrome); border-top: 1px solid var(--border); display: flex; padding: 6px 6px 26px; z-index: 20; }
+    .tabb { flex: 1; background: none; border: none; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 0; cursor: pointer; font-family: inherit; color: var(--muted); min-height: 48px; }
+    .tabb:hover { color: var(--a1Text); }
+    .tabl { font-size: 11px; font-weight: 600; }
+
+    .btnP { inline-size: 100%; box-sizing: border-box; background: var(--a1Fill); color: var(--onA1); border: none; border-radius: 14px; padding: 15px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; min-height: 48px; transition: background 140ms ease; }
+    .btnP:hover { background: color-mix(in oklab, var(--a1Fill) 88%, black); }
+    .btnP[data-disabled="true"] { background: var(--disabledBg); color: var(--disabledFg); cursor: default; }
+    .btnG { inline-size: 100%; box-sizing: border-box; background: var(--rowBg); color: var(--text); border: none; border-radius: 14px; padding: 15px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; min-height: 48px; transition: background 140ms ease; }
+    .btnG:hover { background: color-mix(in oklab, var(--rowBg) 88%, var(--text)); }
+
+    .field { background: var(--sunken); border: 1px solid var(--border); border-radius: 12px; padding: 13px 14px; font-size: 14px; color: var(--text); }
+    .fieldPh { color: var(--muted); }
+    .lab { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 7px; }
+    .chip { font-size: 12px; font-weight: 600; color: var(--text); background: var(--rowBg); border: 1px solid var(--border); border-radius: 999px; padding: 0 13px; cursor: pointer; font-family: inherit; white-space: nowrap; min-height: 36px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; transition: background 140ms ease, border-color 140ms ease; }
+    .chip:hover { border-color: var(--a1Text); }
+    .chipOn { color: var(--onA1); background: var(--a1Fill); border-color: var(--a1Fill); }
+    .chipOn:hover { background: color-mix(in oklab, var(--a1Fill) 88%, black); border-color: transparent; }
+
+    .sheetWrap { position: absolute; inset: 0; background: var(--scrim); display: flex; align-items: flex-end; z-index: 40; }
+    .sheet { inline-size: 100%; background: var(--chrome); border-radius: 20px 20px 0 0; padding: 22px 20px 34px; box-sizing: border-box; max-height: 88%; overflow-y: auto; }
+    .grab { inline-size: 36px; block-size: 4px; border-radius: 4px; background: var(--border); margin: 0 auto 18px; }
+    .recSave { position: absolute; top: 2px; inset-inline-end: 2px; inline-size: 44px; block-size: 44px; border: none; background: none; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .recSave > span { inline-size: 34px; block-size: 34px; border-radius: 50%; background: var(--rowBg); color: var(--a1Text); display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px oklch(20% 0.02 250 / 22%); transition: background 180ms ease, color 180ms ease, transform 160ms cubic-bezier(0.16,1,0.3,1); }
+    .recSave:active > span { transform: scale(0.9); }
+    .recSave.on > span { background: var(--a1Fill); color: #fff; }
+    .stars { display: flex; justify-content: center; margin: 4px 0 18px; }
+    .star { inline-size: 48px; block-size: 48px; border: none; background: none; padding: 0; cursor: pointer; color: var(--border); display: flex; align-items: center; justify-content: center; transition: color 140ms ease, transform 160ms cubic-bezier(0.16,1,0.3,1); }
+    .star.on { color: oklch(76% 0.16 75); }
+    .star:active { transform: scale(0.88); }
+    .photoAdd { inline-size: 64px; block-size: 64px; flex-shrink: 0; border-radius: 12px; border: 1.5px dashed var(--border); background: none; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .sheetT { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 14px; }
+    .back { inline-size: 44px; block-size: 44px; margin-inline-start: -5px; border-radius: 50%; background: none; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: background 140ms ease; }
+    .back:hover { background: var(--rowBg); }
+    .backIcon { color: var(--text); }
+
+    .segw { display: flex; gap: 4px; background: var(--sunken); border-radius: 12px; padding: 4px; }
+    .seg { flex: 1; text-align: center; font-size: 13px; font-weight: 700; color: var(--muted); padding: 11px 0; border-radius: 9px; border: none; background: none; cursor: pointer; font-family: inherit; min-height: 44px; transition: background 140ms ease, color 140ms ease; }
+    .seg:hover { color: var(--text); }
+    .segOn { background: var(--chrome); color: var(--text); box-shadow: 0 1px 3px oklch(20% 0.02 250 / 16%); }
+    /* Home header block (light only): a flat block, with the page ground rising
+       over it on rounded top corners so the capture card straddles the seam. */
+    .band, .bandSheet { display: none; }
+    .app:not(.dark) .band { display: block; position: absolute; top: 0; inset-inline: 0; height: 200px; background: var(--bandBg); z-index: -2; }
+    .app:not(.dark) .bandSheet { display: block; position: absolute; top: 158px; inset-inline: 0; bottom: 0; background: var(--pageBg); border-radius: 26px 26px 0 0; z-index: -1; }
+
+    /* On the teal header the teal logo square needs a ring to stay visible. */
+    .app:not(.dark) .logoMark { box-shadow: 0 0 0 2px oklch(100% 0 0 / 0.85); }
+
+    /* Create space */
+    .csBanner { position: relative; display: block; inline-size: 100%; block-size: 176px; border-radius: 16px; overflow: hidden; cursor: pointer; font-family: inherit; padding: 0; border: 1.5px dashed var(--border); background: var(--rowBg); }
+    .csBannerFilled { border: none; }
+    .csGrid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+    .csEmoji { block-size: 46px; border-radius: 12px; border: 2px solid transparent; background: none; font-size: 22px; cursor: pointer; font-family: inherit; transition: background 140ms ease, border-color 140ms ease; }
+    .csEmoji:hover { background: var(--sunken); }
+    .csEmojiOn { border-color: var(--a1Fill); background: var(--sunken); }
+    .linkPill { display: flex; align-items: center; gap: 10px; inline-size: 100%; box-sizing: border-box; background: var(--sunken); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; cursor: pointer; font-family: inherit; text-align: start; min-height: 48px; }
+    .card { background: var(--rowBg); border-radius: 14px; padding: 14px; }
+
+    .mchip { font-size: 11.5px; font-weight: 700; color: var(--muted); background: none; border: none; padding: 8px 10px; border-radius: 999px; cursor: pointer; font-family: inherit; min-height: 36px; }
+    .mchip:hover { color: var(--text); }
+    .mchipOn { background: var(--rowBg); color: var(--text); }
+    .link { background: none; border: none; padding: 6px 2px; font-family: inherit; font-size: 12px; font-weight: 700; color: var(--a1Text); cursor: pointer; }
+    .link:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+    /* Motion. One authored moment — the capture wait — and small feedback
+       everywhere else. Confident deceleration, never bounce; exits are faster
+       than entrances. Transform and opacity only. */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spin { animation: spin 900ms linear infinite; }
+
+    @keyframes scrimIn { from { opacity: 0; } }
+    /* Entrances move but never start invisible: if an animation stalls, the
+       content is simply there, just without the motion. */
+    @keyframes sheetIn { from { transform: translateY(14px); } }
+    .sheetWrap { animation: scrimIn 220ms ease; }
+    .sheet { animation: sheetIn 320ms cubic-bezier(0.16, 1, 0.3, 1); }
+
+    /* A pushed screen arrives from the leading edge, mirrored in RTL. */
+    @keyframes screenIn { from { transform: translateX(18px); } }
+    @keyframes screenInRtl { from { transform: translateX(-18px); } }
+    .screenIn { animation: screenIn 260ms cubic-bezier(0.16, 1, 0.3, 1); }
+    .app[dir="rtl"] .screenIn { animation-name: screenInRtl; }
+
+    @keyframes revealIn { from { transform: translateY(-6px); } }
+    .reveal { animation: revealIn 220ms cubic-bezier(0.16, 1, 0.3, 1); }
+
+    /* The check lands rather than appears. */
+    @keyframes pop { from { transform: scale(0.4); } }
+    .pop { animation: pop 260ms cubic-bezier(0.16, 1, 0.3, 1); }
+
+    /* Capture wait: the stage list advances, the bar tracks it. */
+    .stage { display: flex; align-items: center; gap: 10px; font-size: 13.5px; color: var(--muted); transition: color 220ms ease; }
+    .stageOn { color: var(--text); font-weight: 700; }
+    .stageDot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--border); flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #fff; transition: background 220ms ease, border-color 220ms ease; }
+    .stageDone .stageDot { background: var(--okFill); border-color: var(--okFill); }
+    .stageBusy .stageDot { border-color: var(--a1Text); border-top-color: transparent; animation: spin 700ms linear infinite; }
+    .track { height: 4px; border-radius: 2px; background: var(--border); overflow: hidden; }
+    .trackFill { height: 100%; border-radius: 2px; background: var(--a1Fill); transition: width 520ms cubic-bezier(0.16, 1, 0.3, 1); }
+
+    /* Reduced motion removes travel, not meaning: colour and state feedback
+       stay, spatial entrances and loops stop. */
+    @media (prefers-reduced-motion: reduce) {
+      .sheetWrap, .sheet, .screenIn, .reveal, .pop, .draw path { animation: none; }
+      .spin, .stageBusy .stageDot { animation: none; }
+      .trackFill { transition-duration: 0ms; }
+    }
+
+    /* RTL: layout is mirrored by logical properties; only glyphs that point
+       need explicit flipping, and Arabic never takes Latin tracking. */
+    .app[dir="rtl"] .mirror { transform: scaleX(-1); }
+    .app[dir="rtl"] .lab, .app[dir="rtl"] .eyebrow { letter-spacing: normal; text-transform: none; }
+    .app[dir="rtl"] .h1 { letter-spacing: 0; }
+
+    .cap { max-inline-size: 390px; }
+    .cap .num { font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
+    .cap .h { font-size: 21px; font-weight: 700; color: var(--text); margin-top: 3px; }
+    .cap .p { font-size: 13px; line-height: 1.5; color: var(--muted); margin-top: 7px; }
+  </style>
+</helmet>

@@ -1,0 +1,13 @@
+{
+  "artboards": [
+    {"file": "Main.dc.html", "x": 0, "y": 0, "w": 440, "h": 1100, "title": "Option 1a · For you mode"},
+    {"file": "Option1b.dc.html", "x": 540, "y": 0, "w": 440, "h": 1100, "title": "Option 1b · sheet expanded"},
+    {"file": "Option2.dc.html", "x": 1160, "y": 0, "w": 440, "h": 1100, "title": "Option 2 · Discover tab"}
+  ],
+  "annotations": [
+    {"id": "note-1", "x": 0, "y": -210, "w": 980, "text": "OPTION 1 — keep the map as Home, give recommendations a mode and a full-screen state.\nTwo frames: the segmented sheet on \"For you\", and the same sheet dragged to full height.\nRecommended: no new tab, no duplicate list surface, and the map keeps doing work in both states."},
+    {"id": "note-2", "x": 1160, "y": -210, "w": 440, "text": "OPTION 2 — your other idea: Discover becomes Home, the map moves to its own tab."},
+    {"id": "note-colour", "x": 0, "y": 1150, "w": 980, "text": "Colour is still Nightfall as a placeholder — this round is about where recommendations live, not the palette. Scheme choice from the last canvas is still open."}
+  ],
+  "launch": {"view": "canvas"}
+}

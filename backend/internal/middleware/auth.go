@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"strings"
 
@@ -33,6 +34,7 @@ func Auth(jwtSecret string) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			header := r.Header.Get("Authorization")
 			if !strings.HasPrefix(header, "Bearer ") {
+				log.Printf("req[%s] auth: no bearer token for %s", ReqID(r), r.URL.Path)
 				writeUnauthorized(w)
 				return
 			}
@@ -46,10 +48,17 @@ func Auth(jwtSecret string) func(http.Handler) http.Handler {
 				return []byte(jwtSecret), nil
 			})
 			if err != nil || !token.Valid {
+				// The reason matters: an expired token is the client failing to
+				// refresh, a signature error is a secret mismatch between
+				// environments. Both surfaced as an identical silent 401.
+				log.Printf("req[%s] auth: rejected token for %s: %v", ReqID(r), r.URL.Path, err)
 				writeUnauthorized(w)
 				return
 			}
 
+			if p, ok := r.Context().Value(uidSlot{}).(*uint64); ok {
+				*p = claims.UserID
+			}
 			ctx := context.WithValue(r.Context(), userIDKey, claims.UserID)
 			ctx = context.WithValue(ctx, profileCompleteKey, claims.ProfileComplete)
 			next.ServeHTTP(w, r.WithContext(ctx))
@@ -61,6 +70,7 @@ func Auth(jwtSecret string) func(http.Handler) http.Handler {
 func RequireProfile(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !GetProfileComplete(r) {
+			log.Printf("req[%s] auth: profile incomplete, blocked %s", ReqID(r), r.URL.Path)
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusForbidden)
 			w.Write([]byte(`{"error":"profile setup required"}`))

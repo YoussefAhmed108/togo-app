@@ -14,6 +14,8 @@ type mockUserStore struct {
 	findByEmail        func(context.Context, string) (*models.User, error)
 	findByID           func(context.Context, uint64) (*models.User, error)
 	findByUsername     func(context.Context, string) (*models.User, error)
+	locations          []*models.SavedLocation
+	locationOwners     map[uint64]uint64
 	updateProfile      func(context.Context, uint64, string, string, *string) error
 	updateMe           func(context.Context, uint64, string, *string) error
 	storeRefreshToken  func(context.Context, uint64, string, time.Time) error
@@ -57,6 +59,36 @@ func (m *mockUserStore) GetInterests(ctx context.Context, userID uint64) ([]stri
 	return m.getInterests(ctx, userID)
 }
 
+// Saved starting points are simple enough to fake for real rather than stub.
+func (m *mockUserStore) ListLocations(_ context.Context, userID uint64) ([]*models.SavedLocation, error) {
+	out := []*models.SavedLocation{}
+	for _, l := range m.locations {
+		if m.locationOwners[l.ID] == userID {
+			out = append(out, l)
+		}
+	}
+	return out, nil
+}
+func (m *mockUserStore) CreateLocation(_ context.Context, userID uint64, label, address string, lat, lng float64) (uint64, error) {
+	if m.locationOwners == nil {
+		m.locationOwners = map[uint64]uint64{}
+	}
+	id := uint64(len(m.locations) + 1)
+	m.locations = append(m.locations, &models.SavedLocation{ID: id, Label: label, Address: address, Lat: lat, Lng: lng})
+	m.locationOwners[id] = userID
+	return id, nil
+}
+func (m *mockUserStore) DeleteLocation(_ context.Context, userID, id uint64) (bool, error) {
+	for i, l := range m.locations {
+		if l.ID == id && m.locationOwners[id] == userID {
+			m.locations = append(m.locations[:i], m.locations[i+1:]...)
+			delete(m.locationOwners, id)
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 // ---- mockPlaceStore ----
 
 type mockPlaceStore struct {
@@ -74,16 +106,23 @@ type mockPlaceStore struct {
 	removeTagFromPlace  func(context.Context, uint64, string) error
 	getPlaceTags        func(context.Context, uint64) ([]string, error)
 	createMemory        func(context.Context, uint64, uint64, string, *string, *uint64) (uint64, error)
-	listMemories        func(context.Context, uint64) ([]*models.Memory, error)
+	listMemories        func(context.Context, uint64, uint64) ([]*models.Memory, error)
 	getMemory           func(context.Context, uint64) (*models.Memory, error)
 	deleteMemory        func(context.Context, uint64, uint64) error
 	placeExistsForOwner func(context.Context, uint64, uint64) (bool, error)
 	listByIDs           func(context.Context, []uint64) ([]*models.Place, error)
 	getUserTagProfile   func(context.Context, uint64, int) ([]string, error)
+	addDishes           func(uint64, []models.Dish) error
 }
 
 func (m *mockPlaceStore) CreatePlace(ctx context.Context, ownerID uint64, name string, address *string, lat, lng float64, saved bool, googlePlaceID *string) (uint64, error) {
 	return m.createPlace(ctx, ownerID, name, address, lat, lng, saved)
+}
+func (m *mockPlaceStore) AddDishes(_ context.Context, memoryID uint64, dishes []models.Dish) error {
+	if m.addDishes != nil {
+		return m.addDishes(memoryID, dishes)
+	}
+	return nil
 }
 func (m *mockPlaceStore) FindByGoogleID(ctx context.Context, ownerID uint64, googlePlaceID string) (uint64, error) {
 	if m.findByGoogleID == nil {
@@ -127,8 +166,8 @@ func (m *mockPlaceStore) GetPlaceTags(ctx context.Context, placeID uint64) ([]st
 func (m *mockPlaceStore) CreateMemory(ctx context.Context, placeID, uploaderID uint64, imageKey string, caption *string, spaceID *uint64) (uint64, error) {
 	return m.createMemory(ctx, placeID, uploaderID, imageKey, caption, spaceID)
 }
-func (m *mockPlaceStore) ListMemories(ctx context.Context, placeID uint64) ([]*models.Memory, error) {
-	return m.listMemories(ctx, placeID)
+func (m *mockPlaceStore) ListMemories(ctx context.Context, placeID, viewerID uint64) ([]*models.Memory, error) {
+	return m.listMemories(ctx, placeID, viewerID)
 }
 func (m *mockPlaceStore) GetMemory(ctx context.Context, memoryID uint64) (*models.Memory, error) {
 	return m.getMemory(ctx, memoryID)
@@ -167,7 +206,8 @@ type mockSpaceStore struct {
 	removePlaceFromSpace   func(context.Context, uint64, uint64) error
 	listSpacePlaceIDs      func(context.Context, uint64) ([]uint64, error)
 	isPlaceInSpace         func(context.Context, uint64, uint64) (bool, error)
-	getOrCreateInviteToken func(context.Context, uint64, uint64) (string, error)
+	getOrCreateInviteToken func(context.Context, uint64, uint64) (string, time.Time, error)
+	setMemberRole          func(context.Context, uint64, uint64, string) (bool, error)
 	findSpaceByInviteToken func(context.Context, string) (*models.Space, error)
 }
 
@@ -225,7 +265,10 @@ func (m *mockSpaceStore) ListSpacePlaceIDs(ctx context.Context, spaceID uint64) 
 func (m *mockSpaceStore) IsPlaceInSpace(ctx context.Context, spaceID, placeID uint64) (bool, error) {
 	return m.isPlaceInSpace(ctx, spaceID, placeID)
 }
-func (m *mockSpaceStore) GetOrCreateInviteToken(ctx context.Context, spaceID, createdBy uint64) (string, error) {
+func (m *mockSpaceStore) SetMemberRole(ctx context.Context, spaceID, userID uint64, role string) (bool, error) {
+	return m.setMemberRole(ctx, spaceID, userID, role)
+}
+func (m *mockSpaceStore) GetOrCreateInviteToken(ctx context.Context, spaceID, createdBy uint64) (string, time.Time, error) {
 	return m.getOrCreateInviteToken(ctx, spaceID, createdBy)
 }
 func (m *mockSpaceStore) FindSpaceByInviteToken(ctx context.Context, token string) (*models.Space, error) {

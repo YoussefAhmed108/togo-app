@@ -9,13 +9,12 @@ import {
   View,
 } from 'react-native';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
-import {SafeAreaView} from 'react-native-safe-area-context';
 import {AppButton} from '../../components/AppButton';
 import {AppInput} from '../../components/AppInput';
-import {AppLogo} from '../../components/AppLogo';
+import {AuthMapHero} from '../../components/AuthMapHero';
 import {ErrorBanner} from '../../components/ErrorBanner';
 import {useAuth} from '../../hooks/useAuth';
-import {colors, fonts, radius, shadows, spacing, typography} from '../../theme';
+import {colors, fonts, spacing} from '../../theme';
 import {AuthStackParamList} from '../../types/navigation';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
@@ -55,42 +54,32 @@ export function LoginScreen({navigation}: Props) {
     } catch (err: any) {
       const msg =
         err?.response?.data?.error ?? 'Something went wrong. Please try again.';
-      setApiError(
-        msg === 'invalid credentials'
-          ? 'Incorrect email or password.'
-          : msg,
-      );
+      setApiError(msg === 'invalid credentials' ? 'Incorrect email or password.' : msg);
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <View style={styles.root}>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}>
+          showsVerticalScrollIndicator={false}
+          bounces={false}>
+          <AuthMapHero height={470} showCaptureCard />
 
-          {/* Logo */}
-          <View style={styles.logoArea}>
-            <AppLogo size="lg" />
-            <Text style={styles.tagline}>Your places, your memories.</Text>
-          </View>
-
-          {/* Form card */}
-          <View style={styles.card}>
-            <Text style={styles.heading}>Welcome back</Text>
-            <Text style={styles.sub}>Sign in to your account</Text>
+          <View style={styles.form}>
+            <Text style={styles.heading}>Your city, already saved.</Text>
+            <Text style={styles.sub}>Sign in to your places and spaces.</Text>
 
             <ErrorBanner message={apiError} />
 
             <AppInput
-              label="Email"
-              placeholder="you@example.com"
+              placeholder="you@email.com"
               keyboardType="email-address"
               value={email}
               onChangeText={t => {
@@ -101,8 +90,7 @@ export function LoginScreen({navigation}: Props) {
             />
 
             <AppInput
-              label="Password"
-              placeholder="••••••••"
+              placeholder="Password"
               isPassword
               value={password}
               onChangeText={t => {
@@ -113,80 +101,47 @@ export function LoginScreen({navigation}: Props) {
             />
 
             <AppButton
-              title="Sign In"
+              title="Sign in"
               loading={loading}
               onPress={handleLogin}
               style={styles.submitBtn}
             />
-          </View>
 
-          {/* Footer */}
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Don't have an account? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
-              <Text style={styles.footerLink}>Create one</Text>
-            </TouchableOpacity>
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>Don't have an account? </Text>
+              <TouchableOpacity hitSlop={10} onPress={() => navigation.navigate('Signup')}>
+                <Text style={styles.footerLink}>Create one</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: {flex: 1, backgroundColor: colors.background},
+  root: {flex: 1, backgroundColor: colors.background},
   flex: {flex: 1},
-  scroll: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.xl,
-  },
-  logoArea: {
-    alignItems: 'center',
-    marginBottom: spacing.xl,
-  },
-  tagline: {
-    fontFamily: fonts.regular,
-    fontSize: 15,
-    marginTop: spacing.md,
-    color: colors.textSecondary,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    padding: 26,
-    ...shadows.card,
-  },
+  scroll: {flexGrow: 1, paddingBottom: spacing.xl},
+  // The form rises into the map's fade.
+  form: {paddingHorizontal: 24, marginTop: -42},
   heading: {
-    ...typography.h1,
-    marginBottom: 2,
+    fontFamily: fonts.bold,
+    fontSize: 30,
+    lineHeight: 32,
+    letterSpacing: -0.9,
+    color: colors.text,
   },
   sub: {
     fontFamily: fonts.regular,
-    fontSize: 15,
+    fontSize: 14,
     color: colors.textSecondary,
-    marginBottom: spacing.lg,
+    marginTop: 8,
+    marginBottom: 24,
   },
-  submitBtn: {
-    marginTop: spacing.sm,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: spacing.lg,
-  },
-  footerText: {
-    fontFamily: fonts.regular,
-    fontSize: 15,
-    color: colors.textSecondary,
-  },
-  footerLink: {
-    fontFamily: fonts.display,
-    fontSize: 15,
-    color: colors.primary,
-  },
+  submitBtn: {marginTop: 6},
+  footer: {flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 20},
+  footerText: {fontFamily: fonts.regular, fontSize: 13, color: colors.textSecondary},
+  footerLink: {fontFamily: fonts.bold, fontSize: 13, color: colors.primary},
 });

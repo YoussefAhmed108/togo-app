@@ -39,10 +39,11 @@ import MapView, {Marker, PROVIDER_GOOGLE, Region} from 'react-native-maps';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {AppStackParamList} from '../../types/navigation';
 import {placeService, ApiPlace, ApiMemoryWithSpace} from '../../services/placeService';
-import memoryService from '../../services/memoryService';
+import memoryService, {DishDraft} from '../../services/memoryService';
 import {colors, fonts, radius, spacing} from '../../theme';
 import {Pin} from '../../components/Pin';
 import {displayAddress} from '../../utils/address';
+import {pickImage, PickedImage} from '../../utils/pickImage';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'PlaceDetail'>;
 
@@ -54,27 +55,43 @@ interface SpaceGroup {
   memories: ApiMemoryWithSpace[];
 }
 
-// ── Image picker helper ───────────────────────────────────────────────────────
 
-interface PickedImage {
-  uri: string;
-  type: string;
+
+// ── Stars ─────────────────────────────────────────────────────────────────────
+
+/** 1-5 stars. Read-only when onRate is omitted. */
+function Stars({
+  rating,
+  onRate,
+  size = 20,
+}: {
+  rating: number;
+  onRate?: (n: number) => void;
+  size?: number;
+}) {
+  return (
+    <View style={st.row}>
+      {[1, 2, 3, 4, 5].map(n => (
+        <TouchableOpacity
+          key={n}
+          disabled={!onRate}
+          onPress={() => onRate?.(n)}
+          hitSlop={6}
+          activeOpacity={0.7}>
+          <Text style={[st.star, {fontSize: size}, n <= rating && st.starOn]}>
+            {n <= rating ? '★' : '☆'}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
 }
 
-async function pickImage(source: 'camera' | 'gallery'): Promise<PickedImage | null> {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const {launchCamera, launchImageLibrary} = require('react-native-image-picker');
-    const options = {mediaType: 'photo' as const, quality: 0.85 as const, maxWidth: 1920, maxHeight: 1920};
-    const res = await (source === 'camera' ? launchCamera(options) : launchImageLibrary(options));
-    const asset = res?.assets?.[0];
-    if (!asset?.uri) return null;
-    return {uri: asset.uri, type: asset.type ?? 'image/jpeg'};
-  } catch {
-    Alert.alert('Image Picker Unavailable', 'Run: npm install react-native-image-picker && cd ios && pod install — then rebuild the app.');
-    return null;
-  }
-}
+const st = StyleSheet.create({
+  row: {flexDirection: 'row', gap: 2},
+  star: {color: colors.textSecondary},
+  starOn: {color: colors.primary},
+});
 
 // ── Memory Upload Modal ───────────────────────────────────────────────────────
 
@@ -88,7 +105,14 @@ interface UploadModalProps {
 
 function MemoryUploadModal({placeId, spaceId, spaceName, onDismiss, onUploaded}: UploadModalProps) {
   const [picked, setPicked] = useState<PickedImage | null>(null);
+  const choose = (source: 'camera' | 'gallery') =>
+    pickImage(source)
+      .then(img => img && setPicked(img))
+      .catch((err: any) =>
+        Alert.alert('Could not open photos', err?.message ?? 'Check photo and camera access in Settings.'),
+      );
   const [caption, setCaption] = useState('');
+  const [dishes, setDishes] = useState<DishDraft[]>([]);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState<'idle' | 'presigning' | 'uploading' | 'saving'>('idle');
 
@@ -101,7 +125,15 @@ function MemoryUploadModal({placeId, spaceId, spaceName, onDismiss, onUploaded}:
       setProgress('uploading');
       await memoryService.uploadToR2(presign_url, picked.uri, picked.type);
       setProgress('saving');
-      await memoryService.create(placeId, key, caption || undefined, spaceId ?? undefined);
+      // Half-typed rows are dropped rather than rejected by the API.
+      const named = dishes.filter(d => d.name.trim().length > 0);
+      await memoryService.create(
+        placeId,
+        key,
+        caption || undefined,
+        spaceId ?? undefined,
+        named,
+      );
       onUploaded();
     } catch (err: any) {
       Alert.alert('Upload failed', err?.message ?? 'Something went wrong.');
@@ -147,11 +179,11 @@ function MemoryUploadModal({placeId, spaceId, spaceName, onDismiss, onUploaded}:
               <Text style={mu.pickerZoneIcon}>📷</Text>
               <Text style={mu.pickerZoneHint}>Choose a photo for this memory</Text>
               <View style={mu.pickerRow}>
-                <TouchableOpacity style={mu.pickerBtn} onPress={() => pickImage('camera').then(img => img && setPicked(img))}>
+                <TouchableOpacity style={mu.pickerBtn} onPress={() => choose('camera')}>
                   <Text style={mu.pickerIcon}>📸</Text>
                   <Text style={mu.pickerLabel}>Camera</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={mu.pickerBtn} onPress={() => pickImage('gallery').then(img => img && setPicked(img))}>
+                <TouchableOpacity style={mu.pickerBtn} onPress={() => choose('gallery')}>
                   <Text style={mu.pickerIcon}>🖼️</Text>
                   <Text style={mu.pickerLabel}>Gallery</Text>
                 </TouchableOpacity>
@@ -170,6 +202,40 @@ function MemoryUploadModal({placeId, spaceId, spaceName, onDismiss, onUploaded}:
             maxLength={200}
           />
           <Text style={mu.captionCount}>{caption.length}/200</Text>
+
+          {/* Dishes — what you ate, rated out of 5 */}
+          <Text style={mu.dishHeading}>Dishes</Text>
+          {dishes.map((d, i) => (
+            <View key={i} style={mu.dishRow}>
+              <TextInput
+                style={mu.dishInput}
+                placeholder="Dish name"
+                placeholderTextColor={colors.textSecondary}
+                value={d.name}
+                onChangeText={name =>
+                  setDishes(prev => prev.map((x, j) => (j === i ? {...x, name} : x)))
+                }
+                maxLength={120}
+              />
+              <Stars
+                rating={d.rating}
+                onRate={rating =>
+                  setDishes(prev => prev.map((x, j) => (j === i ? {...x, rating} : x)))
+                }
+              />
+              <TouchableOpacity
+                onPress={() => setDishes(prev => prev.filter((_, j) => j !== i))}
+                hitSlop={8}>
+                <Text style={mu.dishRemove}>✕</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+          <TouchableOpacity
+            style={mu.addDishBtn}
+            activeOpacity={0.8}
+            onPress={() => setDishes(prev => [...prev, {name: '', rating: 5}])}>
+            <Text style={mu.addDishLabel}>＋ Add a dish</Text>
+          </TouchableOpacity>
         </ScrollView>
 
         {/* Upload button */}
@@ -305,14 +371,12 @@ export default function PlaceScreen({route, navigation}: Props) {
     <View style={[s.root, {paddingTop: insets.top}]}>
       {/* ── Header ──────────────────────────────────────────────────── */}
       <View style={s.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn} hitSlop={12}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={s.backBtn}
+          accessibilityLabel="Back">
           <Text style={s.backArrow}>‹</Text>
-          <Text style={s.backText}>Back</Text>
         </TouchableOpacity>
-        <Text style={s.headerTitle} numberOfLines={1}>
-          {place.name}
-        </Text>
-        <View style={s.headerRight} />
       </View>
 
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
@@ -367,7 +431,7 @@ export default function PlaceScreen({route, navigation}: Props) {
             }}
             activeOpacity={0.75}>
             <Text style={[s.visitedIcon, place.visited && s.visitedIconActive]}>
-              {place.visited ? '✓' : '○'}
+              {place.visited ? '✓' : '⌖'}
             </Text>
             <Text style={[s.visitedLabel, place.visited && s.visitedLabelActive]}>
               {place.visited ? 'Visited' : 'Mark as visited'}
@@ -380,7 +444,7 @@ export default function PlaceScreen({route, navigation}: Props) {
 
         {/* ── Memories section ─────────────────────────────────────────── */}
         <View style={s.memoriesSection}>
-          <Text style={s.sectionTitle}>Memories</Text>
+          <Text style={s.sectionTitle}>Memories here</Text>
 
           {/* Space group tabs */}
           <ScrollView
@@ -436,6 +500,14 @@ export default function PlaceScreen({route, navigation}: Props) {
                           {mem.caption}
                         </Text>
                       )}
+                      {mem.dishes?.map(dish => (
+                        <View key={dish.id} style={s.dishLine}>
+                          <Text style={s.dishName} numberOfLines={1}>
+                            {dish.name}
+                          </Text>
+                          <Stars rating={dish.rating} size={12} />
+                        </View>
+                      ))}
                     </View>
                   ))}
                 </View>
@@ -447,7 +519,7 @@ export default function PlaceScreen({route, navigation}: Props) {
                 onPress={() => setUploadGroup(activeGroup)}
                 activeOpacity={0.8}>
                 <Text style={s.addMemoryIcon}>＋</Text>
-                <Text style={s.addMemoryLabel}>Add Memory</Text>
+                <Text style={s.addMemoryLabel}>Add memory</Text>
               </TouchableOpacity>
             </>
           )}
@@ -488,83 +560,44 @@ const s = StyleSheet.create({
   backFallback: {marginTop: spacing.md},
   backFallbackText: {fontFamily: fonts.semibold, fontSize: 15, color: colors.primary},
 
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: 12,
-  },
-  backBtn: {flexDirection: 'row', alignItems: 'center', width: 84, gap: 2},
-  backArrow: {fontSize: 24, color: colors.primary, lineHeight: 26},
+  header: {flexDirection: 'row', alignItems: 'center', paddingHorizontal: 15, paddingTop: 4, paddingBottom: 8},
+  backBtn: {width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center'},
+  backArrow: {fontSize: 30, color: colors.text, lineHeight: 32},
   backText: {fontFamily: fonts.medium, fontSize: 16, color: colors.primary},
-  headerTitle: {flex: 1, fontFamily: fonts.display, fontSize: 19, color: colors.text, textAlign: 'center'},
+  headerTitle: {flex: 1, fontFamily: fonts.bold, fontSize: 16, color: colors.text, textAlign: 'center'},
   headerRight: {width: 84},
 
   scroll: {paddingBottom: spacing.xl},
 
-  mapWrap: {height: 230, backgroundColor: colors.sand},
+  mapWrap: {height: 200, marginHorizontal: 20, borderRadius: radius.xl, overflow: 'hidden', backgroundColor: colors.surfaceDim},
   map: {...StyleSheet.absoluteFillObject},
 
-  infoSection: {paddingHorizontal: spacing.lg, paddingTop: spacing.lg},
-  placeName: {fontFamily: fonts.display, fontSize: 28, color: colors.text, marginBottom: 10},
+  infoSection: {paddingHorizontal: 20, paddingTop: spacing.md},
+  placeName: {fontFamily: fonts.bold, fontSize: 24, letterSpacing: -0.5, color: colors.text, marginBottom: 8},
   addressRow: {flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: spacing.md},
-  addressText: {
-    flex: 1,
-    fontFamily: fonts.regular,
-    fontSize: 15,
-    color: colors.textSecondary,
-  },
+  addressText: {flex: 1, fontFamily: fonts.regular, fontSize: 12.5, color: colors.textSecondary},
   tagsRow: {flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: spacing.md},
-  tagPill: {
-    backgroundColor: colors.primaryLight,
-    borderRadius: radius.full,
-    paddingVertical: 9,
-    paddingHorizontal: 16,
-  },
-  tagLabel: {fontFamily: fonts.regular, fontSize: 14.5, color: colors.primaryDeep},
+  tagPill: {backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.full, minHeight: 36, justifyContent: 'center', paddingHorizontal: 13},
+  tagLabel: {fontFamily: fonts.semibold, fontSize: 12, color: colors.text},
 
-  visitedBtn: {
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    borderRadius: radius.full,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-  },
-  visitedBtnActive: {borderColor: colors.sage, backgroundColor: colors.sageSoft},
-  visitedIcon: {fontSize: 15, color: colors.textMuted},
-  visitedIconActive: {color: colors.sage},
-  visitedLabel: {fontFamily: fonts.medium, fontSize: 16, color: colors.textSecondary},
-  visitedLabelActive: {color: colors.sage},
+  visitedBtn: {flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: radius.lg, borderWidth: 1.5, borderColor: colors.ringIdle, padding: 14, marginTop: 4},
+  visitedBtnActive: {borderColor: colors.success, backgroundColor: colors.sageTint},
+  visitedIcon: {width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: colors.ringIdle, textAlign: 'center', lineHeight: 24, fontSize: 14, color: colors.textSecondary, overflow: 'hidden'},
+  visitedIconActive: {backgroundColor: colors.success, borderColor: colors.success, color: colors.white},
+  visitedLabel: {fontFamily: fonts.bold, fontSize: 14, color: colors.text},
+  visitedLabelActive: {color: colors.text},
 
-  divider: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginHorizontal: spacing.lg,
-    marginVertical: spacing.lg,
-  },
+  divider: {height: 0, marginVertical: 13},
 
-  memoriesSection: {paddingHorizontal: spacing.lg},
-  sectionTitle: {fontFamily: fonts.display, fontSize: 21, color: colors.text, marginBottom: spacing.md},
+  memoriesSection: {paddingHorizontal: 20},
+  sectionTitle: {fontFamily: fonts.bold, fontSize: 14, color: colors.text, marginBottom: 10},
 
   tabScroll: {marginBottom: spacing.md, marginHorizontal: -spacing.lg},
   tabRow: {flexDirection: 'row', gap: 10, paddingHorizontal: spacing.lg},
-  tab: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: colors.surface,
-    borderRadius: radius.full,
-    paddingVertical: 10,
-    paddingHorizontal: 18,
-  },
-  tabActive: {backgroundColor: colors.primary},
+  tab: {flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.full, minHeight: 36, paddingHorizontal: 13},
+  tabActive: {backgroundColor: colors.primary, borderColor: colors.primary},
   tabHighlighted: {backgroundColor: colors.primaryLight},
-  tabLabel: {fontFamily: fonts.medium, fontSize: 15, color: colors.text},
+  tabLabel: {fontFamily: fonts.semibold, fontSize: 12, color: colors.text},
   tabLabelActive: {color: colors.white},
   tabBadge: {
     minWidth: 22,
@@ -581,12 +614,7 @@ const s = StyleSheet.create({
 
   photoGrid: {flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md},
   photoCard: {width: '47.5%'},
-  photo: {
-    width: '100%',
-    aspectRatio: 1,
-    borderRadius: radius.lg,
-    backgroundColor: colors.sand,
-  },
+  photo: {width: '100%', aspectRatio: 1, borderRadius: radius.lg, backgroundColor: colors.surfaceDim},
   photoCaption: {
     fontFamily: fonts.regular,
     fontSize: 13,
@@ -594,14 +622,8 @@ const s = StyleSheet.create({
     marginTop: 8,
   },
 
-  noMemoriesWrap: {
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingVertical: spacing.xl,
-    alignItems: 'center',
-  },
-  noMemoriesText: {fontFamily: fonts.display, fontSize: 17, color: colors.text},
+  noMemoriesWrap: {borderRadius: radius.md, backgroundColor: colors.surface, paddingVertical: spacing.lg, alignItems: 'center'},
+  noMemoriesText: {fontFamily: fonts.bold, fontSize: 14, color: colors.text},
   noMemoriesSub: {
     fontFamily: fonts.regular,
     fontSize: 14,
@@ -609,21 +631,19 @@ const s = StyleSheet.create({
     marginTop: 6,
   },
 
-  addMemoryBtn: {
-    alignSelf: 'flex-start',
+  dishLine: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginTop: spacing.md,
-    borderRadius: radius.full,
-    borderWidth: 1.5,
-    borderStyle: 'dashed',
-    borderColor: colors.primary,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+    justifyContent: 'space-between',
+    gap: 6,
+    paddingHorizontal: 8,
+    paddingBottom: 4,
   },
-  addMemoryIcon: {fontSize: 15, color: colors.primary},
-  addMemoryLabel: {fontFamily: fonts.semibold, fontSize: 15, color: colors.primary},
+  dishName: {flex: 1, fontFamily: fonts.regular, fontSize: 12, color: colors.text},
+
+  addMemoryBtn: {flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: spacing.md, borderRadius: radius.lg, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.border, minHeight: 64},
+  addMemoryIcon: {fontSize: 18, color: colors.textSecondary},
+  addMemoryLabel: {fontFamily: fonts.semibold, fontSize: 12, color: colors.textSecondary},
 });
 
 // ── Add Memory modal styles ───────────────────────────────────────────────────
@@ -652,7 +672,7 @@ const mu = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
   },
-  title: {fontFamily: fonts.display, fontSize: 24, color: colors.text},
+  title: {fontFamily: fonts.bold, fontSize: 16, color: colors.text},
   subtitle: {
     fontFamily: fonts.regular,
     fontSize: 15,
@@ -709,7 +729,7 @@ const mu = StyleSheet.create({
 
   captionInput: {
     marginTop: spacing.md,
-    borderRadius: radius.xl,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.sandDeep,
     backgroundColor: colors.surface,
@@ -721,6 +741,28 @@ const mu = StyleSheet.create({
     fontSize: 16,
     color: colors.text,
   },
+  dishHeading: {
+    fontFamily: fonts.semibold,
+    fontSize: 14,
+    color: colors.text,
+    marginTop: 18,
+    marginBottom: 8,
+  },
+  dishRow: {flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8},
+  dishInput: {
+    flex: 1,
+    height: 42,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    backgroundColor: colors.sand,
+    color: colors.text,
+    fontFamily: fonts.regular,
+    fontSize: 14,
+  },
+  dishRemove: {fontSize: 14, color: colors.textSecondary},
+  addDishBtn: {alignSelf: 'flex-start', paddingVertical: 6},
+  addDishLabel: {fontFamily: fonts.semibold, fontSize: 14, color: colors.primary},
+
   captionCount: {
     fontFamily: fonts.regular,
     fontSize: 12,
@@ -732,13 +774,13 @@ const mu = StyleSheet.create({
   footer: {paddingHorizontal: spacing.lg, paddingTop: spacing.md},
   uploadBtn: {
     backgroundColor: colors.primary,
-    borderRadius: radius.full,
-    height: 56,
+    borderRadius: radius.lg,
+    minHeight: 48,
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
     gap: spacing.sm,
   },
   uploadBtnOff: {backgroundColor: colors.sandDeep},
-  uploadLabel: {fontFamily: fonts.display, fontSize: 17, color: colors.white},
+  uploadLabel: {fontFamily: fonts.bold, fontSize: 15, color: colors.white},
 });

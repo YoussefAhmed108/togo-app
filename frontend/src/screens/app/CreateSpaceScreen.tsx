@@ -1,8 +1,7 @@
-import React, {useState, useRef} from 'react';
+import React, {useRef, useState} from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Animated,
   Clipboard,
   Image,
   ScrollView,
@@ -15,317 +14,192 @@ import {
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
-import {launchImageLibrary} from 'react-native-image-picker';
+import {pickImage} from '../../utils/pickImage';
 import {AppStackParamList} from '../../types/navigation';
 import {spaceService, ApiSpace} from '../../services/spaceService';
 import memoryService from '../../services/memoryService';
-import {colors, fonts, radius, spacing} from '../../theme';
+import {colors, fonts, radius} from '../../theme';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'CreateSpace'>;
 
-type Mode = 'photo' | 'emoji';
-
-// ─── Emoji data ────────────────────────────────────────────────────────────────
-
-const EMOJI_ROWS = [
-  ['🌍', '🎯', '✨', '🔥', '💫', '🌟', '🎉', '💎', '🚀', '⚡'],
-  ['🍕', '🍣', '🍜', '🥗', '🥩', '🍔', '🌮', '🍱', '🥐', '☕'],
-  ['🏔️', '🌊', '🌸', '🌿', '🏝️', '🌅', '🌴', '🌳', '🌵', '🏕️'],
-  ['🎨', '🎭', '🎬', '🎵', '🎮', '🏋️', '⚽', '🎸', '🎪', '🎯'],
-  ['🏛️', '🏖️', '🗺️', '🧭', '🌃', '🌉', '🏙️', '🛍️', '💆', '🎁'],
+const EMOJIS = [
+  '🌍', '🎯', '✨', '🔥', '💫', '🌟', '🎉', '💎', '🚀', '⚡',
+  '🍕', '🍣', '🍜', '🥗', '🥩', '🍔', '🌮', '🍱', '🥐', '☕',
+  '🏔️', '🌊', '🌸', '🌿', '🏝️', '🌅', '🌴', '🌳', '🌵', '🏕️',
+  '🎨', '🎭', '🎬', '🎵', '🎮', '🏋️', '⚽', '🎸', '🎪', '🎲',
+  '🏛️', '🏖️', '🗺️', '🧭', '🌃', '🌉', '🏙️', '🛍️', '💆', '🎁',
 ];
-const ALL_EMOJIS = EMOJI_ROWS.flat();
-const ICON_COLORS = [
-  colors.primary, colors.sage, colors.primaryDeep, colors.catDeli,
-];
-function emojiColor(emoji: string): string {
-  const idx = ALL_EMOJIS.indexOf(emoji);
-  return ICON_COLORS[((idx < 0 ? 0 : idx) % ICON_COLORS.length)];
+// The icon picks the accent: teal, violet, green, amber.
+const ACCENTS = ['#00838E', '#6A69DB', '#00884B', '#B7791F'];
+function accentFor(emoji: string): string {
+  return ACCENTS[Math.max(0, EMOJIS.indexOf(emoji)) % ACCENTS.length];
 }
 
 // ─── Step 1: Configure ────────────────────────────────────────────────────────
 
-interface ConfigureStepProps {
+function ConfigureStep({
+  navigation,
+  onCreated,
+}: {
   navigation: Props['navigation'];
   onCreated: (space: ApiSpace, inviteLink: string) => void;
-}
-
-function ConfigureStep({navigation, onCreated}: ConfigureStepProps) {
-  const [mode, setMode] = useState<Mode>('photo');
+}) {
   const [name, setName] = useState('');
   const [icon, setIcon] = useState('🌍');
-
-  // Banner image state
-  const [bannerUri, setBannerUri] = useState<string | null>(null);
-  const [bannerMime, setBannerMime] = useState('image/jpeg');
-
+  const [banner, setBanner] = useState<{uri: string; mime: string} | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const inputRef = useRef<TextInput>(null);
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-
-  // ── Image picker ────────────────────────────────────────────────────────────
-  const pickBannerImage = async () => {
-    const result = await launchImageLibrary({
-      mediaType: 'photo',
-      quality: 0.8,
-      selectionLimit: 1,
-    });
-    if (result.didCancel || !result.assets?.length) return;
-    const asset = result.assets[0];
-    if (asset.uri) {
-      setBannerUri(asset.uri);
-      setBannerMime(asset.type ?? 'image/jpeg');
+  // The banner is cropped to its 16:9 frame when picked, so it never shows cut off.
+  const pickBanner = async () => {
+    try {
+      const img = await pickImage('gallery', 'banner');
+      if (img) setBanner({uri: img.uri, mime: img.type});
+    } catch (err: any) {
+      Alert.alert('Could not open your photos', err?.message ?? 'Please try again.');
     }
   };
 
-  // ── Emoji select ────────────────────────────────────────────────────────────
-  const handleEmojiSelect = (emoji: string) => {
-    setIcon(emoji);
-    Animated.sequence([
-      Animated.timing(scaleAnim, {toValue: 1.25, duration: 100, useNativeDriver: true}),
-      Animated.spring(scaleAnim, {toValue: 1, friction: 4, useNativeDriver: true}),
-    ]).start();
-  };
+  const canCreate = name.trim().length > 0 && !loading;
 
-  // ── Create ──────────────────────────────────────────────────────────────────
   const handleCreate = async () => {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-
-    // Photo mode requires an image to be selected
-    if (mode === 'photo' && !bannerUri) {
-      Alert.alert('Add a photo', 'Please select a banner image, or switch to emoji mode.');
-      return;
-    }
-
+    if (!canCreate) return;
     setLoading(true);
     try {
       let bannerKey: string | undefined;
-
-      // Upload banner if we have one
-      if (mode === 'photo' && bannerUri) {
+      if (banner) {
         const presigned = await memoryService.presign('space_banner');
-        await memoryService.uploadToR2(presigned.presign_url, bannerUri, bannerMime);
+        await memoryService.uploadToR2(presigned.presign_url, banner.uri, banner.mime);
         bannerKey = presigned.key;
       }
-
-      const space = await spaceService.create(
-        trimmed,
-        icon, // emoji is used as icon overlay even in photo mode
-        bannerKey,
-      );
-
+      const space = await spaceService.create(name.trim(), icon, bannerKey);
       let inviteLink = '';
       try {
-        const inv = await spaceService.generateInviteLink(space.id);
-        inviteLink = inv.link;
-      } catch {/* non-fatal */}
-
+        inviteLink = (await spaceService.generateInviteLink(space.id)).link;
+      } catch {
+        /* non-fatal: the success step can retry */
+      }
       onCreated(space, inviteLink);
     } catch (err: any) {
-      const msg = err?.response?.data?.error ?? err?.message ?? 'Failed to create space';
-      Alert.alert('Error', msg);
+      Alert.alert('Error', err?.response?.data?.error ?? err?.message ?? 'Failed to create space');
     } finally {
       setLoading(false);
     }
   };
 
-  const accentColor = emojiColor(icon);
-  const canCreate = name.trim().length > 0 && !loading &&
-    (mode === 'emoji' || (mode === 'photo' && bannerUri !== null));
+  const accent = accentFor(icon);
 
   return (
-    <View style={styles.flex}>
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()} hitSlop={12}>
-          <Text style={styles.backIcon}>‹</Text>
+    <View style={s.flex}>
+      <View style={s.header}>
+        <TouchableOpacity style={s.back} accessibilityLabel="Back" onPress={() => navigation.goBack()}>
+          <Text style={s.backIcon}>‹</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>New Space</Text>
-        <View style={styles.backBtn} />
+        <Text style={s.headerTitle}>New space</Text>
+        <View style={s.back} />
       </View>
 
       <ScrollView
-        style={styles.flex}
-        contentContainerStyle={styles.configBody}
+        style={s.flex}
+        contentContainerStyle={s.body}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
-
-        {/* ── Mode toggle ──────────────────────────────────────────────────── */}
-        <View style={styles.modeToggle}>
-          <TouchableOpacity
-            style={[styles.modeTab, mode === 'photo' && styles.modeTabActive]}
-            onPress={() => setMode('photo')}
-            activeOpacity={0.8}>
-            <Text style={[styles.modeTabText, mode === 'photo' && styles.modeTabTextActive]}>
-              Photo
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.modeTab, mode === 'emoji' && styles.modeTabActive]}
-            onPress={() => setMode('emoji')}
-            activeOpacity={0.8}>
-            <Text style={[styles.modeTabText, mode === 'emoji' && styles.modeTabTextActive]}>
-              Emoji
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* ── Photo mode: banner picker ─────────────────────────────────────── */}
-        {mode === 'photo' && (
-          <TouchableOpacity
-            style={styles.bannerPicker}
-            onPress={pickBannerImage}
-            activeOpacity={0.85}>
-
-            {bannerUri ? (
-              /* Image selected — show preview */
-              <>
-                <Image source={{uri: bannerUri}} style={styles.bannerImage} resizeMode="cover" />
-                {/* Dim overlay */}
-                <View style={styles.bannerOverlay} />
-                {/* Change photo hint */}
-                <View style={styles.bannerChangeHint}>
-                  <Text style={styles.bannerChangeHintText}>📷  Tap to change photo</Text>
-                </View>
-                {/* Emoji overlay in bottom-left */}
-                <View style={[styles.bannerEmojiBadge, {backgroundColor: accentColor + 'CC'}]}>
-                  <Text style={styles.bannerEmojiText}>{icon}</Text>
-                </View>
-              </>
-            ) : (
-              /* No image — show placeholder */
-              <>
-                <View style={styles.bannerPlaceholderBg} />
-                <View style={styles.bannerPlaceholderContent}>
-                  <Text style={styles.bannerPlaceholderIcon}>🖼️</Text>
-                  <Text style={styles.bannerPlaceholderTitle}>Add a Banner Photo</Text>
-                  <Text style={styles.bannerPlaceholderSub}>
-                    Appears at the top of your space page
-                  </Text>
-                  <View style={styles.bannerPlaceholderBtn}>
-                    <Text style={styles.bannerPlaceholderBtnText}>Choose from Library</Text>
-                  </View>
-                </View>
-              </>
-            )}
-          </TouchableOpacity>
-        )}
-
-        {/* ── Emoji mode: animated preview ─────────────────────────────────── */}
-        {mode === 'emoji' && (
-          <View style={styles.iconPreviewWrap}>
-            <Animated.View
-              style={[
-                styles.iconCircle,
-                {backgroundColor: accentColor + '22', transform: [{scale: scaleAnim}]},
-              ]}>
-              <View style={[styles.iconCircleInner, {backgroundColor: accentColor + '44'}]}>
-                <Text style={styles.iconEmoji}>{icon}</Text>
+        <TouchableOpacity
+          style={[s.banner, banner && s.bannerFilled]}
+          activeOpacity={0.85}
+          onPress={pickBanner}>
+          {banner ? (
+            <>
+              <Image source={{uri: banner.uri}} style={StyleSheet.absoluteFill} resizeMode="cover" />
+              <View style={s.bannerShade} />
+              <View style={s.changePill}>
+                <Text style={s.changePillText}>Tap to change photo</Text>
               </View>
-            </Animated.View>
-            <Text style={styles.iconHint}>Pick an icon below</Text>
-          </View>
-        )}
+              <View style={[s.badge, {backgroundColor: accent}]}>
+                <Text style={s.badgeEmoji}>{icon}</Text>
+              </View>
+            </>
+          ) : (
+            <View style={s.bannerEmpty}>
+              <Text style={s.bannerGlyph}>🖼️</Text>
+              <Text style={s.bannerTitle}>Add a banner photo</Text>
+              <View style={s.libraryPill}>
+                <Text style={s.libraryPillText}>Choose from library</Text>
+              </View>
+            </View>
+          )}
+        </TouchableOpacity>
 
-        {/* ── Space name ────────────────────────────────────────────────────── */}
-        <View style={styles.inputCard}>
-          <Text style={styles.inputLabel}>SPACE NAME</Text>
+        <Text style={[s.lab, s.labTop]}>Space name</Text>
+        <View style={s.field}>
           <TextInput
-            ref={inputRef}
-            style={styles.nameInput}
+            style={s.fieldInput}
             placeholder="e.g. Weekend Adventures"
             placeholderTextColor={colors.placeholder}
             value={name}
             onChangeText={setName}
             maxLength={60}
             returnKeyType="done"
-            onSubmitEditing={canCreate ? handleCreate : undefined}
-            autoFocus
+            onSubmitEditing={handleCreate}
           />
-          <View style={styles.charCount}>
-            <Text style={styles.charCountText}>{name.length}/60</Text>
-          </View>
+          <Text style={s.mut}>{name.length}/60</Text>
         </View>
 
-        {/* ── Emoji picker (shown in emoji mode + as icon chooser in photo mode) */}
-        <View style={styles.pickerCard}>
-          <Text style={styles.pickerLabel}>
-            {mode === 'photo' ? 'SPACE ICON (OVERLAY)' : 'CHOOSE ICON'}
-          </Text>
-          {EMOJI_ROWS.map((row, rowIdx) => (
-            <View key={rowIdx} style={styles.emojiRow}>
-              {row.map(emoji => {
-                const selected = emoji === icon;
-                return (
-                  <TouchableOpacity
-                    key={emoji}
-                    style={[
-                      styles.emojiItem,
-                      selected && {
-                        backgroundColor: colors.primary + '22',
-                        borderColor: colors.primary,
-                        borderWidth: 2,
-                      },
-                    ]}
-                    onPress={() => handleEmojiSelect(emoji)}
-                    activeOpacity={0.7}>
-                    <Text style={styles.emojiText}>{emoji}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+        <Text style={[s.lab, s.labTop]}>{banner ? 'Badge icon' : 'Icon'}</Text>
+        <View style={s.grid}>
+          {EMOJIS.map(e => (
+            <TouchableOpacity
+              key={e}
+              style={[s.emoji, e === icon && s.emojiOn]}
+              accessibilityLabel={e}
+              accessibilityState={{selected: e === icon}}
+              activeOpacity={0.7}
+              onPress={() => setIcon(e)}>
+              <Text style={s.emojiText}>{e}</Text>
+            </TouchableOpacity>
           ))}
         </View>
-
-        <View style={styles.bottomPad} />
       </ScrollView>
 
-      {/* ── Footer / create button ───────────────────────────────────────────── */}
-      <View style={styles.footer}>
-        {mode === 'photo' && !bannerUri && (
-          <Text style={styles.footerHint}>Select a photo above to continue</Text>
-        )}
+      <View style={s.footer}>
+        {!name.trim() && <Text style={[s.mut, s.footerHint]}>Name your space to continue</Text>}
         <TouchableOpacity
-          style={[styles.createBtn, !canCreate && styles.createBtnDisabled]}
-          onPress={handleCreate}
+          style={[s.btnP, !canCreate && s.btnOff]}
+          activeOpacity={0.85}
           disabled={!canCreate}
-          activeOpacity={0.85}>
-          {loading ? (
-            <ActivityIndicator color={colors.white} />
-          ) : (
-            <Text style={styles.createBtnText}>Create Space</Text>
-          )}
+          onPress={handleCreate}>
+          {loading && <ActivityIndicator color={colors.white} size="small" />}
+          <Text style={[s.btnPText, !canCreate && !loading && s.btnOffText]}>
+            {loading ? 'Creating…' : 'Create space'}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 }
 
-// ─── Step 2: Success / Share ───────────────────────────────────────────────────
+// ─── Step 2: Invite ───────────────────────────────────────────────────────────
 
-interface SuccessStepProps {
+function SuccessStep({
+  space,
+  initialInviteLink,
+  navigation,
+}: {
   space: ApiSpace;
   initialInviteLink: string;
   navigation: Props['navigation'];
-}
-
-function SuccessStep({space, initialInviteLink, navigation}: SuccessStepProps) {
-  const accentColor = emojiColor(space.icon);
-
+}) {
+  const accent = accentFor(space.icon);
   const [inviteLink, setInviteLink] = useState(initialInviteLink);
   const [linkLoading, setLinkLoading] = useState(false);
   const [linkError, setLinkError] = useState('');
   const [copied, setCopied] = useState(false);
-  const copyTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchInviteLink = async () => {
     setLinkLoading(true);
     setLinkError('');
     try {
-      const inv = await spaceService.generateInviteLink(space.id);
-      setInviteLink(inv.link);
+      setInviteLink((await spaceService.generateInviteLink(space.id)).link);
     } catch (err: any) {
       setLinkError(err?.response?.data?.error ?? err?.message ?? 'Could not generate link');
     } finally {
@@ -333,145 +207,104 @@ function SuccessStep({space, initialInviteLink, navigation}: SuccessStepProps) {
     }
   };
 
-  const handleCopy = () => {
+  const copy = () => {
     Clipboard.setString(inviteLink);
     setCopied(true);
-    if (copyTimeout.current) clearTimeout(copyTimeout.current);
-    copyTimeout.current = setTimeout(() => setCopied(false), 2500);
+    if (copyTimer.current) clearTimeout(copyTimer.current);
+    copyTimer.current = setTimeout(() => setCopied(false), 2500);
   };
 
-  const handleShare = async () => {
+  const share = async () => {
     try {
-      await Share.share({message: `Join my space "${space.name}" on the app: ${inviteLink}`});
-    } catch {/* dismissed */}
+      await Share.share({message: `Join my space "${space.name}": ${inviteLink}`});
+    } catch {
+      /* dismissed */
+    }
   };
 
   return (
-    <View style={styles.flex}>
-      <View style={styles.header}>
-        <View style={styles.backBtn} />
-        <Text style={styles.headerTitle}>Space Created</Text>
-        <View style={styles.backBtn} />
-      </View>
+    <View style={s.flex}>
+      <ScrollView contentContainerStyle={s.successBody} showsVerticalScrollIndicator={false}>
+        <Text style={s.successTitle}>Space created</Text>
 
-      <ScrollView
-        style={styles.flex}
-        contentContainerStyle={styles.successBody}
-        showsVerticalScrollIndicator={false}>
-
-        {/* Success banner — show space image or emoji */}
         {space.banner_url ? (
-          <View style={styles.successBannerWrap}>
-            <Image
-              source={{uri: space.banner_url}}
-              style={styles.successBanner}
-              resizeMode="cover"
-            />
-            <View style={styles.successBannerOverlay} />
-            <View style={[styles.successBannerEmoji, {backgroundColor: accentColor + 'CC'}]}>
-              <Text style={styles.successBannerEmojiText}>{space.icon}</Text>
+          <View style={s.successBanner}>
+            <Image source={{uri: space.banner_url}} style={StyleSheet.absoluteFill} resizeMode="cover" />
+            <View style={[s.badge, s.badgeLg, {backgroundColor: accent}]}>
+              <Text style={s.badgeEmojiLg}>{space.icon}</Text>
             </View>
           </View>
         ) : (
-          <View style={styles.successCheckWrap}>
-            <View style={[styles.successIconCircle, {backgroundColor: accentColor + '33'}]}>
-              <Text style={styles.successIconEmoji}>{space.icon}</Text>
-            </View>
+          <View style={[s.emojiTile, {backgroundColor: accent + '33'}]}>
+            <Text style={s.emojiTileText}>{space.icon}</Text>
           </View>
         )}
 
-        <Text style={styles.successHeading}>{space.name}</Text>
-        <Text style={styles.successSub}>
-          Your space is ready. Invite friends to join and explore places together.
-        </Text>
+        <Text style={s.h1}>{space.name}</Text>
+        <Text style={[s.mut, s.centered]}>You're the only member so far.</Text>
 
-        {/* Invite link */}
-        <View style={styles.inviteCard}>
-          <Text style={styles.inviteLabel}>INVITE FRIENDS</Text>
-
+        <View style={s.card}>
+          <Text style={s.lab}>Invite friends</Text>
           {inviteLink ? (
             <>
-              <TouchableOpacity style={styles.inviteLinkBox} onPress={handleCopy} activeOpacity={0.75}>
-                <Text style={styles.inviteLinkText} numberOfLines={1} ellipsizeMode="middle">
+              <TouchableOpacity style={s.linkPill} activeOpacity={0.75} onPress={copy}>
+                <Text style={s.linkGlyph}>🔗</Text>
+                <Text style={s.linkText} numberOfLines={1} ellipsizeMode="middle">
                   {inviteLink}
                 </Text>
-                <Text style={styles.inviteLinkCopyHint}>
-                  {copied ? '✓ Copied!' : 'Tap to copy'}
+                <Text style={[s.linkHint, copied && s.linkHintDone]}>
+                  {copied ? 'Copied' : 'Tap to copy'}
                 </Text>
               </TouchableOpacity>
-              <View style={styles.inviteBtnRow}>
-                <TouchableOpacity
-                  style={[styles.copyBtn, copied && styles.copyBtnDone]}
-                  onPress={handleCopy}
-                  activeOpacity={0.85}>
-                  <Text style={styles.copyBtnIcon}>{copied ? '✓' : '⎘'}</Text>
-                  <Text style={styles.copyBtnText}>{copied ? 'Copied!' : 'Copy Link'}</Text>
+              <View style={s.btnRow}>
+                <TouchableOpacity style={[s.btnG, s.btnSunken, s.btnHalf]} activeOpacity={0.8} onPress={copy}>
+                  <Text style={s.btnGText}>{copied ? '✓ Copied' : 'Copy link'}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.shareBtn} onPress={handleShare} activeOpacity={0.85}>
-                  <Text style={styles.shareBtnIcon}>↑</Text>
-                  <Text style={styles.shareBtnText}>Share</Text>
+                <TouchableOpacity style={[s.btnP, s.btnHalf]} activeOpacity={0.85} onPress={share}>
+                  <Text style={s.btnPText}>Share</Text>
                 </TouchableOpacity>
               </View>
             </>
           ) : (
             <>
-              <Text style={styles.inviteHint}>
-                Share a link so friends can join this space instantly.
-              </Text>
-              {linkError ? <Text style={styles.inviteError}>{linkError}</Text> : null}
+              {!!linkError && <Text style={s.error}>{linkError}</Text>}
               <TouchableOpacity
-                style={[styles.shareBtn, linkLoading && {opacity: 0.6}]}
-                onPress={fetchInviteLink}
+                style={s.btnP}
+                activeOpacity={0.85}
                 disabled={linkLoading}
-                activeOpacity={0.85}>
+                onPress={fetchInviteLink}>
                 {linkLoading ? (
                   <ActivityIndicator color={colors.white} size="small" />
                 ) : (
-                  <>
-                    <Text style={styles.shareBtnIcon}>🔗</Text>
-                    <Text style={styles.shareBtnText}>
-                      {linkError ? 'Retry Invite Link' : 'Get Invite Link'}
-                    </Text>
-                  </>
+                  <Text style={s.btnPText}>{linkError ? 'Retry invite link' : 'Get invite link'}</Text>
                 )}
               </TouchableOpacity>
             </>
           )}
+          <Text style={[s.mut, s.inviteHint]}>Anyone with this link can join the space.</Text>
         </View>
-
-        <View style={styles.bottomPad} />
       </ScrollView>
 
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={styles.doneBtn}
-          onPress={() => navigation.navigate('Home')}
-          activeOpacity={0.85}>
-          <Text style={styles.doneBtnText}>Done</Text>
+      <View style={s.doneWrap}>
+        <TouchableOpacity style={s.btnG} activeOpacity={0.8} onPress={() => navigation.navigate('Tabs')}>
+          <Text style={s.btnGText}>Done</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 }
 
-// ─── Root ──────────────────────────────────────────────────────────────────────
+// ─── Root ─────────────────────────────────────────────────────────────────────
 
 export default function CreateSpaceScreen({navigation}: Props) {
   const [created, setCreated] = useState<{space: ApiSpace; link: string} | null>(null);
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+    <SafeAreaView style={s.safe} edges={['top', 'bottom']}>
       {created ? (
-        <SuccessStep
-          space={created.space}
-          initialInviteLink={created.link}
-          navigation={navigation}
-        />
+        <SuccessStep space={created.space} initialInviteLink={created.link} navigation={navigation} />
       ) : (
-        <ConfigureStep
-          navigation={navigation}
-          onCreated={(space, link) => setCreated({space, link})}
-        />
+        <ConfigureStep navigation={navigation} onCreated={(space, link) => setCreated({space, link})} />
       )}
     </SafeAreaView>
   );
@@ -479,327 +312,182 @@ export default function CreateSpaceScreen({navigation}: Props) {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  safe: {flex: 1, backgroundColor: colors.headerBg},
+const s = StyleSheet.create({
+  safe: {flex: 1, backgroundColor: colors.background},
   flex: {flex: 1},
+  mut: {fontFamily: fonts.regular, fontSize: 11.5, color: colors.textSecondary},
+  centered: {textAlign: 'center', marginTop: 4},
 
-  // ── Header ──────────────────────────────────────────────────────────────
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.headerBg,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 12,
-  },
-  backBtn: {width: 44, alignItems: 'flex-start'},
-  backIcon: {fontSize: 30, color: colors.white, lineHeight: 32},
-  headerTitle: {fontFamily: fonts.display, fontSize: 19, color: colors.white},
+  header: {flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 4, paddingBottom: 10},
+  back: {width: 44, height: 44, alignItems: 'center', justifyContent: 'center'},
+  backIcon: {fontSize: 30, color: colors.text, lineHeight: 32},
+  headerTitle: {flex: 1, textAlign: 'center', fontFamily: fonts.bold, fontSize: 16, color: colors.text},
 
-  // ── Configure body ──────────────────────────────────────────────────────
-  configBody: {
-    backgroundColor: colors.background,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-  },
+  body: {paddingHorizontal: 20, paddingTop: 6, paddingBottom: 20},
 
-  modeToggle: {
-    flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderRadius: radius.full,
-    padding: 5,
-    marginBottom: spacing.lg,
-  },
-  modeTab: {
-    flex: 1,
-    borderRadius: radius.full,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  modeTabActive: {backgroundColor: colors.primary},
-  modeTabText: {fontFamily: fonts.medium, fontSize: 16, color: colors.textSecondary},
-  modeTabTextActive: {fontFamily: fonts.display, color: colors.white},
-
-  // ── Banner picker ───────────────────────────────────────────────────────
-  bannerPicker: {
-    height: 216,
-    borderRadius: radius.lg,
+  banner: {
+    height: 176,
+    borderRadius: radius.xl,
     overflow: 'hidden',
-    marginBottom: spacing.md,
     borderWidth: 1.5,
     borderStyle: 'dashed',
-    borderColor: colors.sandDeep,
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
-  bannerImage: {...StyleSheet.absoluteFillObject},
-  bannerOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(45,42,36,0.28)',
-  },
-  bannerChangeHint: {
-    backgroundColor: 'rgba(45,42,36,0.7)',
-    borderRadius: radius.full,
-    paddingVertical: 8,
-    paddingHorizontal: spacing.md,
-  },
-  bannerChangeHintText: {fontFamily: fonts.medium, fontSize: 14, color: colors.white},
-  bannerEmojiBadge: {
+  bannerFilled: {borderWidth: 0},
+  bannerEmpty: {flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8},
+  bannerGlyph: {fontSize: 28, opacity: 0.6},
+  bannerTitle: {fontFamily: fonts.bold, fontSize: 14, color: colors.text},
+  libraryPill: {backgroundColor: colors.primary, borderRadius: 999, paddingVertical: 8, paddingHorizontal: 14},
+  libraryPillText: {fontFamily: fonts.bold, fontSize: 12, color: colors.white},
+  bannerShade: {...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(20,20,30,0.25)'},
+  changePill: {
     position: 'absolute',
-    left: spacing.md,
-    bottom: spacing.md,
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    alignItems: 'center',
-    justifyContent: 'center',
+    top: 12,
+    right: 12,
+    backgroundColor: 'rgba(20,20,30,0.55)',
+    borderRadius: 999,
+    paddingVertical: 6,
+    paddingHorizontal: 11,
   },
-  bannerEmojiText: {fontSize: 24},
-  bannerPlaceholderBg: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.surface,
-  },
-  bannerPlaceholderContent: {alignItems: 'center', paddingHorizontal: spacing.lg},
-  bannerPlaceholderIcon: {fontSize: 30, marginBottom: 12, opacity: 0.55},
-  bannerPlaceholderTitle: {
-    fontFamily: fonts.semibold,
-    fontSize: 17,
-    color: colors.text,
-    marginBottom: 4,
-  },
-  bannerPlaceholderSub: {
-    fontFamily: fonts.regular,
-    fontSize: 14,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: spacing.md,
-  },
-  bannerPlaceholderBtn: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.full,
-    paddingVertical: 11,
-    paddingHorizontal: spacing.lg,
-  },
-  bannerPlaceholderBtnText: {fontFamily: fonts.semibold, fontSize: 15, color: colors.white},
-
-  // ── Emoji preview ───────────────────────────────────────────────────────
-  iconPreviewWrap: {alignItems: 'center', paddingVertical: spacing.lg},
-  iconCircle: {
-    width: 128,
-    height: 128,
-    borderRadius: 64,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconCircleInner: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconEmoji: {fontSize: 46},
-  iconHint: {
-    fontFamily: fonts.regular,
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginTop: spacing.md,
-  },
-
-  // ── Name + picker cards ─────────────────────────────────────────────────
-  inputCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    marginBottom: spacing.md,
-  },
-  inputLabel: {
-    fontFamily: fonts.semibold,
-    fontSize: 12,
-    letterSpacing: 1.2,
-    color: colors.textSecondary,
-    marginBottom: 10,
-  },
-  nameInput: {
-    fontFamily: fonts.display,
-    fontSize: 21,
-    color: colors.text,
-    paddingVertical: 4,
-  },
-  charCount: {alignItems: 'flex-end', marginTop: 6},
-  charCountText: {fontFamily: fonts.regular, fontSize: 12, color: colors.textMuted},
-
-  pickerCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-  },
-  pickerLabel: {
-    fontFamily: fonts.semibold,
-    fontSize: 12,
-    letterSpacing: 1.2,
-    color: colors.textSecondary,
-    marginBottom: 12,
-  },
-  emojiRow: {flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8},
-  emojiItem: {
+  changePillText: {fontFamily: fonts.bold, fontSize: 11.5, color: colors.white},
+  badge: {
+    position: 'absolute',
+    left: 12,
+    bottom: 12,
     width: 44,
     height: 44,
-    borderRadius: radius.md,
-    backgroundColor: colors.sand,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  badgeEmoji: {fontSize: 22},
+  badgeLg: {width: 48, height: 48, borderRadius: 14},
+  badgeEmojiLg: {fontSize: 24},
+
+  lab: {
+    fontFamily: fonts.bold,
+    fontSize: 11,
+    letterSpacing: 0.7,
+    textTransform: 'uppercase',
+    color: colors.textSecondary,
+    marginBottom: 7,
+  },
+  labTop: {marginTop: 20},
+  field: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: colors.sunken,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingHorizontal: 14,
+    // A minimum, not a fixed height: with a larger system text size the text
+    // grows the field instead of being clipped (seen on device).
+    minHeight: 48,
+  },
+  fieldInput: {flex: 1, fontFamily: fonts.regular, fontSize: 14, color: colors.text, paddingVertical: 12},
+
+  // Seven columns, as in the design.
+  grid: {flexDirection: 'row', flexWrap: 'wrap', gap: 4},
+  emoji: {
+    width: '13.3%',
+    height: 46,
+    borderRadius: radius.md,
     borderWidth: 2,
     borderColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  emojiText: {fontSize: 21},
-  bottomPad: {height: spacing.xl},
+  emojiOn: {borderColor: colors.primary, backgroundColor: colors.surface},
+  emojiText: {fontSize: 22},
 
-  // ── Footer ──────────────────────────────────────────────────────────────
   footer: {
-    backgroundColor: colors.headerBg,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.md,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 12,
+    backgroundColor: colors.surface,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
-  footerHint: {
-    fontFamily: fonts.regular,
-    fontSize: 14,
-    color: colors.textOnDarkSub,
-    textAlign: 'center',
-    marginBottom: 12,
-  },
-  createBtn: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.full,
-    height: 56,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  createBtnDisabled: {backgroundColor: 'rgba(198,113,57,0.35)'},
-  createBtnText: {fontFamily: fonts.display, fontSize: 17, color: colors.white},
+  footerHint: {textAlign: 'center', marginBottom: 10},
 
-  // ── Success step ────────────────────────────────────────────────────────
-  successBody: {
-    backgroundColor: colors.background,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xl,
-    flexGrow: 1,
-  },
-  successBannerWrap: {
-    height: 180,
+  btnP: {
+    flexDirection: 'row',
+    gap: 8,
+    minHeight: 48,
     borderRadius: radius.lg,
-    overflow: 'hidden',
-    marginBottom: spacing.lg,
-  },
-  successBanner: {...StyleSheet.absoluteFillObject},
-  successBannerOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(45,42,36,0.2)',
-  },
-  successBannerEmoji: {
-    position: 'absolute',
-    left: spacing.md,
-    bottom: spacing.md,
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  successBannerEmojiText: {fontSize: 24},
-  successCheckWrap: {alignItems: 'center', marginBottom: spacing.lg},
-  successIconCircle: {
-    width: 92,
-    height: 92,
-    borderRadius: 46,
+  btnPText: {fontFamily: fonts.bold, fontSize: 15, color: colors.white},
+  btnOff: {backgroundColor: colors.disabledBg},
+  btnOffText: {color: colors.disabledFg},
+  btnG: {
+    minHeight: 48,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  successIconEmoji: {fontSize: 40},
-  successHeading: {
-    fontFamily: fonts.display,
-    fontSize: 28,
+  btnSunken: {backgroundColor: colors.sunken},
+  btnGText: {fontFamily: fonts.bold, fontSize: 15, color: colors.text},
+  btnRow: {flexDirection: 'row', gap: 10, marginTop: 12},
+  btnHalf: {flex: 1, minHeight: 44},
+
+  successBody: {paddingHorizontal: 20, paddingTop: 16, paddingBottom: 20},
+  successTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 16,
     color: colors.text,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 18,
   },
-  successSub: {
-    fontFamily: fonts.regular,
-    fontSize: 15,
-    lineHeight: 22,
-    color: colors.textSecondary,
+  successBanner: {height: 150, borderRadius: 18, overflow: 'hidden'},
+  emojiTile: {
+    alignSelf: 'center',
+    width: 112,
+    height: 112,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emojiTileText: {fontSize: 54},
+  h1: {
+    fontFamily: fonts.bold,
+    fontSize: 24,
+    letterSpacing: -0.5,
+    color: colors.text,
     textAlign: 'center',
-    marginBottom: spacing.lg,
+    marginTop: 16,
   },
-
-  // ── Invite card (dark) ──────────────────────────────────────────────────
-  inviteCard: {
-    backgroundColor: colors.cardDark,
+  card: {
+    marginTop: 22,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
     borderRadius: radius.lg,
-    padding: spacing.md,
+    padding: 14,
   },
-  inviteLabel: {
-    fontFamily: fonts.semibold,
-    fontSize: 12,
-    letterSpacing: 1.2,
-    color: colors.textOnDarkSub,
-    marginBottom: 12,
-  },
-  inviteLinkBox: {
-    backgroundColor: colors.inkInput,
+  linkPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    minHeight: 48,
+    backgroundColor: colors.sunken,
+    borderWidth: 1,
+    borderColor: colors.border,
     borderRadius: radius.md,
-    padding: spacing.md,
-    marginBottom: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
   },
-  inviteLinkText: {
-    fontFamily: 'Menlo',
-    fontSize: 15,
-    color: colors.white,
-    marginBottom: 4,
-  },
-  inviteLinkCopyHint: {fontFamily: fonts.regular, fontSize: 13, color: colors.textOnDarkSub},
-  inviteBtnRow: {flexDirection: 'row', gap: 12},
-  copyBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: colors.inkInput,
-    borderRadius: radius.full,
-    height: 48,
-  },
-  copyBtnDone: {backgroundColor: 'rgba(122,138,94,0.4)'},
-  copyBtnIcon: {fontSize: 15, color: colors.white},
-  copyBtnText: {fontFamily: fonts.semibold, fontSize: 15, color: colors.white},
-  inviteHint: {
-    fontFamily: fonts.regular,
-    fontSize: 14,
-    lineHeight: 20,
-    color: colors.textOnDarkSub,
-    marginBottom: 12,
-  },
-  inviteError: {fontFamily: fonts.regular, fontSize: 13, color: colors.error, marginBottom: 8},
-  shareBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: colors.primary,
-    borderRadius: radius.full,
-    height: 48,
-  },
-  shareBtnIcon: {fontSize: 15, color: colors.white},
-  shareBtnText: {fontFamily: fonts.semibold, fontSize: 15, color: colors.white},
-
-  doneBtn: {
-    backgroundColor: colors.headerDeep,
-    borderRadius: radius.full,
-    height: 56,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  doneBtnText: {fontFamily: fonts.display, fontSize: 17, color: colors.white},
+  linkGlyph: {fontSize: 14},
+  linkText: {flex: 1, fontFamily: fonts.semibold, fontSize: 13, color: colors.text},
+  linkHint: {fontFamily: fonts.bold, fontSize: 11.5, color: colors.primaryDeep},
+  linkHintDone: {color: colors.success},
+  inviteHint: {marginTop: 12, lineHeight: 17},
+  error: {fontFamily: fonts.regular, fontSize: 12, color: colors.error, marginBottom: 8},
+  doneWrap: {paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12},
 });

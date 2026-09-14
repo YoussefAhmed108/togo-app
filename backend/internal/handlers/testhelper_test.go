@@ -38,5 +38,5 @@ func bearerToken(userID uint64, profileComplete bool) string {
 }
 
 func noopStorage() *storage.Client {
-	return storage.NewNoopClient()
+	return storage.NewLocalClient("/tmp", "http://localhost:8080")
 }

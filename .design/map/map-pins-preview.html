@@ -1,0 +1,252 @@
+<title>Map Pins Review</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;700;800&display=swap">
+<style>
+  :root { --ground:#F0F0F3; --ink:#1C1C25; --muted:#5C5C69; --line:#DCDCE0; --teal:#00838E; --teal-ink:#006873; --shadow:0 18px 44px rgba(20,20,30,.14); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --ground:#0E1217; --ink:#E8EBEF; --muted:#8B9095; --line:#242930; --teal:#00A3AD; --teal-ink:#00BCC5; --shadow:0 18px 44px rgba(0,0,0,.5); } }
+  :root[data-theme="dark"] { --ground:#0E1217; --ink:#E8EBEF; --muted:#8B9095; --line:#242930; --teal:#00A3AD; --teal-ink:#00BCC5; --shadow:0 18px 44px rgba(0,0,0,.5); }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--ground); color:var(--ink); font-family:'Figtree','Avenir Next','Helvetica Neue',sans-serif; -webkit-font-smoothing:antialiased; }
+  main { max-width:1120px; margin:0 auto; padding:40px 24px 72px; display:flex; flex-direction:column; gap:36px; }
+  .top { display:flex; flex-direction:column; gap:8px; max-width:62ch; }
+  .eyebrow { font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--teal-ink); }
+  h1 { margin:0; font-size:clamp(28px,4vw,38px); font-weight:800; letter-spacing:-.03em; line-height:1.05; text-wrap:balance; }
+  .top p { margin:0; font-size:15px; line-height:1.55; color:var(--muted); }
+  .row { display:flex; flex-wrap:wrap; gap:28px; }
+  .frame { margin:0; width:312px; display:flex; flex-direction:column; gap:14px; }
+  .phone { width:312px; height:675px; border-radius:34px; overflow:hidden; box-shadow:var(--shadow); background:#E6E7EC; }
+  .phone iframe { width:390px; height:844px; border:0; transform:scale(.8); transform-origin:0 0; display:block; }
+  figcaption { display:flex; gap:12px; align-items:flex-start; }
+  .tag { flex-shrink:0; width:28px; height:28px; border-radius:8px; background:var(--teal); color:#fff; font-size:13px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+  figcaption h3 { margin:0 0 3px; font-size:15px; font-weight:700; }
+  figcaption p { margin:0; font-size:13px; line-height:1.5; color:var(--muted); }
+</style>
+<main>
+  <div class="top"><span class="eyebrow">Waypoint · Map</span><h1>Which pins tell you the place?</h1>
+  <p>All three pull the list down to a small peek bar so the map fills the screen. They differ in how a pin tells you which place it is.</p></div>
+  <div class="row">
+    <figure class="frame"><div class="phone"><iframe title="A · Name tags" srcdoc="&lt;!doctype html&gt;&lt;html&gt;&lt;head&gt;&lt;meta charset=&quot;utf-8&quot;&gt;
+  &lt;link rel=&quot;stylesheet&quot; href=&quot;https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&amp;display=swap&quot;&gt;
+  &lt;style&gt;
+    body { margin: 0; font-family: &#x27;Figtree&#x27;, &#x27;Avenir Next&#x27;, &#x27;Helvetica Neue&#x27;, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #006873; } a:hover { color: #00838E; }
+  &lt;/style&gt;
+&lt;style&gt;html,body{margin:0}&lt;/style&gt;&lt;/head&gt;&lt;body&gt;
+&lt;!-- A · Name tags: every pin is a small tag with the place&#x27;s icon and name, bordered in its space&#x27;s colour. Sheet pulled down to a peek bar. --&gt;
+&lt;div style=&quot;position: relative; width: 390px; height: 844px; overflow: hidden; background: #E6E7EC; color: #1C1C25;&quot;&gt;
+  &lt;svg width=&quot;390&quot; height=&quot;844&quot; viewBox=&quot;0 0 390 844&quot; style=&quot;position: absolute; inset: 0;&quot;&gt;
+    &lt;rect width=&quot;390&quot; height=&quot;844&quot; fill=&quot;#E6E7EC&quot;&gt;&lt;/rect&gt;
+    &lt;path d=&quot;M150 -10 C110 160 200 260 160 420 C130 560 210 680 180 860 L225 860 C250 680 175 560 205 420 C245 260 150 160 190 -10 Z&quot; fill=&quot;#CFE0EF&quot;&gt;&lt;/path&gt;
+    &lt;ellipse cx=&quot;310&quot; cy=&quot;240&quot; rx=&quot;55&quot; ry=&quot;40&quot; fill=&quot;#D6ECDD&quot;&gt;&lt;/ellipse&gt;
+    &lt;ellipse cx=&quot;70&quot; cy=&quot;560&quot; rx=&quot;46&quot; ry=&quot;34&quot; fill=&quot;#D6ECDD&quot;&gt;&lt;/ellipse&gt;
+    &lt;path d=&quot;M-10 150 L400 110 M-10 330 L400 300 M-10 520 L400 490 M-10 690 L400 660 M70 -10 L110 860 M285 -10 L260 860 M345 -10 L375 860&quot; stroke=&quot;#FBFBFD&quot; stroke-width=&quot;10&quot; fill=&quot;none&quot;&gt;&lt;/path&gt;
+    &lt;path d=&quot;M-10 420 L400 390&quot; stroke=&quot;#FBFBFD&quot; stroke-width=&quot;16&quot; fill=&quot;none&quot;&gt;&lt;/path&gt;
+  &lt;/svg&gt;
+
+  &lt;!-- search + space chips --&gt;
+  &lt;div style=&quot;position: absolute; left: 20px; right: 20px; top: 62px; display: flex; flex-direction: column; gap: 10px;&quot;&gt;
+    &lt;div style=&quot;height: 46px; display: flex; align-items: center; gap: 8px; padding: 0 14px; background: #F0F0F3; border: 1px solid #DCDCE0; border-radius: 999px; box-shadow: 0 3px 10px rgba(20,20,30,0.10); font-size: 13.5px; font-weight: 600; color: #5C5C69;&quot;&gt;
+      &lt;svg width=&quot;16&quot; height=&quot;16&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#1C1C25&quot; stroke-width=&quot;2.4&quot; stroke-linecap=&quot;round&quot;&gt;&lt;circle cx=&quot;11&quot; cy=&quot;11&quot; r=&quot;7&quot;&gt;&lt;/circle&gt;&lt;path d=&quot;M20 20l-3.5-3.5&quot;&gt;&lt;/path&gt;&lt;/svg&gt;Search your places
+    &lt;/div&gt;
+    &lt;div style=&quot;display: flex; gap: 7px;&quot;&gt;
+      &lt;div style=&quot;display: flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 12px; border-radius: 999px; background: #00838E; color: #fff; font-size: 12px; font-weight: 600;&quot;&gt;&lt;span style=&quot;width: 8px; height: 8px; border-radius: 50%; background: #fff;&quot;&gt;&lt;/span&gt;All pins&lt;/div&gt;
+      &lt;div style=&quot;display: flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 12px; border-radius: 999px; background: #FDFDFF; border: 1px solid #DCDCE0; font-size: 12px; font-weight: 600;&quot;&gt;&lt;span style=&quot;width: 8px; height: 8px; border-radius: 50%; background: #7C63D6;&quot;&gt;&lt;/span&gt;Flowers&lt;/div&gt;
+      &lt;div style=&quot;display: flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 12px; border-radius: 999px; background: #FDFDFF; border: 1px solid #DCDCE0; font-size: 12px; font-weight: 600;&quot;&gt;&lt;span style=&quot;width: 8px; height: 8px; border-radius: 50%; background: #2E9E52;&quot;&gt;&lt;/span&gt;SS 3&lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;!-- name-tag pins: icon + name, tail points at the spot --&gt;
+  &lt;div style=&quot;position: absolute; left: 34px; top: 236px; display: flex; flex-direction: column; align-items: flex-start;&quot;&gt;
+    &lt;div style=&quot;display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 4px; background: #FDFDFF; border: 2px solid #7C63D6; border-radius: 999px; box-shadow: 0 4px 12px rgba(20,20,30,0.16); font-size: 12px; font-weight: 700; white-space: nowrap;&quot;&gt;
+      &lt;span style=&quot;width: 22px; height: 22px; border-radius: 50%; background: #EEEAFB; display: flex; align-items: center; justify-content: center;&quot;&gt;&lt;svg width=&quot;13&quot; height=&quot;13&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#7C63D6&quot; stroke-width=&quot;2.4&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;&gt;&lt;path d=&quot;M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10&quot;&gt;&lt;/path&gt;&lt;path d=&quot;M17 21V3c-2 1.5-3 4-3 7h3&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/span&gt;Smiley’s Grill
+    &lt;/div&gt;
+    &lt;div style=&quot;width: 2px; height: 8px; margin-left: 15px; background: #7C63D6;&quot;&gt;&lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div style=&quot;position: absolute; left: 190px; top: 318px; display: flex; flex-direction: column; align-items: flex-start;&quot;&gt;
+    &lt;div style=&quot;display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 4px; background: #FDFDFF; border: 2px solid #7C63D6; border-radius: 999px; box-shadow: 0 4px 12px rgba(20,20,30,0.16); font-size: 12px; font-weight: 700; white-space: nowrap;&quot;&gt;
+      &lt;span style=&quot;width: 22px; height: 22px; border-radius: 50%; background: #EEEAFB; display: flex; align-items: center; justify-content: center;&quot;&gt;&lt;svg width=&quot;13&quot; height=&quot;13&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#7C63D6&quot; stroke-width=&quot;2.4&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;&gt;&lt;path d=&quot;M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10&quot;&gt;&lt;/path&gt;&lt;path d=&quot;M17 21V3c-2 1.5-3 4-3 7h3&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/span&gt;El Baraka…
+    &lt;/div&gt;
+    &lt;div style=&quot;width: 2px; height: 8px; margin-left: 15px; background: #7C63D6;&quot;&gt;&lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div style=&quot;position: absolute; left: 226px; top: 452px; display: flex; flex-direction: column; align-items: flex-start;&quot;&gt;
+    &lt;div style=&quot;display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 4px; background: #FDFDFF; border: 2px solid #2E9E52; border-radius: 999px; box-shadow: 0 4px 12px rgba(20,20,30,0.16); font-size: 12px; font-weight: 700; white-space: nowrap;&quot;&gt;
+      &lt;span style=&quot;width: 22px; height: 22px; border-radius: 50%; background: #DCF3E3; display: flex; align-items: center; justify-content: center;&quot;&gt;&lt;svg width=&quot;13&quot; height=&quot;13&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#2E9E52&quot; stroke-width=&quot;2.4&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;&gt;&lt;path d=&quot;M5 8h14l-1 13H6z&quot;&gt;&lt;/path&gt;&lt;path d=&quot;M9 8V6a3 3 0 0 1 6 0v2&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/span&gt;Citystars Mall
+    &lt;/div&gt;
+    &lt;div style=&quot;width: 2px; height: 8px; margin-left: 15px; background: #2E9E52;&quot;&gt;&lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div style=&quot;position: absolute; left: 88px; top: 566px; display: flex; flex-direction: column; align-items: flex-start;&quot;&gt;
+    &lt;div style=&quot;display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 4px; background: #FDFDFF; border: 2px solid #2E9E52; border-radius: 999px; box-shadow: 0 4px 12px rgba(20,20,30,0.16); font-size: 12px; font-weight: 700; white-space: nowrap;&quot;&gt;
+      &lt;span style=&quot;width: 22px; height: 22px; border-radius: 50%; background: #DCF3E3; display: flex; align-items: center; justify-content: center;&quot;&gt;&lt;svg width=&quot;13&quot; height=&quot;13&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#2E9E52&quot; stroke-width=&quot;2.4&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;&gt;&lt;path d=&quot;M12 3l6 9h-3l4 6H5l4-6H6z&quot;&gt;&lt;/path&gt;&lt;path d=&quot;M12 18v3&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/span&gt;Cairo Festival City
+    &lt;/div&gt;
+    &lt;div style=&quot;width: 2px; height: 8px; margin-left: 15px; background: #2E9E52;&quot;&gt;&lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;!-- you --&gt;
+  &lt;div style=&quot;position: absolute; left: 118px; top: 402px; width: 48px; height: 48px; border-radius: 50%; background: rgba(66,133,244,0.18); display: flex; align-items: center; justify-content: center;&quot;&gt;
+    &lt;div style=&quot;width: 30px; height: 30px; box-sizing: border-box; border-radius: 50%; border: 3px solid #fff; background: #4285F4; color: #fff; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center;&quot;&gt;Y&lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;!-- sheet pulled down: peek bar --&gt;
+  &lt;div style=&quot;position: absolute; left: 0; right: 0; bottom: 84px; height: 78px; background: #F0F0F3; border-radius: 22px 22px 0 0; box-shadow: 0 -6px 24px rgba(20,20,30,0.12); display: flex; flex-direction: column; align-items: center; padding-top: 10px; box-sizing: border-box;&quot;&gt;
+    &lt;div style=&quot;width: 36px; height: 4px; border-radius: 2px; background: #BABAC1;&quot;&gt;&lt;/div&gt;
+    &lt;div style=&quot;display: flex; align-items: center; justify-content: space-between; align-self: stretch; padding: 12px 20px 0;&quot;&gt;
+      &lt;div style=&quot;display: flex; flex-direction: column; gap: 1px;&quot;&gt;
+        &lt;div style=&quot;font-size: 15px; font-weight: 800;&quot;&gt;10 places on the map&lt;/div&gt;
+        &lt;div style=&quot;font-size: 12px; color: #5C5C69;&quot;&gt;Pull up for the list&lt;/div&gt;
+      &lt;/div&gt;
+      &lt;svg width=&quot;20&quot; height=&quot;20&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#5C5C69&quot; stroke-width=&quot;2.4&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;&gt;&lt;path d=&quot;M6 15l6-6 6 6&quot;&gt;&lt;/path&gt;&lt;/svg&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;!-- tab bar --&gt;
+  &lt;div style=&quot;position: absolute; left: 0; right: 0; bottom: 0; height: 84px; background: #FDFDFF; border-top: 1px solid #DCDCE0; display: flex; padding-top: 10px; box-sizing: border-box;&quot;&gt;
+    &lt;div style=&quot;flex: 1; text-align: center; font-size: 11px; font-weight: 600; color: #5C5C69;&quot;&gt;Home&lt;/div&gt;
+    &lt;div style=&quot;flex: 1; text-align: center; font-size: 11px; font-weight: 700; color: #006873;&quot;&gt;Map&lt;/div&gt;
+    &lt;div style=&quot;flex: 1; text-align: center; font-size: 11px; font-weight: 600; color: #5C5C69;&quot;&gt;Spaces&lt;/div&gt;
+    &lt;div style=&quot;flex: 1; text-align: center; font-size: 11px; font-weight: 600; color: #5C5C69;&quot;&gt;Profile&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;/body&gt;&lt;/html&gt;" scrolling="no"></iframe></div>
+      <figcaption><span class="tag">A</span><div><h3>Name tags</h3><p>Every pin is a tag with the place's icon and name, bordered in its space's colour. Readable at a glance; crowded when places sit close together.</p></div></figcaption></figure>
+    <figure class="frame"><div class="phone"><iframe title="B · Tap to peek" srcdoc="&lt;!doctype html&gt;&lt;html&gt;&lt;head&gt;&lt;meta charset=&quot;utf-8&quot;&gt;
+  &lt;link rel=&quot;stylesheet&quot; href=&quot;https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&amp;display=swap&quot;&gt;
+  &lt;style&gt;
+    body { margin: 0; font-family: &#x27;Figtree&#x27;, &#x27;Avenir Next&#x27;, &#x27;Helvetica Neue&#x27;, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #006873; } a:hover { color: #00838E; }
+  &lt;/style&gt;
+&lt;style&gt;html,body{margin:0}&lt;/style&gt;&lt;/head&gt;&lt;body&gt;
+&lt;!-- B · Tap to peek: pins stay small but carry the place&#x27;s icon; tapping one lifts it and slides up a place card. --&gt;
+&lt;div style=&quot;position: relative; width: 390px; height: 844px; overflow: hidden; background: #E6E7EC; color: #1C1C25;&quot;&gt;
+  &lt;svg width=&quot;390&quot; height=&quot;844&quot; viewBox=&quot;0 0 390 844&quot; style=&quot;position: absolute; inset: 0;&quot;&gt;
+    &lt;rect width=&quot;390&quot; height=&quot;844&quot; fill=&quot;#E6E7EC&quot;&gt;&lt;/rect&gt;
+    &lt;path d=&quot;M150 -10 C110 160 200 260 160 420 C130 560 210 680 180 860 L225 860 C250 680 175 560 205 420 C245 260 150 160 190 -10 Z&quot; fill=&quot;#CFE0EF&quot;&gt;&lt;/path&gt;
+    &lt;ellipse cx=&quot;310&quot; cy=&quot;240&quot; rx=&quot;55&quot; ry=&quot;40&quot; fill=&quot;#D6ECDD&quot;&gt;&lt;/ellipse&gt;
+    &lt;ellipse cx=&quot;70&quot; cy=&quot;560&quot; rx=&quot;46&quot; ry=&quot;34&quot; fill=&quot;#D6ECDD&quot;&gt;&lt;/ellipse&gt;
+    &lt;path d=&quot;M-10 150 L400 110 M-10 330 L400 300 M-10 520 L400 490 M-10 690 L400 660 M70 -10 L110 860 M285 -10 L260 860 M345 -10 L375 860&quot; stroke=&quot;#FBFBFD&quot; stroke-width=&quot;10&quot; fill=&quot;none&quot;&gt;&lt;/path&gt;
+    &lt;path d=&quot;M-10 420 L400 390&quot; stroke=&quot;#FBFBFD&quot; stroke-width=&quot;16&quot; fill=&quot;none&quot;&gt;&lt;/path&gt;
+  &lt;/svg&gt;
+
+  &lt;div style=&quot;position: absolute; left: 20px; right: 20px; top: 62px;&quot;&gt;
+    &lt;div style=&quot;height: 46px; display: flex; align-items: center; gap: 8px; padding: 0 14px; background: #F0F0F3; border: 1px solid #DCDCE0; border-radius: 999px; box-shadow: 0 3px 10px rgba(20,20,30,0.10); font-size: 13.5px; font-weight: 600; color: #5C5C69;&quot;&gt;
+      &lt;svg width=&quot;16&quot; height=&quot;16&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#1C1C25&quot; stroke-width=&quot;2.4&quot; stroke-linecap=&quot;round&quot;&gt;&lt;circle cx=&quot;11&quot; cy=&quot;11&quot; r=&quot;7&quot;&gt;&lt;/circle&gt;&lt;path d=&quot;M20 20l-3.5-3.5&quot;&gt;&lt;/path&gt;&lt;/svg&gt;Search your places
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;!-- icon pins: space-colour disc with the place&#x27;s kind drawn inside --&gt;
+  &lt;div style=&quot;position: absolute; left: 62px; top: 232px; display: flex; flex-direction: column; align-items: center;&quot;&gt;
+    &lt;div style=&quot;width: 32px; height: 32px; border-radius: 50%; background: #7C63D6; border: 3px solid #fff; box-sizing: border-box; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 10px rgba(20,20,30,0.2);&quot;&gt;&lt;svg width=&quot;14&quot; height=&quot;14&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#fff&quot; stroke-width=&quot;2.6&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;&gt;&lt;path d=&quot;M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10&quot;&gt;&lt;/path&gt;&lt;path d=&quot;M17 21V3c-2 1.5-3 4-3 7h3&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/div&gt;
+    &lt;div style=&quot;width: 2px; height: 7px; background: #7C63D6;&quot;&gt;&lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div style=&quot;position: absolute; left: 240px; top: 444px; display: flex; flex-direction: column; align-items: center;&quot;&gt;
+    &lt;div style=&quot;width: 32px; height: 32px; border-radius: 50%; background: #2E9E52; border: 3px solid #fff; box-sizing: border-box; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 10px rgba(20,20,30,0.2);&quot;&gt;&lt;svg width=&quot;14&quot; height=&quot;14&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#fff&quot; stroke-width=&quot;2.6&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;&gt;&lt;path d=&quot;M5 8h14l-1 13H6z&quot;&gt;&lt;/path&gt;&lt;path d=&quot;M9 8V6a3 3 0 0 1 6 0v2&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/div&gt;
+    &lt;div style=&quot;width: 2px; height: 7px; background: #2E9E52;&quot;&gt;&lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div style=&quot;position: absolute; left: 110px; top: 546px; display: flex; flex-direction: column; align-items: center;&quot;&gt;
+    &lt;div style=&quot;width: 32px; height: 32px; border-radius: 50%; background: #2E9E52; border: 3px solid #fff; box-sizing: border-box; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 10px rgba(20,20,30,0.2);&quot;&gt;&lt;svg width=&quot;14&quot; height=&quot;14&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#fff&quot; stroke-width=&quot;2.6&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;&gt;&lt;path d=&quot;M12 3l6 9h-3l4 6H5l4-6H6z&quot;&gt;&lt;/path&gt;&lt;path d=&quot;M12 18v3&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/div&gt;
+    &lt;div style=&quot;width: 2px; height: 7px; background: #2E9E52;&quot;&gt;&lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;!-- the tapped pin: lifted, bigger, name above it --&gt;
+  &lt;div style=&quot;position: absolute; left: 176px; top: 262px; display: flex; flex-direction: column; align-items: center; gap: 4px;&quot;&gt;
+    &lt;div style=&quot;background: #1C1C25; color: #fff; font-size: 12px; font-weight: 700; border-radius: 8px; padding: 4px 9px; white-space: nowrap;&quot;&gt;El Baraka Fried Chicken&lt;/div&gt;
+    &lt;div style=&quot;width: 44px; height: 44px; border-radius: 50%; background: #7C63D6; border: 4px solid #fff; box-sizing: border-box; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(20,20,30,0.28);&quot;&gt;&lt;svg width=&quot;18&quot; height=&quot;18&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#fff&quot; stroke-width=&quot;2.6&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;&gt;&lt;path d=&quot;M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10&quot;&gt;&lt;/path&gt;&lt;path d=&quot;M17 21V3c-2 1.5-3 4-3 7h3&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/div&gt;
+    &lt;div style=&quot;width: 3px; height: 9px; background: #7C63D6;&quot;&gt;&lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;!-- place card, above the peek bar --&gt;
+  &lt;div style=&quot;position: absolute; left: 14px; right: 14px; bottom: 176px; background: #FDFDFF; border-radius: 20px; padding: 14px; box-shadow: 0 16px 40px rgba(20,20,30,0.18); display: flex; flex-direction: column; gap: 12px;&quot;&gt;
+    &lt;div style=&quot;display: flex; gap: 12px; align-items: center;&quot;&gt;
+      &lt;div style=&quot;width: 48px; height: 48px; border-radius: 12px; background: #EEEAFB; display: flex; align-items: center; justify-content: center; flex-shrink: 0;&quot;&gt;&lt;svg width=&quot;22&quot; height=&quot;22&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#7C63D6&quot; stroke-width=&quot;2.2&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;&gt;&lt;path d=&quot;M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10&quot;&gt;&lt;/path&gt;&lt;path d=&quot;M17 21V3c-2 1.5-3 4-3 7h3&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/div&gt;
+      &lt;div style=&quot;flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px;&quot;&gt;
+        &lt;div style=&quot;font-size: 16px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;&quot;&gt;El Baraka Fried Chicken&lt;/div&gt;
+        &lt;div style=&quot;display: flex; align-items: center; gap: 6px; font-size: 12px; color: #5C5C69;&quot;&gt;&lt;span style=&quot;width: 7px; height: 7px; border-radius: 50%; background: #7C63D6;&quot;&gt;&lt;/span&gt;Flowers · 17 min · 5.8 km&lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div style=&quot;display: flex; gap: 8px;&quot;&gt;
+      &lt;div style=&quot;flex: 1; min-height: 42px; border-radius: 12px; background: #00838E; color: #fff; font-size: 13.5px; font-weight: 700; display: flex; align-items: center; justify-content: center;&quot;&gt;Directions&lt;/div&gt;
+      &lt;div style=&quot;flex: 1; min-height: 42px; border-radius: 12px; background: #F0F0F3; font-size: 13.5px; font-weight: 700; display: flex; align-items: center; justify-content: center;&quot;&gt;Open place&lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;div style=&quot;position: absolute; left: 0; right: 0; bottom: 84px; height: 78px; background: #F0F0F3; border-radius: 22px 22px 0 0; box-shadow: 0 -6px 24px rgba(20,20,30,0.12); display: flex; flex-direction: column; align-items: center; padding-top: 10px; box-sizing: border-box;&quot;&gt;
+    &lt;div style=&quot;width: 36px; height: 4px; border-radius: 2px; background: #BABAC1;&quot;&gt;&lt;/div&gt;
+    &lt;div style=&quot;display: flex; align-items: center; justify-content: space-between; align-self: stretch; padding: 12px 20px 0;&quot;&gt;
+      &lt;div style=&quot;display: flex; flex-direction: column; gap: 1px;&quot;&gt;
+        &lt;div style=&quot;font-size: 15px; font-weight: 800;&quot;&gt;10 places on the map&lt;/div&gt;
+        &lt;div style=&quot;font-size: 12px; color: #5C5C69;&quot;&gt;Pull up for the list&lt;/div&gt;
+      &lt;/div&gt;
+      &lt;svg width=&quot;20&quot; height=&quot;20&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#5C5C69&quot; stroke-width=&quot;2.4&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;&gt;&lt;path d=&quot;M6 15l6-6 6 6&quot;&gt;&lt;/path&gt;&lt;/svg&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;div style=&quot;position: absolute; left: 0; right: 0; bottom: 0; height: 84px; background: #FDFDFF; border-top: 1px solid #DCDCE0; display: flex; padding-top: 10px; box-sizing: border-box;&quot;&gt;
+    &lt;div style=&quot;flex: 1; text-align: center; font-size: 11px; font-weight: 600; color: #5C5C69;&quot;&gt;Home&lt;/div&gt;
+    &lt;div style=&quot;flex: 1; text-align: center; font-size: 11px; font-weight: 700; color: #006873;&quot;&gt;Map&lt;/div&gt;
+    &lt;div style=&quot;flex: 1; text-align: center; font-size: 11px; font-weight: 600; color: #5C5C69;&quot;&gt;Spaces&lt;/div&gt;
+    &lt;div style=&quot;flex: 1; text-align: center; font-size: 11px; font-weight: 600; color: #5C5C69;&quot;&gt;Profile&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;/body&gt;&lt;/html&gt;" scrolling="no"></iframe></div>
+      <figcaption><span class="tag">B</span><div><h3>Tap to peek</h3><p>Small icon pins. Tap one and it lifts with its name, and a place card slides up with Directions and Open place. Cleanest map; you tap to learn a name.</p></div></figcaption></figure>
+    <figure class="frame"><div class="phone"><iframe title="C · Names as you zoom" srcdoc="&lt;!doctype html&gt;&lt;html&gt;&lt;head&gt;&lt;meta charset=&quot;utf-8&quot;&gt;
+  &lt;link rel=&quot;stylesheet&quot; href=&quot;https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&amp;display=swap&quot;&gt;
+  &lt;style&gt;
+    body { margin: 0; font-family: &#x27;Figtree&#x27;, &#x27;Avenir Next&#x27;, &#x27;Helvetica Neue&#x27;, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #006873; } a:hover { color: #00838E; }
+  &lt;/style&gt;
+&lt;style&gt;html,body{margin:0}&lt;/style&gt;&lt;/head&gt;&lt;body&gt;
+&lt;!-- C · Names as you zoom: zoomed out, pins are icon dots; zoom in and names appear beside them, like street labels. Tap still opens the card. --&gt;
+&lt;div style=&quot;position: relative; width: 390px; height: 844px; overflow: hidden; background: #E6E7EC; color: #1C1C25;&quot;&gt;
+  &lt;svg width=&quot;390&quot; height=&quot;844&quot; viewBox=&quot;0 0 390 844&quot; style=&quot;position: absolute; inset: 0;&quot;&gt;
+    &lt;rect width=&quot;390&quot; height=&quot;844&quot; fill=&quot;#E6E7EC&quot;&gt;&lt;/rect&gt;
+    &lt;path d=&quot;M120 -10 C70 200 230 330 170 520 C130 650 230 760 200 860 L270 860 C300 760 200 650 240 520 C300 330 150 200 190 -10 Z&quot; fill=&quot;#CFE0EF&quot;&gt;&lt;/path&gt;
+    &lt;ellipse cx=&quot;320&quot; cy=&quot;300&quot; rx=&quot;70&quot; ry=&quot;52&quot; fill=&quot;#D6ECDD&quot;&gt;&lt;/ellipse&gt;
+    &lt;path d=&quot;M-10 190 L400 150 M-10 420 L400 380 M-10 620 L400 590 M60 -10 L100 860 M300 -10 L275 860&quot; stroke=&quot;#FBFBFD&quot; stroke-width=&quot;14&quot; fill=&quot;none&quot;&gt;&lt;/path&gt;
+  &lt;/svg&gt;
+
+  &lt;div style=&quot;position: absolute; left: 20px; right: 20px; top: 62px;&quot;&gt;
+    &lt;div style=&quot;height: 46px; display: flex; align-items: center; gap: 8px; padding: 0 14px; background: #F0F0F3; border: 1px solid #DCDCE0; border-radius: 999px; box-shadow: 0 3px 10px rgba(20,20,30,0.10); font-size: 13.5px; font-weight: 600; color: #5C5C69;&quot;&gt;
+      &lt;svg width=&quot;16&quot; height=&quot;16&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#1C1C25&quot; stroke-width=&quot;2.4&quot; stroke-linecap=&quot;round&quot;&gt;&lt;circle cx=&quot;11&quot; cy=&quot;11&quot; r=&quot;7&quot;&gt;&lt;/circle&gt;&lt;path d=&quot;M20 20l-3.5-3.5&quot;&gt;&lt;/path&gt;&lt;/svg&gt;Search your places
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;!-- zoomed-in: pin + name beside it, halo&#x27;d like a map label --&gt;
+  &lt;div style=&quot;position: absolute; left: 40px; top: 250px; display: flex; align-items: center; gap: 6px;&quot;&gt;
+    &lt;div style=&quot;width: 30px; height: 30px; border-radius: 50%; background: #7C63D6; border: 3px solid #fff; box-sizing: border-box; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 10px rgba(20,20,30,0.2);&quot;&gt;&lt;svg width=&quot;13&quot; height=&quot;13&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#fff&quot; stroke-width=&quot;2.6&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;&gt;&lt;path d=&quot;M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10&quot;&gt;&lt;/path&gt;&lt;path d=&quot;M17 21V3c-2 1.5-3 4-3 7h3&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/div&gt;
+    &lt;div style=&quot;font-size: 13px; font-weight: 800; color: #3F2E8F; text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff;&quot;&gt;Smiley’s Grill&lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div style=&quot;position: absolute; left: 196px; top: 340px; display: flex; align-items: center; gap: 6px;&quot;&gt;
+    &lt;div style=&quot;width: 30px; height: 30px; border-radius: 50%; background: #7C63D6; border: 3px solid #fff; box-sizing: border-box; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 10px rgba(20,20,30,0.2);&quot;&gt;&lt;svg width=&quot;13&quot; height=&quot;13&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#fff&quot; stroke-width=&quot;2.6&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;&gt;&lt;path d=&quot;M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10&quot;&gt;&lt;/path&gt;&lt;path d=&quot;M17 21V3c-2 1.5-3 4-3 7h3&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/div&gt;
+    &lt;div style=&quot;font-size: 13px; font-weight: 800; color: #3F2E8F; text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff; max-width: 140px;&quot;&gt;El Baraka Fried Chicken&lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div style=&quot;position: absolute; left: 120px; top: 500px; display: flex; align-items: center; gap: 6px;&quot;&gt;
+    &lt;div style=&quot;width: 30px; height: 30px; border-radius: 50%; background: #2E9E52; border: 3px solid #fff; box-sizing: border-box; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 10px rgba(20,20,30,0.2);&quot;&gt;&lt;svg width=&quot;13&quot; height=&quot;13&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#fff&quot; stroke-width=&quot;2.6&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;&gt;&lt;path d=&quot;M5 8h14l-1 13H6z&quot;&gt;&lt;/path&gt;&lt;path d=&quot;M9 8V6a3 3 0 0 1 6 0v2&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/div&gt;
+    &lt;div style=&quot;font-size: 13px; font-weight: 800; color: #166534; text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff;&quot;&gt;Citystars Mall&lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;!-- zoom hint, bottom-right above peek bar --&gt;
+  &lt;div style=&quot;position: absolute; right: 16px; bottom: 178px; display: flex; flex-direction: column; gap: 8px;&quot;&gt;
+    &lt;div style=&quot;width: 44px; height: 44px; border-radius: 22px; background: #FDFDFF; box-shadow: 0 3px 10px rgba(20,20,30,0.12); display: flex; align-items: center; justify-content: center;&quot;&gt;&lt;div style=&quot;width: 16px; height: 16px; box-sizing: border-box; border-radius: 50%; border: 3px solid #4285F4; background: rgba(66,133,244,0.25);&quot;&gt;&lt;/div&gt;&lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;div style=&quot;position: absolute; left: 0; right: 0; bottom: 84px; height: 78px; background: #F0F0F3; border-radius: 22px 22px 0 0; box-shadow: 0 -6px 24px rgba(20,20,30,0.12); display: flex; flex-direction: column; align-items: center; padding-top: 10px; box-sizing: border-box;&quot;&gt;
+    &lt;div style=&quot;width: 36px; height: 4px; border-radius: 2px; background: #BABAC1;&quot;&gt;&lt;/div&gt;
+    &lt;div style=&quot;display: flex; align-items: center; justify-content: space-between; align-self: stretch; padding: 12px 20px 0;&quot;&gt;
+      &lt;div style=&quot;display: flex; flex-direction: column; gap: 1px;&quot;&gt;
+        &lt;div style=&quot;font-size: 15px; font-weight: 800;&quot;&gt;3 places in view&lt;/div&gt;
+        &lt;div style=&quot;font-size: 12px; color: #5C5C69;&quot;&gt;Pull up for the list&lt;/div&gt;
+      &lt;/div&gt;
+      &lt;svg width=&quot;20&quot; height=&quot;20&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#5C5C69&quot; stroke-width=&quot;2.4&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;&gt;&lt;path d=&quot;M6 15l6-6 6 6&quot;&gt;&lt;/path&gt;&lt;/svg&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;div style=&quot;position: absolute; left: 0; right: 0; bottom: 0; height: 84px; background: #FDFDFF; border-top: 1px solid #DCDCE0; display: flex; padding-top: 10px; box-sizing: border-box;&quot;&gt;
+    &lt;div style=&quot;flex: 1; text-align: center; font-size: 11px; font-weight: 600; color: #5C5C69;&quot;&gt;Home&lt;/div&gt;
+    &lt;div style=&quot;flex: 1; text-align: center; font-size: 11px; font-weight: 700; color: #006873;&quot;&gt;Map&lt;/div&gt;
+    &lt;div style=&quot;flex: 1; text-align: center; font-size: 11px; font-weight: 600; color: #5C5C69;&quot;&gt;Spaces&lt;/div&gt;
+    &lt;div style=&quot;flex: 1; text-align: center; font-size: 11px; font-weight: 600; color: #5C5C69;&quot;&gt;Profile&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;/body&gt;&lt;/html&gt;" scrolling="no"></iframe></div>
+      <figcaption><span class="tag">C</span><div><h3>Names as you zoom</h3><p>Icon pins when zoomed out; names appear beside them as you zoom in, like street labels. Tapping still opens B's card.</p></div></figcaption></figure>
+  </div>
+</main>

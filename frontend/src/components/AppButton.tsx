@@ -52,6 +52,7 @@ export function AppButton({
             (variant === 'primary' || variant === 'danger') && styles.labelOnFill,
             variant === 'outline' && styles.labelOutline,
             variant === 'ghost' && styles.labelGhost,
+            isDisabled && styles.labelDisabled,
           ]}>
           {title}
         </Text>
@@ -62,25 +63,23 @@ export function AppButton({
 
 const styles = StyleSheet.create({
   base: {
-    height: 56,
-    borderRadius: radius.full,
+    minHeight: 48,
+    borderRadius: radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 28,
   },
-  baseSm: {height: 44, paddingHorizontal: 20},
+  baseSm: {minHeight: 44, paddingHorizontal: 16},
   primary: {backgroundColor: colors.primary},
   danger: {backgroundColor: colors.error},
-  outline: {
-    backgroundColor: 'transparent',
-    borderWidth: 1.5,
-    borderColor: colors.border,
-  },
+  // Design's ghost button (btnG): a white card-coloured slab, no border.
+  outline: {backgroundColor: colors.surface},
   ghost: {backgroundColor: 'transparent'},
-  disabled: {opacity: 0.45},
-  label: {fontFamily: fonts.display, fontSize: 17, color: colors.text},
-  labelSm: {fontSize: 15},
+  disabled: {backgroundColor: colors.disabledBg},
+  label: {fontFamily: fonts.bold, fontSize: 15, color: colors.text},
+  labelSm: {fontSize: 13.5},
   labelOnFill: {color: colors.white},
   labelOutline: {color: colors.text},
+  labelDisabled: {color: colors.disabledFg},
   labelGhost: {fontFamily: fonts.medium, color: colors.textSecondary},
 });

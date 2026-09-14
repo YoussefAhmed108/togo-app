@@ -1,4 +1,5 @@
 import api from './api';
+import {ApiDish} from './memoryService';
 
 export interface ApiPlace {
   id: number;
@@ -23,6 +24,7 @@ export interface ApiMemoryWithSpace {
   space_name: string | null;
   image_url: string;
   caption: string | null;
+  dishes: ApiDish[];
   created_at: string;
 }
 

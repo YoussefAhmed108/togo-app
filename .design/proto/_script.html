@@ -1,0 +1,1055 @@
+<script data-dc-script data-props='{"dark":{"editor":"boolean","default":false,"section":"Theme"},"lang":{"editor":"enum","options":["en","ar"],"default":"en","section":"Theme"},"$preview":{"width":430,"height":1010}}'>
+const STR = {
+ en: {
+  tagline: "Your places, your memories.",
+  welcomeBack: "Welcome back",
+  signinSub: "Sign in to your account",
+  emailPh: "you@email.com",
+  confirmPw: "Confirm password",
+  password: "Password",
+  signIn: "Sign in",
+  noAccount: "Don't have an account?",
+  createOne: "Create one",
+  createAccount: "Create account",
+  createSub: "It's free and takes 30 seconds.",
+  email: "Email",
+  phone: "Phone number",
+  strengthGood: "Strength: good",
+  terms: "By continuing you agree to our Terms of Service and Privacy Policy.",
+  lastStep: "One last step",
+  lastStepSub: "Tell people who you are.",
+  displayName: "Display name",
+  displayNamePh: "How you'll appear to others",
+  username: "Username",
+  usernamePh: "e.g. alice_wanders",
+  usernameHint: "Letters, numbers and underscores.",
+  continueLbl: "Continue",
+  interestsTitle: "What do you love?",
+  interestsSub: "We'll use this to recommend places.",
+  skip: "Skip for now",
+  addPlace: "Add a place",
+  addPlaceSub: "Paste a TikTok or Instagram link, or search",
+  scopeNote: "scopes what you see below",
+  nearYou: "Near you right now",
+  noRecsNote: "Nothing is trending near you yet. Check back soon.",
+  recentlySaved: "Recently saved",
+  yourSpaces: "Your spaces",
+  newSpace: "New space",
+  searchPlaces: "Search your places",
+  nearby: "Nearby",
+  allSaved: "All saved",
+  appearance: "Appearance",
+  appearanceSub: "Pick the mood of the app on this device.",
+  light: "Light",
+  dark: "Dark",
+  language: "Language",
+  savedAddresses: "Saved addresses",
+  pointsSub: "Named starting points you can pick instead of your live location.",
+  noPointsNote: "No saved addresses yet. Add one and it becomes a one-tap origin on the location sheet.",
+  addPoint: "Add a starting point",
+  pointLabelPh: "Home, Work, Mum's",
+  pointLabelHint: "Leave it blank and we'll use the first line of the address.",
+  chooseOnMap: "Choose on map",
+  label: "Label",
+  changePassword: "Change password",
+  currentPwPh: "Your current password",
+  currentPw: "Current password",
+  newPw: "New password",
+  newPwPh: "At least 8 characters",
+  confirmNewPw: "Confirm new password",
+  confirmNewPwPh: "Repeat the new password",
+  pwNote: "Signing in on your other devices will not be affected.",
+  updatePassword: "Update password",
+  account: "Account",
+  edit: "Edit",
+  visitedPlaces: "Visited places",
+  logOut: "Log out",
+  closestToYou: "Closest to you",
+  directions: "Directions",
+  noPlacesMatch: "No places match this filter.",
+  memoriesHere: "Memories here",
+  memories: "Memories",
+  addDish: "+ Add a dish",
+  noMemoriesMatch: "No memories match this filter.",
+  filterMemories: "Filter memories",
+  clear: "Clear",
+  showResults: "Show results",
+  addPlaceTitle: "Add Place",
+  poweredBy: "Powered by Google Places",
+  locating: "Locating…",
+  dragMap: "Drag map here",
+  placeName: "Place name",
+  tags: "Tags",
+  tagsHint: "optional · up to 10",
+  customTagPh: "Type a custom tag…",
+  add: "Add",
+  usedInSpace: "Used in this space",
+  popular: "Popular",
+  pasteLink: "Paste a TikTok or Instagram link",
+  pasteLinkSub: "We'll read the video and find the place",
+  pickLocationHint: "Search above or drag the map to pick a location",
+  placeSaved: "Place saved!",
+  done: "Done",
+  analysing: "Analysing TikTok…",
+  analysingSub: "Reading the video to find the place",
+  whichPlace: "Which place is it?",
+  noneOfThese: "None of these — search manually",
+  addThisTo: "Add this place to…",
+  cancel: "Cancel",
+  addMemory: "Add memory",
+  setLocation: "Set location",
+  useCurrent: "Use current location",
+  useCurrentSub: "Uses your device GPS",
+  useCustom: "Set a custom location",
+  useCustomSub: "Search or drop a pin on the map",
+  cover: "Cover",
+  spaceName: "Space name",
+  spaceNamePh: "e.g. Weekend in Lisbon",
+  createSpace: "Create space",
+  caption: "Caption",
+  captionPh: "What happened here?",
+  upload: "Upload",
+  home: "Home",
+  map: "Map",
+  spaces: "Spaces",
+  profile: "Profile",
+  save: "Save",
+  saved: "Saved",
+  seeAll: "See all",
+  all: "All",
+  allPins: "All pins",
+  visited: "Visited",
+  nearbyCount: "nearby",
+  members: "members",
+  places: "places",
+  morePlaces: "More places",
+  filters: "Filters",
+  minWalk: "min walk",
+  kmAway: "km away",
+  savedPlaces: "Saved Places",
+  pickAtLeastOne: "Pick at least one",
+  saveTo: "Save to",
+  destination: "destination",
+  destinations: "destinations",
+  nextChoose: "Next — choose destination",
+  pickLocationFirst: "Pick a location first",
+  continueWith: "Continue with",
+  selected: "selected",
+  of: "of",
+  place: "Place",
+  cuisine: "Cuisine",
+  status: "Status",
+  notVisited: "Not visited",
+  back: "Back",
+  toggleVisited: "Toggle visited",
+  removeAddress: "Remove address",
+  newSpaceAria: "New space",
+  passwordAge: "Last changed 3 months ago",
+  evidence: "“best bifanas in Lisbon, the one by the river” — 3 branches matched",
+  camera: "📸 Camera",
+  gallery: "🖼️ Gallery",
+  suggestedNear: "Suggested near this space",
+  becauseCoffee: "Because you like coffee",
+  youMightLike: "You might like",
+  topPick: "Top pick today",
+  orSearch: "Or search",
+  pasteALink: "Paste a link",
+  nameOrAddress: "Name or address",
+  weWillPull: "We'll pull the place out of the video for you.",
+  searchPlaceOrAddress: "Search for a place or address…",
+  savePlace: "Save place",
+  sample: "Sample data",
+  Food: "Food",
+  Nature: "Nature",
+  Culture: "Culture",
+  Shop: "Shop",
+  savedBy: "saved by",
+  km: "km",
+  min: "min",
+  i1: "Food & Dining",
+  i1h: "Restaurants, markets",
+  i2: "Coffee & Cafés",
+  i2h: "Roasters, brunch",
+  i3: "Outdoors",
+  i3h: "Parks, trails, views",
+  i4: "Arts & Culture",
+  i4h: "Museums, galleries",
+  i5: "Shopping",
+  i5h: "Markets, vintage",
+  i6: "Bars & Nightlife",
+  i6h: "Cocktails, rooftops",
+  i7: "Wellness",
+  i7h: "Spas, studios",
+  i8: "Entertainment",
+  i8h: "Cinema, live music",
+  reason1: "Popular near Lisbon",
+  reason2: "Matches your interests",
+  reason3: "Loved by your group",
+  nearbyLabel: "nearby",
+  allCount: "All",
+  noneYet: "None yet",
+  address1: "address",
+  addressN: "addresses",
+  stage1: "Reading the video",
+  stage2: "Finding the place",
+  stage3: "Matching it on the map",
+  analyseNote: "This usually takes about 20 seconds. You can leave the app — we'll finish.",
+  csPhoto: "Photo",
+  csEmoji: "Emoji",
+  csAddBanner: "Add a banner photo",
+  csChooseLibrary: "Choose from library",
+  csChangePhoto: "Tap to change photo",
+  csPickIconBelow: "Pick an icon below",
+  csBadgeIcon: "Badge icon",
+  csIconLbl: "Icon",
+  csNamePh: "e.g. Weekend Adventures",
+  csSampleName: "Weekend in Lisbon",
+  csNeedName: "Name your space to continue",
+  csNeedPhoto: "Add a photo, or switch to Emoji",
+  csCreating: "Creating…",
+  csCreated: "Space created",
+  csOnlyMember: "You're the only member so far.",
+  csInvite: "Invite friends",
+  csTapCopy: "Tap to copy",
+  csCopied: "Copied",
+  csCopyLink: "Copy link",
+  csShare: "Share",
+  csInviteHint: "Anyone with this link can join the space.",
+  trendingNow: "Trending right now",
+  settings: "Settings",
+  markVisited: "Mark as visited",
+  howWasIt: "How was it?",
+  reviewSub: "Rate it for your spaces. Everything here is optional.",
+  yourRating: "Your rating",
+  whatStoodOut: "What stood out?",
+  reviewNotePh: "The dishes, the vibe, who you went with…",
+  reviewSample: "Crispy fries, slow service, worth it for the view.",
+  addPhotos: "Photos",
+  saveReview: "Save review",
+  skipReview: "Skip for now",
+  savesThisWeek: "saves this week",
+  sponsored: "Sponsored",
+  beenHere: "Been here",
+ },
+ ar: {
+  tagline: "أماكنك، وذكرياتك.",
+  welcomeBack: "أهلاً بعودتك",
+  signinSub: "سجّل الدخول إلى حسابك",
+  emailPh: "you@email.com",
+  confirmPw: "تأكيد كلمة المرور",
+  password: "كلمة المرور",
+  signIn: "تسجيل الدخول",
+  noAccount: "ليس لديك حساب؟",
+  createOne: "أنشئ حساباً",
+  createAccount: "إنشاء حساب",
+  createSub: "مجاني ولا يستغرق سوى 30 ثانية.",
+  email: "البريد الإلكتروني",
+  phone: "رقم الهاتف",
+  strengthGood: "القوة: جيدة",
+  terms: "بالمتابعة فإنك توافق على شروط الخدمة وسياسة الخصوصية.",
+  lastStep: "خطوة أخيرة",
+  lastStepSub: "عرّف الآخرين بنفسك.",
+  displayName: "الاسم الظاهر",
+  displayNamePh: "كيف سيظهر اسمك للآخرين",
+  username: "اسم المستخدم",
+  usernamePh: "مثال: alice_wanders",
+  usernameHint: "حروف وأرقام وشرطة سفلية.",
+  continueLbl: "متابعة",
+  interestsTitle: "ما الذي تحبه؟",
+  interestsSub: "سنستخدم هذا لاقتراح أماكن تناسبك.",
+  skip: "تخطٍّ الآن",
+  addPlace: "أضف مكاناً",
+  addPlaceSub: "الصق رابط تيك توك أو إنستغرام، أو ابحث",
+  scopeNote: "يحدد ما تراه بالأسفل",
+  nearYou: "قريب منك الآن",
+  noRecsNote: "لا يوجد شيء رائج بالقرب منك بعد. عُد لاحقًا.",
+  recentlySaved: "المحفوظة مؤخراً",
+  yourSpaces: "مساحاتك",
+  newSpace: "مساحة جديدة",
+  searchPlaces: "ابحث في أماكنك",
+  nearby: "القريبة",
+  allSaved: "كل المحفوظات",
+  appearance: "المظهر",
+  appearanceSub: "اختر مظهر التطبيق على هذا الجهاز.",
+  light: "فاتح",
+  dark: "داكن",
+  language: "اللغة",
+  savedAddresses: "العناوين المحفوظة",
+  pointsSub: "نقاط انطلاق مسماة يمكنك اختيارها بدل موقعك المباشر.",
+  noPointsNote: "لا توجد عناوين محفوظة بعد. أضف واحداً ليصبح نقطة انطلاق بضغطة واحدة عند تحديد الموقع.",
+  addPoint: "أضف نقطة انطلاق",
+  pointLabelPh: "المنزل، العمل، بيت العائلة",
+  pointLabelHint: "اتركها فارغة وسنستخدم أول سطر من العنوان.",
+  chooseOnMap: "اختر على الخريطة",
+  label: "التسمية",
+  changePassword: "تغيير كلمة المرور",
+  currentPwPh: "كلمة المرور الحالية",
+  currentPw: "كلمة المرور الحالية",
+  newPw: "كلمة المرور الجديدة",
+  newPwPh: "8 أحرف على الأقل",
+  confirmNewPw: "تأكيد كلمة المرور الجديدة",
+  confirmNewPwPh: "أعد كتابة كلمة المرور الجديدة",
+  pwNote: "لن يتأثر تسجيل دخولك على أجهزتك الأخرى.",
+  updatePassword: "تحديث كلمة المرور",
+  account: "الحساب",
+  edit: "تعديل",
+  visitedPlaces: "الأماكن التي زرتها",
+  logOut: "تسجيل الخروج",
+  closestToYou: "الأقرب إليك",
+  directions: "الاتجاهات",
+  noPlacesMatch: "لا توجد أماكن مطابقة لهذه التصفية.",
+  memoriesHere: "الذكريات هنا",
+  memories: "الذكريات",
+  addDish: "أضف طبقاً",
+  noMemoriesMatch: "لا توجد ذكريات مطابقة لهذه التصفية.",
+  filterMemories: "تصفية الذكريات",
+  clear: "مسح",
+  showResults: "عرض النتائج",
+  addPlaceTitle: "إضافة مكان",
+  poweredBy: "بواسطة Google Places",
+  locating: "جارٍ تحديد الموقع…",
+  dragMap: "حرّك الخريطة هنا",
+  placeName: "اسم المكان",
+  tags: "الوسوم",
+  tagsHint: "اختياري · حتى 10",
+  customTagPh: "اكتب وسماً مخصصاً…",
+  add: "إضافة",
+  usedInSpace: "مستخدمة في هذه المساحة",
+  popular: "شائعة",
+  pasteLink: "الصق رابط تيك توك أو إنستغرام",
+  pasteLinkSub: "سنقرأ الفيديو ونجد المكان",
+  pickLocationHint: "ابحث بالأعلى أو حرّك الخريطة لاختيار موقع",
+  placeSaved: "تم حفظ المكان!",
+  done: "تم",
+  analysing: "جارٍ تحليل الفيديو…",
+  analysingSub: "نقرأ الفيديو للعثور على المكان",
+  whichPlace: "أي مكان تقصد؟",
+  noneOfThese: "لا شيء منها — ابحث يدوياً",
+  addThisTo: "أضف هذا المكان إلى…",
+  cancel: "إلغاء",
+  addMemory: "أضف ذكرى",
+  setLocation: "تحديد الموقع",
+  useCurrent: "استخدام موقعي الحالي",
+  useCurrentSub: "يستخدم نظام تحديد المواقع في جهازك",
+  useCustom: "تحديد موقع مخصص",
+  useCustomSub: "ابحث أو ضع دبوساً على الخريطة",
+  cover: "الغلاف",
+  spaceName: "اسم المساحة",
+  spaceNamePh: "مثال: عطلة في لشبونة",
+  createSpace: "إنشاء مساحة",
+  caption: "التعليق",
+  captionPh: "ماذا حدث هنا؟",
+  upload: "رفع",
+  home: "الرئيسية",
+  map: "الخريطة",
+  spaces: "المساحات",
+  profile: "حسابي",
+  save: "حفظ",
+  saved: "محفوظ",
+  seeAll: "عرض الكل",
+  all: "الكل",
+  allPins: "كل الدبابيس",
+  visited: "تمت زيارته",
+  nearbyCount: "بالقرب",
+  members: "أعضاء",
+  places: "أماكن",
+  morePlaces: "أماكن أخرى",
+  filters: "التصفية",
+  minWalk: "دقيقة سيراً",
+  kmAway: "كم",
+  savedPlaces: "الأماكن المحفوظة",
+  pickAtLeastOne: "اختر واحدة على الأقل",
+  saveTo: "احفظ في",
+  destination: "وجهة",
+  destinations: "وجهات",
+  nextChoose: "التالي — اختر الوجهة",
+  pickLocationFirst: "اختر موقعاً أولاً",
+  continueWith: "تابع مع",
+  selected: "مختارة",
+  of: "من",
+  place: "المكان",
+  cuisine: "المطبخ",
+  status: "الحالة",
+  notVisited: "لم تُزر",
+  back: "رجوع",
+  toggleVisited: "تبديل الزيارة",
+  removeAddress: "إزالة العنوان",
+  newSpaceAria: "مساحة جديدة",
+  passwordAge: "آخر تغيير قبل 3 أشهر",
+  evidence: "«أفضل بيفانا في لشبونة، تلك التي عند النهر» — 3 فروع مطابقة",
+  camera: "📸 الكاميرا",
+  gallery: "🖼️ المعرض",
+  suggestedNear: "مقترح قرب هذه المساحة",
+  becauseCoffee: "لأنك تحب القهوة",
+  youMightLike: "قد يعجبك",
+  topPick: "اختيار اليوم",
+  orSearch: "أو ابحث",
+  pasteALink: "الصق رابطاً",
+  nameOrAddress: "الاسم أو العنوان",
+  weWillPull: "سنستخرج المكان من الفيديو نيابةً عنك.",
+  searchPlaceOrAddress: "ابحث عن مكان أو عنوان…",
+  savePlace: "حفظ المكان",
+  sample: "بيانات تجريبية",
+  Food: "طعام",
+  Nature: "طبيعة",
+  Culture: "ثقافة",
+  Shop: "تسوّق",
+  savedBy: "حفظه",
+  km: "كم",
+  min: "دقيقة",
+  i1: "المطاعم والطعام",
+  i1h: "مطاعم وأسواق",
+  i2: "القهوة والمقاهي",
+  i2h: "محامص وفطور متأخر",
+  i3: "الأماكن المفتوحة",
+  i3h: "حدائق ومسارات وإطلالات",
+  i4: "الفنون والثقافة",
+  i4h: "متاحف ومعارض",
+  i5: "التسوّق",
+  i5h: "أسواق وقطع قديمة",
+  i6: "البارات والسهر",
+  i6h: "كوكتيلات وأسطح",
+  i7: "العافية",
+  i7h: "منتجعات واستوديوهات",
+  i8: "الترفيه",
+  i8h: "سينما وحفلات",
+  reason1: "شائع قرب لشبونة",
+  reason2: "يناسب اهتماماتك",
+  reason3: "محبوب لدى مجموعتك",
+  nearbyLabel: "أماكن قريبة",
+  allCount: "الكل",
+  noneYet: "لا شيء بعد",
+  address1: "عنوان",
+  addressN: "عناوين",
+  stage1: "نقرأ الفيديو",
+  stage2: "نبحث عن المكان",
+  stage3: "نطابقه على الخريطة",
+  analyseNote: "يستغرق هذا نحو 20 ثانية عادةً. يمكنك مغادرة التطبيق — سنكمل نحن.",
+  csPhoto: "صورة",
+  csEmoji: "إيموجي",
+  csAddBanner: "أضف صورة غلاف",
+  csChooseLibrary: "اختر من المعرض",
+  csChangePhoto: "اضغط لتغيير الصورة",
+  csPickIconBelow: "اختر أيقونة بالأسفل",
+  csBadgeIcon: "أيقونة الشارة",
+  csIconLbl: "الأيقونة",
+  csNamePh: "مثال: مغامرات عطلة الأسبوع",
+  csSampleName: "عطلة في لشبونة",
+  csNeedName: "سمِّ مساحتك للمتابعة",
+  csNeedPhoto: "أضف صورة، أو انتقل إلى الإيموجي",
+  csCreating: "جارٍ الإنشاء…",
+  csCreated: "تم إنشاء المساحة",
+  csOnlyMember: "أنت العضو الوحيد حتى الآن.",
+  csInvite: "ادعُ أصدقاءك",
+  csTapCopy: "اضغط للنسخ",
+  csCopied: "تم النسخ",
+  csCopyLink: "نسخ الرابط",
+  csShare: "مشاركة",
+  csInviteHint: "يمكن لأي شخص لديه هذا الرابط الانضمام إلى المساحة.",
+  trendingNow: "الرائج الآن",
+  settings: "الإعدادات",
+  markVisited: "حدّده كمكان زرته",
+  howWasIt: "كيف كانت التجربة؟",
+  reviewSub: "قيّمه لمساحاتك. كل شيء هنا اختياري.",
+  yourRating: "تقييمك",
+  whatStoodOut: "ما الذي لفت انتباهك؟",
+  reviewNotePh: "الأطباق، الأجواء، مع من ذهبت…",
+  reviewSample: "بطاطس مقرمشة وخدمة بطيئة، لكن الإطلالة تستحق.",
+  addPhotos: "الصور",
+  saveReview: "حفظ التقييم",
+  skipReview: "تخطَّ الآن",
+  savesThisWeek: "حفظًا هذا الأسبوع",
+  sponsored: "ممول",
+  beenHere: "زرته",
+ }
+};
+
+const A1 = 'oklch(62% 0.15 200)';
+const A2 = 'oklch(60% 0.17 280)';
+const OK = 'oklch(60% 0.14 155)';
+const PINCOL = {
+  Food: 'oklch(64% 0.19 40)',
+  Nature: 'oklch(62% 0.15 150)',
+  Culture: 'oklch(58% 0.17 290)',
+  Shop: 'oklch(64% 0.18 355)',
+};
+
+const SPACES = [
+  { id: 's1', name: 'Weekend in Lisbon', members: 4, places: 12, color: PINCOL.Food },
+  { id: 's2', name: 'Tokyo Bucket List', members: 6, places: 24, color: PINCOL.Culture },
+  { id: 's3', name: 'Hometown Faves', members: 2, places: 8, color: PINCOL.Nature },
+];
+
+const PLACES = [
+  { id: 'p1', name: 'Time Out Market', category: 'Food', area: 'Lisbon', savedBy: 'Mia', visited: true, space: 's1', km: 0.4, min: 6, x: '92px', y: '196px' },
+  { id: 'p5', name: 'Pensão Amor', category: 'Culture', area: 'Lisbon', savedBy: 'Mia', visited: false, space: 's1', km: 0.9, min: 12, x: '150px', y: '236px' },
+  { id: 'p6', name: 'Manteigaria', category: 'Food', area: 'Lisbon', savedBy: 'you', visited: false, space: 's1', km: 1.4, min: 18, x: '116px', y: '272px' },
+  { id: 'p4', name: 'Feira da Ladra', category: 'Shop', area: 'Lisbon', savedBy: 'Mia', visited: true, space: 's1', km: 2.8, min: 35, x: '132px', y: '318px' },
+  { id: 'p2', name: 'Jardim da Estrela', category: 'Nature', area: 'Lisbon', savedBy: 'you', visited: false, space: 's3', km: 1.2, min: 16, x: '286px', y: '168px' },
+  { id: 'p8', name: 'Cervejaria Ramiro', category: 'Food', area: 'Lisbon', savedBy: 'Dev', visited: false, space: 's3', km: 2.4, min: 30, x: '308px', y: '262px' },
+  { id: 'p3', name: 'LX Factory', category: 'Culture', area: 'Lisbon', savedBy: 'Dev', visited: false, space: 's2', km: 2.1, min: 27, x: '208px', y: '300px' },
+  { id: 'p7', name: 'Miradouro da Graça', category: 'Nature', area: 'Lisbon', savedBy: 'Mia', visited: false, space: 's2', km: 1.9, min: 24, x: '242px', y: '206px' },
+];
+
+// Trending = what's being saved and filmed most this week. At most one paid
+// slot per row, never first, always labelled.
+const RECS = [
+  { id: 'r1', name: 'Pastéis de Belém', category: 'Food', area: 'Belém', saves: 312 },
+  { id: 'r2', name: 'Alfama Miradouro', category: 'Nature', area: 'Alfama', saves: 248 },
+  { id: 'r3', name: 'Cervejaria Ramiro', category: 'Food', area: 'Anjos', sponsored: true },
+  { id: 'r4', name: 'LX Factory', category: 'Culture', area: 'Alcântara', saves: 190 },
+];
+const INTERESTS = [
+  { id: 'i1', emoji: '🍽️', label: 'Food & Dining', hint: 'Restaurants, markets' },
+  { id: 'i2', emoji: '☕', label: 'Coffee & Cafés', hint: 'Roasters, brunch' },
+  { id: 'i3', emoji: '🌳', label: 'Outdoors', hint: 'Parks, trails, views' },
+  { id: 'i4', emoji: '🎨', label: 'Arts & Culture', hint: 'Museums, galleries' },
+  { id: 'i5', emoji: '🛍️', label: 'Shopping', hint: 'Markets, vintage' },
+  { id: 'i6', emoji: '🍸', label: 'Bars & Nightlife', hint: 'Cocktails, rooftops' },
+  { id: 'i7', emoji: '💆', label: 'Wellness', hint: 'Spas, studios' },
+  { id: 'i8', emoji: '🎬', label: 'Entertainment', hint: 'Cinema, live music' },
+];
+
+const MEMORIES = [
+  { id: 'm1', placeId: 'p1', place: 'Time Out Market', cuisine: 'Portuguese', tags: ['dinner', 'group fave'], photos: [1, 2],
+    dishes: [ { name: 'Bifanas', rating: 5, note: 'Split three ways.' }, { name: 'Pastéis de nata', rating: 5, note: 'Still warm.' } ] },
+  { id: 'm2', placeId: 'p4', place: 'Feira da Ladra', cuisine: 'Flea market', tags: ['souvenirs', 'group fave'], photos: [1], dishes: [] },
+  { id: 'm3', placeId: 'p5', place: 'Pensão Amor', cuisine: 'Cocktails', tags: ['chill'], photos: [1, 2],
+    dishes: [ { name: 'Old fashioned', rating: 3, note: 'Rooftop, great light.' } ] },
+  { id: 'm4', placeId: 'p3', place: 'LX Factory', cuisine: 'Coffee', tags: ['chill'], photos: [1], dishes: [] },
+  { id: 'm5', placeId: 'p2', place: 'Jardim da Estrela', cuisine: 'Picnic', tags: ['morning'], photos: [1, 2], dishes: [] },
+];
+const STARS = ['☆☆☆☆☆', '★☆☆☆☆', '★★☆☆☆', '★★★☆☆', '★★★★☆', '★★★★★'];
+
+const TAG_EMOJI = {
+  restaurant: '🍽️', cafe: '☕', bar: '🍸', pizza: '🍕', sushi: '🍣', brunch: '🥞',
+  park: '🌳', nature: '🏞️', beach: '🏖️', museum: '🏛️', art: '🎨', shopping: '🛍️',
+  hotel: '🏨', coffee: '☕', bakery: '🥐', cocktails: '🍹', rooftop: '🌆', gym: '💪',
+};
+const GLOBAL_TAGS = ['restaurant', 'cafe', 'bar', 'pizza', 'sushi', 'brunch', 'park', 'nature', 'beach', 'museum', 'art', 'shopping', 'hotel', 'coffee', 'bakery', 'cocktails', 'rooftop', 'gym'];
+const SPACE_TAGS = ['portuguese', 'group fave'];
+const SEARCH_RESULTS = [
+  { name: 'Time Out Market Lisboa', address: 'Av. 24 de Julho 49, 1200-479 Lisboa', gid: 'g1' },
+  { name: 'Mercado da Ribeira', address: 'Cais do Sodré, 1200-109 Lisboa', gid: 'g2' },
+  { name: 'Time Out Market Porto', address: 'R. de Sá da Bandeira, Porto', gid: 'g3' },
+];
+const CANDIDATES = [
+  { name: 'Casa das Bifanas', address: 'Praça da Figueira 7, Lisboa', gid: 'c1' },
+  { name: 'Casa das Bifanas — Ribeira', address: 'Cais do Sodré 12, Lisboa', gid: 'c2' },
+  { name: 'Casa das Bifanas — Belém', address: 'R. de Belém 84, Lisboa', gid: 'c3' },
+];
+const CS_EMOJIS = [
+  '🌍', '🎯', '✨', '🔥', '💫', '🌟', '🎉', '💎', '🚀', '⚡',
+  '🍕', '🍣', '🍜', '🥗', '🥩', '🍔', '🌮', '🍱', '🥐', '☕',
+  '🏔️', '🌊', '🌸', '🌿', '🏝️', '🌅', '🌴', '🌳', '🌵', '🏕️',
+  '🎨', '🎭', '🎬', '🎵', '🎮', '🏋️', '⚽', '🎸', '🎪', '🎲',
+  '🏛️', '🏖️', '🗺️', '🧭', '🌃', '🌉', '🏙️', '🛍️', '💆', '🎁',
+];
+// Same idea as emojiColor() in CreateSpaceScreen: the icon picks the accent.
+const CS_ACCENTS = ['oklch(53% 0.15 200)', 'oklch(58% 0.17 280)', 'oklch(55% 0.14 155)', 'oklch(62% 0.14 60)'];
+const CS_LINK = '[your-domain]/j/K7Q2XM9P';
+
+const TAGS = ['restaurant', 'cafe', 'bar', 'park', 'museum', 'bakery', 'rooftop', 'shopping'];
+const POINTS = [
+  { id: 1, label: 'Home', address: 'R. da Rosa 212, 1200-387 Lisboa' },
+  { id: 2, label: 'Work', address: 'Av. da Liberdade 110, 1269-046 Lisboa' },
+];
+
+const TABS = [
+  { id: 'home', label: 'Home' },
+  { id: 'map', label: 'Map' },
+  { id: 'spaces', label: 'Spaces' },
+  { id: 'profile', label: 'Profile' },
+];
+
+class Component extends DCLogic {
+  state = {
+    dark: (this.props || {}).dark ?? false,
+    auth: 'app',
+    tab: 'home',
+    stack: [],
+    sheet: null,
+    location: 'Lisbon, Portugal',
+    visited: PLACES.reduce((m, p) => { m[p.id] = p.visited; return m; }, {}),
+    saved: {},
+    filters: {},
+    mapSeg: 'nearby',
+    spFilter: 'All',
+    showMemFilters: false,
+    memFilter: { place: null, cuisine: null, tag: null, status: 'All' },
+    interests: {},
+    tags: {},
+    cs: null,
+    csIcon: '🌍',
+    csPhoto: false,
+    csNamed: false,
+    csCopied: false,
+    addOpen: false,
+    addStep: 'form',
+    analysing: false,
+    analyseStep: 0,
+    showCandidates: false,
+    showResults: false,
+    locating: false,
+    picked: null,
+    addTags: [],
+    destSaved: true,
+    destSpaces: {},
+    addScopeSpace: null,
+    lang: (this.props || {}).lang || 'en',
+    points: POINTS.slice(),
+    pointsOpen: false,
+    review: null,
+  };
+
+  set = (patch) => this.setState(patch);
+  selectTab = (id) => this.setState({ tab: id, stack: [], sheet: null });
+  push = (entry) => this.setState(s => ({ stack: s.stack.concat([entry]), sheet: null }));
+  pop = () => this.setState(s => ({ stack: s.stack.slice(0, -1) }));
+  openSheet = (name) => this.setState({ sheet: name });
+  closeSheet = () => this.setState({ sheet: null });
+  toggleVisited = (id) => this.setState(s => {
+    const v = Object.assign({}, s.visited);
+    v[id] = !v[id];
+    // Marking visited asks for a review; un-marking stays silent.
+    return v[id]
+      ? { visited: v, lastToggled: id, sheet: 'review', review: { id, stars: 0, noted: false, photos: 0 } }
+      : { visited: v, lastToggled: id };
+  });
+  setReview = (patch) => this.setState(s => ({ review: Object.assign({}, s.review, patch) }));
+  setMemFilter = (key, value) => this.setState(s => {
+    const next = Object.assign({}, s.memFilter);
+    next[key] = next[key] === value ? (key === 'status' ? 'All' : null) : value;
+    return { memFilter: next };
+  });
+  addTag = (t) => this.setState(s => (
+    s.addTags.indexOf(t) >= 0 || s.addTags.length >= 10 ? null : { addTags: s.addTags.concat([t]) }
+  ));
+  toggleKey = (bag, key) => this.setState(s => {
+    const next = Object.assign({}, s[bag]);
+    if (next[key]) { delete next[key]; } else { next[key] = true; }
+    return { [bag]: next };
+  });
+
+  visibleSpaceIds() {
+    const on = Object.keys(this.state.filters);
+    return on.length ? on : SPACES.map(s => s.id);
+  }
+
+  t() { return STR[this.state.lang] || STR.en; }
+
+  decoratePlace(p) {
+    const T = this.t();
+    const v = this.state.visited[p.id];
+    const space = SPACES.find(s => s.id === p.space);
+    return Object.assign({}, p, {
+      pinColor: PINCOL[p.category],
+      spaceName: space ? space.name : 'Saved',
+      dist: p.km + ' ' + T.km,
+      meta: T[p.category] + ' · ' + p.km + ' ' + T.km + ' · ' + T.savedBy + ' ' + p.savedBy,
+      visited: !!v,
+      notVisited: !v,
+      pressed: v ? 'true' : 'false',
+      visitCls: v ? 'on' : '',
+      drawCls: v && this.state.lastToggled === p.id ? 'draw' : '',
+      iconFg: v ? '#fff' : 'var(--muted)',
+      ringColor: v ? OK : 'var(--ringIdle)',
+      fillColor: v ? 'var(--okFill)' : 'transparent',
+      visitBg: v ? 'color-mix(in oklab, ' + OK + ' 12%, transparent)' : 'transparent',
+      visitLabel: v ? T.visited : T.markVisited,
+      open: () => this.push({ type: 'place', id: p.id }),
+      toggle: () => this.toggleVisited(p.id),
+    });
+  }
+
+  renderVals() {
+    const s = this.state;
+    const T = this.t();
+    const top = s.stack.length ? s.stack[s.stack.length - 1] : null;
+    const inApp = s.auth === 'app';
+    const onScreen = inApp && !top;
+    const visIds = this.visibleSpaceIds();
+    const visPlaces = PLACES.filter(p => visIds.indexOf(p.space) >= 0);
+    const mapList = s.mapSeg === 'nearby' ? visPlaces.slice(0, 3) : visPlaces;
+    const activePlace = top && top.type === 'place' ? PLACES.find(p => p.id === top.id) : null;
+    const activeSpace = top && top.type === 'space' ? SPACES.find(x => x.id === top.id) : null;
+    const nInterests = Object.keys(s.interests).length;
+    const spAll = activeSpace ? PLACES.filter(p => p.space === activeSpace.id) : [];
+    const spSorted = spAll.slice().sort((a, b) => a.min - b.min);
+    const heroPlace = spSorted[0] || null;
+    const spCats = [];
+    spAll.forEach(p => { if (spCats.indexOf(p.category) < 0) spCats.push(p.category); });
+    const spFilterList = [['All', T.all]].concat(spCats.map(c => [c, T[c] || c])).concat([['Visited', T.visited]]);
+    const spVisible = spSorted.filter(p => {
+      if (s.spFilter === 'All') return true;
+      if (s.spFilter === 'Visited') return !!s.visited[p.id];
+      return p.category === s.spFilter;
+    });
+    const spIds = spAll.map(p => p.id);
+    const spMems = MEMORIES.filter(m => spIds.indexOf(m.placeId) >= 0);
+    const mf = s.memFilter;
+    const memVisible = spMems.filter(m => {
+      if (mf.place && m.place !== mf.place) return false;
+      if (mf.cuisine && m.cuisine !== mf.cuisine) return false;
+      if (mf.tag && m.tags.indexOf(mf.tag) < 0) return false;
+      if (mf.status === 'Visited' && !s.visited[m.placeId]) return false;
+      if (mf.status === 'Not visited' && s.visited[m.placeId]) return false;
+      return true;
+    });
+    const uniq = (arr) => { const o = []; arr.forEach(v => { if (o.indexOf(v) < 0) o.push(v); }); return o; };
+    const memChip = (label, key, value) => ({
+      label,
+      cls: mf[key] === value ? 'chipOn' : '',
+      select: () => this.setMemFilter(key, value),
+    });
+    const destCount = (s.destSaved ? 1 : 0) + Object.keys(s.destSpaces).length;
+    let successEmoji = '📍';
+    for (let i = 0; i < s.addTags.length; i++) {
+      if (TAG_EMOJI[s.addTags[i]]) { successEmoji = TAG_EMOJI[s.addTags[i]]; break; }
+    }
+    const tabVals = (id, label) => {
+      const on = s.tab === id && !s.stack.length;
+      return {
+        label,
+        fg: on ? 'var(--a1Text)' : 'var(--muted)',
+        sw: on ? '2.2' : '1.7',
+        select: () => this.selectTab(id),
+      };
+    };
+    const csValid = s.csNamed;
+    const csHint = !s.csNamed ? T.csNeedName : '';
+    const csIdx = Math.max(0, CS_EMOJIS.indexOf(s.csIcon));
+    const csAccent = CS_ACCENTS[csIdx % CS_ACCENTS.length];
+    const activeMemFilters = ['place', 'cuisine', 'tag'].filter(k => mf[k]).length + (mf.status !== 'All' ? 1 : 0);
+
+    return {
+      themeClass: s.dark ? 'dark' : '',
+      boardBg: s.dark ? 'oklch(13% 0.012 255)' : 'oklch(93% 0.005 250)',
+
+      isLogin: s.auth === 'login',
+      isSignup: s.auth === 'signup',
+      isSetup: s.auth === 'setup',
+      isInterests: s.auth === 'interests',
+      isHome: onScreen && s.tab === 'home',
+      isMap: onScreen && s.tab === 'map',
+      isSpaces: onScreen && s.tab === 'spaces',
+      isProfile: onScreen && s.tab === 'profile',
+      isSpaceDetail: !!activeSpace,
+      isPlaceDetail: !!activePlace,
+      showTabs: inApp && !s.addOpen && !s.cs,
+
+      doLogin: () => this.setState({ auth: 'app', tab: 'home', stack: [] }),
+      goSignup: () => this.setState({ auth: 'signup' }),
+      goLogin: () => this.setState({ auth: 'login' }),
+      goSetup: () => this.setState({ auth: 'setup' }),
+      goInterests: () => this.setState({ auth: 'interests' }),
+      finishOnboarding: () => this.setState({ auth: 'app', tab: 'home' }),
+      doLogout: () => this.setState({ auth: 'login', stack: [], sheet: null }),
+      goProfile: () => this.selectTab('profile'),
+      goSpaces: () => this.selectTab('spaces'),
+      pop: this.pop,
+      noop: () => {},
+
+      locationLabel: s.location,
+      openLocation: () => this.openSheet('location'),
+      openAdd: () => this.setState({ addOpen: true, addStep: 'form', sheet: null }),
+      openNewSpace: () => this.setState({ cs: 'config', csIcon: '🌍', csPhoto: false, csNamed: false, csCopied: false, sheet: null }),
+      openMemory: () => this.openSheet('memory'),
+      closeSheet: this.closeSheet,
+      sheetLocation: s.sheet === 'location',
+      sheetMemory: s.sheet === 'memory',
+      useCurrent: () => this.setState({ location: 'Current location', sheet: null }),
+      useCustom: () => this.setState({ location: 'Custom pin', sheet: null }),
+
+      interestCta: nInterests ? (T.continueWith + ' ' + nInterests + ' ' + T.selected) : T.continueLbl,
+      interests: INTERESTS.map(i => {
+        const on = !!s.interests[i.id];
+        return Object.assign({}, i, {
+          label: T[i.id], hint: T[i.id + 'h'],
+          on,
+          bg: on ? 'color-mix(in oklab, ' + A1 + ' 10%, transparent)' : 'var(--rowBg)',
+          border: on ? A1 : 'transparent',
+          toggle: () => this.toggleKey('interests', i.id),
+        });
+      }),
+
+      hasRecs: RECS.length > 0,
+      noRecs: RECS.length === 0,
+      recs: RECS.map(r => {
+        const on = !!s.saved[r.id];
+        return Object.assign({}, r, {
+          trending: !r.sponsored,
+          sponsored: !!r.sponsored,
+          signal: r.saves ? (r.saves + ' ' + T.savesThisWeek) : '',
+          meta: T[r.category] + ' · ' + r.area,
+          cta: on ? T.saved : T.save,
+          pressed: on ? 'true' : 'false',
+          saveCls: on ? 'on' : '',
+          iconFill: on ? 'currentColor' : 'none',
+          save: () => this.toggleKey('saved', r.id),
+        });
+      }),
+      homeSpaces: SPACES.slice(0, 3).map(sp => Object.assign({}, sp, {
+        membersLabel: sp.members + ' ' + T.members,
+        open: () => this.push({ type: 'space', id: sp.id }),
+      })),
+      spacesLink: SPACES.length > 3 ? (T.allCount + ' (' + SPACES.length + ')') : T.seeAll,
+      savedLink: T.allCount + ' (' + PLACES.length + ')',
+      goMap: () => this.selectTab('map'),
+
+      spaces: SPACES.map(sp => Object.assign({}, sp, {
+        membersLabel: sp.members + ' ' + T.members,
+        statLine: sp.members + ' members · ' + sp.places + ' places',
+        open: () => this.push({ type: 'space', id: sp.id }),
+      })),
+
+      places: PLACES.slice(0, 3).map(p => this.decoratePlace(p)),
+      mapPlaces: mapList.map(p => this.decoratePlace(p)),
+      pins: visPlaces.map(p => ({
+        x: p.x, y: p.y, size: '32px', badge: '',
+        color: (SPACES.find(x => x.id === p.space) || {}).color || A1,
+      })),
+      filters: [{ id: 'all', name: T.allPins, color: A1 }].concat(SPACES).map(f => {
+        const isAll = f.id === 'all';
+        const anyOn = Object.keys(s.filters).length > 0;
+        const on = isAll ? !anyOn : !!s.filters[f.id];
+        return {
+          name: f.name,
+          dot: on ? '#fff' : f.color,
+          cls: on ? 'chipOn' : '',
+          toggle: isAll ? (() => this.setState({ filters: {} })) : (() => this.toggleKey('filters', f.id)),
+        };
+      }),
+      mapSegNearby: s.mapSeg === 'nearby' ? 'segOn' : '',
+      mapSegAll: s.mapSeg === 'all' ? 'segOn' : '',
+      setMapNearby: () => this.setState({ mapSeg: 'nearby' }),
+      setMapAll: () => this.setState({ mapSeg: 'all' }),
+      space: activeSpace
+        ? Object.assign({}, activeSpace, {
+            subLine: activeSpace.members + ' ' + T.members + ' · ' + spAll.length + ' ' + T.places,
+          })
+        : { name: '', subLine: '' },
+      hero: heroPlace
+        ? Object.assign({}, this.decoratePlace(heroPlace), { meta: T[heroPlace.category] + ' · ' + heroPlace.min + ' ' + T.minWalk })
+        : { name: '', meta: '', open: () => {} },
+      spaceFilters: spFilterList.map(f => ({
+        label: f[1],
+        cls: s.spFilter === f[0] ? 'chipOn' : '',
+        select: () => this.setState({ spFilter: f[0] }),
+      })),
+      spacePlaces: spVisible.map(p => Object.assign({}, this.decoratePlace(p), {
+        travelLine: T[p.category] + ' · ' + p.min + ' ' + T.minWalk + ' · ' + p.km + ' ' + T.km,
+      })),
+      noPlaceResults: spVisible.length === 0,
+      visibleMemories: memVisible.map(m => Object.assign({}, m, {
+        dishes: m.dishes.map(d => ({ name: d.name, quote: '\u201C' + d.note + '\u201D', stars: STARS[d.rating] })),
+      })),
+      noMemories: memVisible.length === 0,
+      memFilterLabel: activeMemFilters > 0 ? (T.filters + ' (' + activeMemFilters + ')') : T.filters,
+      showMemFilters: s.showMemFilters,
+      openMemFilters: () => this.setState({ showMemFilters: true }),
+      closeMemFilters: () => this.setState({ showMemFilters: false }),
+      clearMemFilters: () => this.setState({ memFilter: { place: null, cuisine: null, tag: null, status: 'All' } }),
+      memFilterGroups: [
+        { title: T.place, chips: uniq(spMems.map(m => m.place)).map(p => memChip(p, 'place', p)) },
+        { title: T.cuisine, chips: uniq(spMems.map(m => m.cuisine)).map(c => memChip(c, 'cuisine', c)) },
+        { title: T.tags, chips: uniq([].concat.apply([], spMems.map(m => m.tags))).map(t => memChip(t, 'tag', t)) },
+        { title: T.status, chips: [['All', T.all], ['Visited', T.visited], ['Not visited', T.notVisited]].map(v => memChip(v[1], 'status', v[0])) },
+      ],
+      place: activePlace ? this.decoratePlace(activePlace) : { name: '', meta: '', category: '', area: '', mark: '', ringColor: 'var(--ringIdle)', fillColor: 'transparent', visitBg: 'transparent', visitLabel: '', pinColor: A1, toggle: () => {} },
+
+      tagChips: TAGS.map(t => ({
+        label: t,
+        cls: s.tags[t] ? 'chipOn' : '',
+        toggle: () => this.toggleKey('tags', t),
+      })),
+
+      segLight: s.dark ? '' : 'segOn',
+      segDark: s.dark ? 'segOn' : '',
+      setLight: () => this.setState({ dark: false }),
+      setDark: () => this.setState({ dark: true }),
+      visitedCount: Object.keys(s.visited).filter(k => s.visited[k]).length + ' ' + T.of + ' ' + PLACES.length,
+
+      isAdd: s.addOpen,
+      addForm: s.addStep === 'form',
+      addDestinations: s.addStep === 'destinations',
+      addSuccess: s.addStep === 'success',
+      analysing: s.analysing,
+      showCandidates: s.showCandidates,
+      showResults: s.showResults,
+      locating: s.locating,
+      pinLift: s.locating ? '-8px' : '0px',
+      hasLocation: !!s.picked,
+      noLocation: !s.picked,
+      pickedAddress: s.picked ? s.picked.address : '',
+      nameText: s.picked ? s.picked.name : 'e.g. Frenchie Restaurant',
+      nameFg: s.picked ? 'var(--text)' : 'var(--muted)',
+      nameCount: s.picked ? (s.picked.name.length + '/80') : '',
+      searchText: s.picked ? s.picked.name : 'Search for a place or address…',
+      searchFg: s.picked ? 'var(--text)' : 'var(--muted)',
+      nextDisabled: s.picked ? 'false' : 'true',
+      nextLabel: s.picked ? T.nextChoose : T.pickLocationFirst,
+      closeAdd: () => this.setState({ addOpen: false, addStep: 'form', picked: null, addTags: [], showResults: false, showCandidates: false, analysing: false }),
+      toggleResults: () => this.setState({ showResults: !s.showResults }),
+      searchResults: SEARCH_RESULTS.map(r => ({
+        name: r.name, address: r.address,
+        pick: () => this.setState({ picked: { name: r.name, address: r.address, gid: r.gid }, showResults: false }),
+      })),
+      dropPin: () => {
+        this.setState({ locating: true, showResults: false });
+        setTimeout(() => this.setState({
+          locating: false,
+          picked: { name: (this.state.picked ? this.state.picked.name : 'Dropped pin'), address: 'R. Nova do Carvalho 24, Lisboa', gid: null },
+        }), 900);
+      },
+      analyseLink: () => {
+        // Three real stages of the extraction pipeline. The prototype compresses
+        // ~20s into ~2.4s; the shape of the wait is what is being designed.
+        this.setState({ analysing: true, analyseStep: 0, showResults: false });
+        this.analyseTimers = [
+          setTimeout(() => this.setState({ analyseStep: 1 }), 800),
+          setTimeout(() => this.setState({ analyseStep: 2 }), 1600),
+          setTimeout(() => this.setState({ analysing: false, analyseStep: 0, showCandidates: true }), 2400),
+        ];
+      },
+      analyseProgress: ((s.analyseStep + 1) / 3 * 100) + '%',
+      analyseStages: [T.stage1, T.stage2, T.stage3].map((label, i) => ({
+        label,
+        done: i < s.analyseStep,
+        cls: i < s.analyseStep ? 'stageDone' : (i === s.analyseStep ? 'stageOn stageBusy' : ''),
+      })),
+      candidates: CANDIDATES.map(c => ({
+        name: c.name, address: c.address,
+        pick: () => this.setState({ picked: { name: c.name, address: c.address, gid: c.gid }, showCandidates: false }),
+      })),
+      dismissCandidates: () => this.setState({ showCandidates: false }),
+      hasTags: s.addTags.length > 0,
+      chosenTags: s.addTags.map(t => ({
+        label: t,
+        remove: () => this.setState({ addTags: s.addTags.filter(x => x !== t) }),
+      })),
+      hasSpaceTags: !!s.addScopeSpace,
+      spaceTagSuggestions: SPACE_TAGS.filter(t => s.addTags.indexOf(t) < 0).map(t => ({
+        label: t,
+        add: () => this.addTag(t),
+      })),
+      tagSuggestions: GLOBAL_TAGS.filter(t => s.addTags.indexOf(t) < 0).slice(0, 12).map(t => ({
+        label: (TAG_EMOJI[t] || '🏷️') + ' ' + t,
+        add: () => this.addTag(t),
+      })),
+      goDestinations: () => { if (s.picked) this.setState({ addStep: 'destinations' }); },
+      backToForm: () => this.setState({ addStep: 'form' }),
+      destinations: [{ id: 'saved', emoji: '📍', label: T.savedPlaces }].concat(
+        SPACES.map(sp => ({ id: sp.id, emoji: '🗂️', label: sp.name }))
+      ).map(d => {
+        const on = d.id === 'saved' ? s.destSaved : !!s.destSpaces[d.id];
+        return {
+          emoji: d.emoji, label: d.label,
+          on: on,
+          boxBorder: on ? A1 : 'var(--ringIdle)',
+          boxBg: on ? A1 : 'transparent',
+          toggle: d.id === 'saved'
+            ? (() => this.setState({ destSaved: !s.destSaved }))
+            : (() => this.toggleKey('destSpaces', d.id)),
+        };
+      }),
+      destCta: destCount === 0 ? T.pickAtLeastOne : (T.saveTo + ' ' + destCount + ' ' + (destCount === 1 ? T.destination : T.destinations)),
+      destDisabled: destCount === 0 ? 'true' : 'false',
+      saveWithDestinations: () => { if (destCount > 0) this.setState({ addStep: 'success' }); },
+      successSub: destCount === 1 ? 'It is now in one destination and can be added to any space.' : ('It is now in ' + destCount + ' destinations.'),
+      successEmoji: successEmoji,
+
+      dir: s.lang === 'ar' ? 'rtl' : 'ltr',
+      t: T,
+      segEn: s.lang === 'ar' ? '' : 'segOn',
+      segAr: s.lang === 'ar' ? 'segOn' : '',
+      setEn: () => this.setState({ lang: 'en' }),
+      setAr: () => this.setState({ lang: 'ar' }),
+
+      pointsOpen: s.pointsOpen,
+      pointsCaret: s.pointsOpen ? '180deg' : '0deg',
+      pointsSummary: s.points.length === 0 ? T.noneYet : (s.points.length + ' ' + (s.points.length === 1 ? T.address1 : T.addressN)),
+      togglePoints: () => this.setState({ pointsOpen: !s.pointsOpen }),
+      hasPoints: s.points.length > 0,
+      noPoints: s.points.length === 0,
+      points: s.points.map(p => ({
+        label: p.label,
+        address: p.address,
+        remove: () => this.setState({ points: s.points.filter(x => x.id !== p.id) }),
+        use: () => this.setState({ location: p.label, sheet: null }),
+      })),
+      openAddPoint: () => this.openSheet('point'),
+      openPassword: () => this.openSheet('password'),
+      sheetPoint: s.sheet === 'point',
+      sheetPassword: s.sheet === 'password',
+      openSettings: () => this.openSheet('settings'),
+      sheetSettings: s.sheet === 'settings',
+      settingsSummary: (s.dark ? T.dark : T.light) + ' · ' + (s.lang === 'ar' ? 'العربية' : 'English'),
+      sheetReview: s.sheet === 'review' && !!s.review,
+      reviewPlace: s.review ? ((PLACES.find(p => p.id === s.review.id) || {}).name || '') : '',
+      reviewStars: [1, 2, 3, 4, 5].map(n => ({
+        cls: s.review && s.review.stars >= n ? 'on' : '',
+        checked: s.review && s.review.stars === n ? 'true' : 'false',
+        label: n + ' / 5',
+        pick: () => this.setReview({ stars: n }),
+      })),
+      reviewNoteText: s.review && s.review.noted ? T.reviewSample : T.reviewNotePh,
+      reviewNoteFg: s.review && s.review.noted ? 'var(--text)' : 'var(--muted)',
+      reviewFillNote: () => this.setReview({ noted: true }),
+      reviewPhotoList: s.review ? Array.from({ length: s.review.photos }, (_, i) => ({ i })) : [],
+      reviewAddPhoto: () => this.setReview({ photos: Math.min(4, ((this.state.review || {}).photos || 0) + 1) }),
+      reviewDisabled: s.review && s.review.stars ? 'false' : 'true',
+      reviewSave: () => { if (this.state.review && this.state.review.stars) this.closeSheet(); },
+      passwordAge: T.passwordAge,
+      csConfig: s.cs === 'config' || s.cs === 'creating',
+      csDone: s.cs === 'done',
+      csClose: () => this.setState({ cs: null }),
+      csNoPhoto: !s.csPhoto,
+      csHasPhoto: s.csPhoto,
+      csBannerCls: s.csPhoto ? 'csBannerFilled' : '',
+      csPickPhoto: () => this.setState({ csPhoto: true }),
+      csIcon: s.csIcon,
+      csAccent: csAccent,
+      csAccentSoft: 'color-mix(in oklab, ' + csAccent + ' 20%, var(--rowBg))',
+      csNameText: s.csNamed ? T.csSampleName : T.csNamePh,
+      csNameFg: s.csNamed ? 'var(--text)' : 'var(--muted)',
+      csNameCount: (s.csNamed ? T.csSampleName.length : 0) + '/60',
+      csFillName: () => this.setState({ csNamed: true }),
+      csGridLabel: s.csPhoto ? T.csBadgeIcon : T.csIconLbl,
+      csEmojis: CS_EMOJIS.map(e => ({
+        emoji: e,
+        cls: e === s.csIcon ? 'csEmojiOn' : '',
+        pick: () => this.setState({ csIcon: e }),
+      })),
+      csHasHint: !!csHint,
+      csHint: csHint,
+      csDisabled: csValid && s.cs !== 'creating' ? 'false' : 'true',
+      csBusy: s.cs === 'creating',
+      csBtnLabel: s.cs === 'creating' ? T.csCreating : T.createSpace,
+      csCreate: () => {
+        if (!csValid || s.cs === 'creating') return;
+        this.setState({ cs: 'creating' });
+        setTimeout(() => this.setState({ cs: 'done', csCopied: false }), 900);
+      },
+      csDonePhoto: s.csPhoto,
+      csDoneEmoji: !s.csPhoto,
+      csLink: CS_LINK,
+      csCopied: s.csCopied,
+      csCopyHint: s.csCopied ? T.csCopied : T.csTapCopy,
+      csCopyFg: s.csCopied ? 'var(--okFill)' : 'var(--a1Text)',
+      csCopyLabel: s.csCopied ? T.csCopied : T.csCopyLink,
+      csCopy: () => {
+        this.setState({ csCopied: true });
+        clearTimeout(this.csCopyTimer);
+        this.csCopyTimer = setTimeout(() => this.setState({ csCopied: false }), 2500);
+      },
+      csFinish: () => this.setState({ cs: null, tab: 'home', stack: [] }),
+
+      tabHome: tabVals('home', T.home),
+      tabMap: tabVals('map', T.map),
+      tabSpaces: tabVals('spaces', T.spaces),
+      tabProfile: tabVals('profile', T.profile),
+    };
+  }
+}
+</script>

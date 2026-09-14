@@ -10,3 +10,4 @@ android/app/build/
 *.keystore
 !debug.keystore
 ios/build/
+ios/build-device/

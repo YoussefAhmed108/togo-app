@@ -1,0 +1,90 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap">
+  <style>
+    body { margin: 0; font-family: 'Figtree', 'Avenir Next', 'Helvetica Neue', sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #006873; } a:hover { color: #00838E; }
+  </style>
+</helmet>
+<!-- D · Name as the hero: the place's name leads, on a card that rises out of the map; tags come colour-coded by kind. -->
+<div style="position: relative; width: 390px; height: 844px; overflow: hidden; background: #F0F0F3; color: #1C1C25;">
+  <div style="position: absolute; left: 0; right: 0; top: 0; height: 290px;">
+    <svg width="390" height="290" viewBox="0 0 390 290" style="position: absolute; inset: 0;">
+      <rect width="390" height="290" fill="#E6E7EC"></rect>
+      <path d="M160 -10 C130 80 200 130 170 210 C150 260 200 290 190 300 L230 300 C240 290 190 260 210 210 C240 130 170 80 200 -10 Z" fill="#CFE0EF"></path>
+      <ellipse cx="320" cy="90" rx="50" ry="36" fill="#D6ECDD"></ellipse>
+      <path d="M-10 70 L400 40 M-10 175 L400 150 M70 -10 L100 300 M290 -10 L270 300" stroke="#FBFBFD" stroke-width="10" fill="none"></path>
+    </svg>
+    <div style="position: absolute; left: 12px; top: 54px; width: 44px; height: 44px; border-radius: 50%; background: rgba(253,253,255,0.94); box-shadow: 0 4px 14px rgba(20,20,30,0.12); display: flex; align-items: center; justify-content: center;">
+      <svg width="12" height="18" viewBox="0 0 10 16" fill="none"><path d="M8 1L2 8l6 7" stroke="#1C1C25" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+    </div>
+    <div style="position: absolute; left: 172px; top: 118px;">
+      <svg width="46" height="56" viewBox="0 0 24 30"><path d="M12 1c5 0 9 4 9 9 0 6.5-9 19-9 19S3 16.5 3 10c0-5 4-9 9-9z" fill="#E65719" stroke="#FFFFFF" stroke-width="1.4"></path><circle cx="12" cy="10" r="3.4" fill="#FFFFFF"></circle></svg>
+    </div>
+  </div>
+
+  <!-- the name, loud -->
+  <div style="position: absolute; left: 16px; right: 16px; top: 236px; background: #FDFDFF; border-radius: 20px; padding: 18px; box-shadow: 0 18px 44px rgba(20,20,30,0.12); display: flex; flex-direction: column; gap: 10px;">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #C2410C; background: #FFE7DC; border-radius: 999px; padding: 4px 9px;">Food &amp; drink</div>
+      <div style="font-size: 11.5px; color: #5C5C69;">Found from your TikTok</div>
+    </div>
+    <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;">
+      <div style="font-size: 28px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.05; text-wrap: balance;">Koshary Abou Tarek</div>
+      <div style="width: 36px; height: 36px; flex-shrink: 0; border-radius: 50%; background: #F0F0F3; display: flex; align-items: center; justify-content: center;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1C1C25" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"></path><path d="M13.5 6.5l4 4"></path></svg>
+      </div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #5C5C69;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5C5C69" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z"></path><circle cx="12" cy="10" r="2.3"></circle></svg>
+      <span>16 Champollion St, Downtown, Cairo</span>
+    </div>
+  </div>
+
+  <!-- tags, colour-coded by kind -->
+  <div style="position: absolute; left: 16px; right: 16px; top: 452px; display: flex; flex-direction: column; gap: 14px;">
+    <div style="display: flex; align-items: baseline; justify-content: space-between;">
+      <div style="font-size: 15px; font-weight: 800;">What kind of place?</div>
+      <div style="font-size: 11.5px; color: #5C5C69;">2 of 10</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <div style="display: flex; flex-wrap: wrap; gap: 7px;">
+        <div style="display: flex; align-items: center; gap: 6px; min-height: 36px; box-sizing: border-box; padding: 0 13px; border-radius: 999px; background: #E65719; color: #FFFFFF; font-size: 12.5px; font-weight: 700;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4.5 4.5L19 7"></path></svg>restaurant
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px; min-height: 36px; box-sizing: border-box; padding: 0 13px; border-radius: 999px; background: #E65719; color: #FFFFFF; font-size: 12.5px; font-weight: 700;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4.5 4.5L19 7"></path></svg>egyptian
+        </div>
+        <div style="display: flex; align-items: center; min-height: 36px; box-sizing: border-box; padding: 0 13px; border-radius: 999px; background: #FFE7DC; color: #9A3412; font-size: 12.5px; font-weight: 600;">cafe</div>
+        <div style="display: flex; align-items: center; min-height: 36px; box-sizing: border-box; padding: 0 13px; border-radius: 999px; background: #FFE7DC; color: #9A3412; font-size: 12.5px; font-weight: 600;">bakery</div>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 7px;">
+        <div style="display: flex; align-items: center; min-height: 36px; box-sizing: border-box; padding: 0 13px; border-radius: 999px; background: #DCF3E3; color: #166534; font-size: 12.5px; font-weight: 600;">rooftop</div>
+        <div style="display: flex; align-items: center; min-height: 36px; box-sizing: border-box; padding: 0 13px; border-radius: 999px; background: #DCF3E3; color: #166534; font-size: 12.5px; font-weight: 600;">park</div>
+        <div style="display: flex; align-items: center; min-height: 36px; box-sizing: border-box; padding: 0 13px; border-radius: 999px; background: #E8E6FB; color: #4338CA; font-size: 12.5px; font-weight: 600;">museum</div>
+        <div style="display: flex; align-items: center; min-height: 36px; box-sizing: border-box; padding: 0 13px; border-radius: 999px; background: #E8E6FB; color: #4338CA; font-size: 12.5px; font-weight: 600;">art</div>
+        <div style="display: flex; align-items: center; min-height: 36px; box-sizing: border-box; padding: 0 13px; border-radius: 999px; background: #FCE4EF; color: #9D174D; font-size: 12.5px; font-weight: 600;">shopping</div>
+      </div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px; height: 46px; box-sizing: border-box; background: #FDFDFF; border: 1px dashed #BABAC1; border-radius: 12px; padding: 0 6px 0 14px;">
+      <div style="flex-grow: 1; font-size: 13px; color: #5C5C69;">Add your own tag…</div>
+      <div style="width: 34px; height: 34px; border-radius: 9px; background: #00838E; display: flex; align-items: center; justify-content: center;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+      </div>
+    </div>
+  </div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 16px 30px; background: #FDFDFF; border-top: 1px solid #DCDCE0;">
+    <div style="min-height: 48px; border-radius: 14px; background: #00838E; color: #FFFFFF; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center;">Next — choose destination</div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

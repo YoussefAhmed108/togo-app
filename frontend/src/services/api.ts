@@ -6,13 +6,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // When set this wins in EVERY build, debug included — a debug build otherwise
 // ignores the production URL below and keeps talking to DEV_HOST.
 // Set it back to '' to go back to a local backend.
-const DEPLOYED_API = 'https://togo-app.fly.dev';
+const DEPLOYED_API = 'https://togo-backend-1069920815834.europe-west3.run.app';
 
 // Host the app talks to in development.
 // Simulator / emulator: leave as null — the per-platform defaults below apply.
 // PHYSICAL DEVICE: set your Mac's LAN IP (`ipconfig getifaddr en0`), e.g. '192.168.1.33'.
 // On a real phone "localhost" means the phone itself, so the app cannot reach your Mac.
-const DEV_HOST: string | null = '192.168.1.33';
+const DEV_HOST: string | null = null;
 
 // Android emulator → 10.0.2.2, iOS simulator → localhost
 const BASE_URL = DEPLOYED_API
@@ -44,6 +44,18 @@ api.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
   }
   return config;
 });
+
+// ── Session expiry ──────────────────────────────────────────────────────────
+// The interceptor can only clear storage; the signed-in state lives in
+// AuthContext. It registers here so a dead session sends the user to sign-in
+// instead of leaving them on empty screens.
+let sessionExpiredListener: (() => void) | null = null;
+export function onSessionExpired(listener: () => void): () => void {
+  sessionExpiredListener = listener;
+  return () => {
+    if (sessionExpiredListener === listener) sessionExpiredListener = null;
+  };
+}
 
 // ── Response interceptor — refresh on 401 ───────────────────────────────────
 let isRefreshing = false;
@@ -106,6 +118,7 @@ api.interceptors.response.use(
         STORAGE_KEYS.ACCESS_TOKEN,
         STORAGE_KEYS.REFRESH_TOKEN,
       ]);
+      sessionExpiredListener?.();
       return Promise.reject(err);
     } finally {
       isRefreshing = false;

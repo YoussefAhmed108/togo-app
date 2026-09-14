@@ -9,10 +9,9 @@ import {
   View,
 } from 'react-native';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
-import {SafeAreaView} from 'react-native-safe-area-context';
 import {AppButton} from '../../components/AppButton';
 import {AppInput} from '../../components/AppInput';
-import {AppLogo} from '../../components/AppLogo';
+import {AuthMapHero} from '../../components/AuthMapHero';
 import {ErrorBanner} from '../../components/ErrorBanner';
 import {useAuth} from '../../hooks/useAuth';
 import {colors, fonts, radius, shadows, spacing, typography} from '../../theme';
@@ -74,8 +73,8 @@ export function SignupScreen({navigation}: Props) {
       const msg =
         err?.response?.data?.error ?? 'Something went wrong. Please try again.';
       setApiError(
-        msg === 'email already registered'
-          ? 'An account with this email already exists.'
+        msg === 'unable to create account'
+          ? "We couldn't create an account with these details. If you already have one, try logging in."
           : msg,
       );
     } finally {
@@ -84,19 +83,17 @@ export function SignupScreen({navigation}: Props) {
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <View style={styles.safe}>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}>
-
-          {/* Logo */}
-          <View style={styles.logoArea}>
-            <AppLogo size="md" markOnly />
-          </View>
+          showsVerticalScrollIndicator={false}
+          bounces={false}>
+          {/* The sign-in map, shorter: same place, one step further in. */}
+          <AuthMapHero height={220} onBack={() => navigation.navigate('Login')} />
 
           {/* Form card */}
           <View style={styles.card}>
@@ -106,8 +103,7 @@ export function SignupScreen({navigation}: Props) {
             <ErrorBanner message={apiError} />
 
             <AppInput
-              label="Email"
-              placeholder="you@example.com"
+              placeholder="Email"
               keyboardType="email-address"
               value={email}
               onChangeText={t => {
@@ -118,8 +114,7 @@ export function SignupScreen({navigation}: Props) {
             />
 
             <AppInput
-              label="Phone Number"
-              placeholder="+1 (555) 000-0000"
+              placeholder="Phone number"
               keyboardType="phone-pad"
               value={phone}
               onChangeText={t => {
@@ -130,8 +125,7 @@ export function SignupScreen({navigation}: Props) {
             />
 
             <AppInput
-              label="Password"
-              placeholder="Min. 8 characters"
+              placeholder="Password"
               isPassword
               value={password}
               onChangeText={t => {
@@ -145,8 +139,7 @@ export function SignupScreen({navigation}: Props) {
             <PasswordStrength password={password} />
 
             <AppInput
-              label="Confirm Password"
-              placeholder="Re-enter your password"
+              placeholder="Confirm password"
               isPassword
               value={confirm}
               onChangeText={t => {
@@ -157,30 +150,23 @@ export function SignupScreen({navigation}: Props) {
             />
 
             <AppButton
-              title="Create Account"
+              title="Create account"
               loading={loading}
               onPress={handleSignup}
               style={styles.submitBtn}
             />
 
             <Text style={styles.terms}>
-              By creating an account you agree to our{' '}
+              By continuing you agree to our{' '}
               <Text style={styles.termsLink}>Terms of Service</Text> and{' '}
               <Text style={styles.termsLink}>Privacy Policy</Text>.
             </Text>
           </View>
 
-          {/* Footer */}
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Already have an account? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-              <Text style={styles.footerLink}>Sign in</Text>
-            </TouchableOpacity>
-          </View>
 
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -231,21 +217,11 @@ const ps = StyleSheet.create({
 const styles = StyleSheet.create({
   safe: {flex: 1, backgroundColor: colors.background},
   flex: {flex: 1},
-  scroll: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xl,
-  },
-  logoArea: {alignItems: 'center', marginBottom: spacing.lg},
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    padding: 26,
-    ...shadows.card,
-  },
-  heading: {...typography.h1, marginBottom: 2},
+  scroll: {flexGrow: 1, paddingBottom: spacing.xl},
+  back: {width: 44, height: 44, marginLeft: -10, alignItems: 'center', justifyContent: 'center', marginBottom: 20},
+  backIcon: {fontSize: 30, color: colors.text, lineHeight: 32},
+  card: {paddingHorizontal: 24, marginTop: -30},
+  heading: {fontFamily: fonts.bold, fontSize: 30, lineHeight: 32, letterSpacing: -0.9, color: colors.text, marginBottom: 2},
   sub: {
     fontFamily: fonts.regular,
     fontSize: 15,

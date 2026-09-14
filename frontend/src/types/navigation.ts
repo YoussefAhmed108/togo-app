@@ -1,11 +1,20 @@
+import type {ExtractedPlace} from '../services/extractService';
+
 export type AuthStackParamList = {
   Login: undefined;
   Signup: undefined;
 };
 
-export type AppStackParamList = {
+/** Bottom navigation bar — the app's top-level destinations. */
+export type TabParamList = {
   Home: undefined;
-  Settings: undefined;
+  Map: undefined;
+  Spaces: undefined;
+  Account: undefined;
+};
+
+export type AppStackParamList = {
+  Tabs: undefined;
   CreateSpace: undefined;
   CreatePlace: {
     spaceId?: number;
@@ -18,7 +27,12 @@ export type AppStackParamList = {
     prefillLat?: number;
     prefillLng?: number;
   } | undefined;
-  SeeAll: {kind: 'spaces' | 'places'};
+  /** A TikTok featuring several venues — pick where each one goes. */
+  ReviewPlaces: {
+    places: ExtractedPlace[];
+    /** Opened from a space: that space is every place's default destination. */
+    spaceId?: number;
+  };
   SpaceDetail: {
     spaceId: number;
     spaceName: string;

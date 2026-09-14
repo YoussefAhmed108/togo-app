@@ -12,18 +12,15 @@ interface AppSettingsContextValue {
 export const AppSettingsContext = createContext<AppSettingsContextValue | null>(null);
 
 export function AppSettingsProvider({children}: {children: React.ReactNode}) {
-  const [themeName, setThemeNameState] = useState<AppThemeName>('sunrise');
+  const [themeName, setThemeNameState] = useState<AppThemeName>('light');
 
   useEffect(() => {
     (async () => {
       const stored = await AsyncStorage.getItem(STORAGE_KEY);
-      if (stored === 'sunrise' || stored === 'midnight' || stored === 'grove') {
-        applyTheme(stored);
-        setThemeNameState(stored);
-        return;
-      }
-
-      applyTheme('sunrise');
+      // Pre-Waypoint presets: midnight was the only dark one.
+      const next: AppThemeName = stored === 'dark' || stored === 'midnight' ? 'dark' : 'light';
+      applyTheme(next);
+      setThemeNameState(next);
     })();
   }, []);
 

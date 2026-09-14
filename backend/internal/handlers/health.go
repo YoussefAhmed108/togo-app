@@ -4,8 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"log"
 	"net/http"
+	"net/url"
 	"sync"
 	"time"
 
@@ -18,9 +21,8 @@ import (
 const checkTimeout = 5 * time.Second
 
 type checkResult struct {
-	OK        bool   `json:"ok"`
-	LatencyMS int64  `json:"latency_ms"`
-	Detail    string `json:"detail,omitempty"`
+	OK        bool  `json:"ok"`
+	LatencyMS int64 `json:"latency_ms"`
 }
 
 type HealthHandler struct {
@@ -58,7 +60,13 @@ func (h *HealthHandler) Deep(w http.ResponseWriter, r *http.Request) {
 			err := fn(ctx)
 			res := checkResult{OK: err == nil, LatencyMS: time.Since(start).Milliseconds()}
 			if err != nil {
-				res.Detail = err.Error()
+				// This endpoint is public: raw errors carried the Maps key (it
+				// rides in the request URL) and DB host names. Log, don't return.
+				var ue *url.Error
+				if errors.As(err, &ue) {
+					ue.URL = "(redacted)"
+				}
+				log.Printf("health/deep: %s: %v", name, err)
 			}
 			mu.Lock()
 			checks[name] = res

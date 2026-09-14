@@ -21,6 +21,10 @@ type UserStore interface {
 	// Interest categories chosen during onboarding.
 	SaveInterests(ctx context.Context, userID uint64, categories []string) error
 	GetInterests(ctx context.Context, userID uint64) ([]string, error)
+	// Saved starting points the user can pick instead of GPS.
+	ListLocations(ctx context.Context, userID uint64) ([]*models.SavedLocation, error)
+	CreateLocation(ctx context.Context, userID uint64, label, address string, lat, lng float64) (uint64, error)
+	DeleteLocation(ctx context.Context, userID, id uint64) (bool, error)
 }
 
 // PlaceStore is the interface satisfied by PlaceRepository.
@@ -40,8 +44,11 @@ type PlaceStore interface {
 	RemoveTagFromPlace(ctx context.Context, placeID uint64, tagName string) error
 	GetPlaceTags(ctx context.Context, placeID uint64) ([]string, error)
 	CreateMemory(ctx context.Context, placeID, uploaderID uint64, imageKey string, caption *string, spaceID *uint64) (uint64, error)
-	ListMemories(ctx context.Context, placeID uint64) ([]*models.Memory, error)
+	// ListMemories returns only the memories viewerID is allowed to see.
+	ListMemories(ctx context.Context, placeID, viewerID uint64) ([]*models.Memory, error)
 	GetMemory(ctx context.Context, memoryID uint64) (*models.Memory, error)
+	// Dishes rated on a memory.
+	AddDishes(ctx context.Context, memoryID uint64, dishes []models.Dish) error
 	DeleteMemory(ctx context.Context, memoryID, placeID uint64) error
 	PlaceExistsForOwner(ctx context.Context, placeID, ownerID uint64) (bool, error)
 	ListByIDs(ctx context.Context, ids []uint64) ([]*models.Place, error)
@@ -70,7 +77,8 @@ type SpaceStore interface {
 	ListSpacePlaceIDs(ctx context.Context, spaceID uint64) ([]uint64, error)
 	// IsPlaceInSpace returns true if the given place is linked to the given space.
 	IsPlaceInSpace(ctx context.Context, spaceID, placeID uint64) (bool, error)
-	GetOrCreateInviteToken(ctx context.Context, spaceID, createdBy uint64) (string, error)
+	GetOrCreateInviteToken(ctx context.Context, spaceID, createdBy uint64) (token string, expiresAt time.Time, err error)
+	SetMemberRole(ctx context.Context, spaceID, userID uint64, role string) (bool, error)
 	FindSpaceByInviteToken(ctx context.Context, token string) (*models.Space, error)
 }
 

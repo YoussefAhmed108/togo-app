@@ -1,0 +1,102 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Manrope:wght@400..800&display=swap">
+  <style>
+    :root { --board:#0A0E16;--sheet:#131A28;--land:#161D2B;--road:#1F2A3E;--road2:#24314A;--water:#0F1A2E;--park:#14251C;--ink:#EAF1FA;--ink2:#C3CFE0;--muted:#7C8CA6;--line:rgba(255,255,255,0.09);--chipBg:rgba(255,255,255,0.07);--primary:#2EE0C6;--onPrimary:#06231F;--primaryHalo:rgba(46,224,198,0.22);--secondary:#FF9052;--recBg:rgba(46,224,198,0.07);--sp1:#FF9052;--sp1Tint:rgba(255,144,82,0.16);--sp2:#FF5D8F;--sp2Tint:rgba(255,93,143,0.16);--sp3:#7BE38B;--sp3Tint:rgba(123,227,139,0.16);--sp4:#7AA8FF;--sp5:#C99BFF;--sp6:#FFD75E;--capInk:#EAF1FA;--capSub:#9AA9C0; }
+    body { margin: 0; }
+    a { color: var(--primary); }
+    .wrap { width: 440px; height: 1170px; box-sizing: border-box; padding: 20px; background: var(--board); font-family: 'Manrope','Helvetica Neue',sans-serif; display: flex; flex-direction: column; gap: 16px; }
+    .dsp { font-family: 'Bricolage Grotesque','Helvetica Neue',sans-serif; }
+    .phone { width: 390px; height: 844px; background: var(--sheet); border-radius: 34px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 16px 44px rgba(0,0,0,0.22); }
+    .lbl { font-size: 10px; font-weight: 800; letter-spacing: 1.4px; text-transform: uppercase; color: var(--muted); }
+    .chip { font-size: 12px; font-weight: 600; color: var(--ink2); background: var(--chipBg); border: 1px solid var(--line); border-radius: 9999px; padding: 7px 13px; white-space: nowrap; }
+    .chipOn { font-size: 12px; font-weight: 800; color: var(--onPrimary); background: var(--primary); border-radius: 9999px; padding: 7px 13px; white-space: nowrap; }
+    .row { display: flex; align-items: center; gap: 12px; padding: 13px 18px; border-bottom: 1px solid var(--line); }
+    .th { width: 46px; height: 46px; border-radius: 13px; background: var(--chipBg); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+    .nm { font-size: 15px; font-weight: 800; color: var(--ink); }
+    .sb { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .tab { height: 68px; border-top: 1px solid var(--line); display: flex; align-items: center; justify-content: space-around; background: var(--sheet); flex-shrink: 0; }
+    .ti { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; color: var(--muted); }
+    .tiOn { color: var(--primary); }
+    .cap .num { font-size: 11px; font-weight: 800; letter-spacing: 1.6px; text-transform: uppercase; color: var(--muted); }
+    .cap .h { font-size: 24px; font-weight: 700; color: var(--capInk); margin-top: 2px; }
+    .cap .p { font-size: 13px; line-height: 1.45; color: var(--capSub); margin-top: 7px; }
+    .cap .t { font-size: 12px; line-height: 1.45; color: var(--capSub); border-left: 3px solid var(--primary); padding-left: 10px; margin-top: 9px; }
+    .sw { border-radius: 12px; height: 62px; padding: 11px; box-sizing: border-box; }
+    .swl { font-size: 10px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; opacity: 0.72; }
+    .swv { font-size: 14px; font-weight: 800; margin-top: 3px; }
+    .wrap { height: 1100px; }
+    .seg { flex-grow: 1; text-align: center; font-size: 13px; font-weight: 700; color: var(--muted); padding: 9px 0; border-radius: 9px; }
+    .segOn { background: var(--sheet); color: var(--ink); box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+    .rc { border-radius: 18px; overflow: hidden; background: var(--chipBg); border: 1px solid var(--line); }
+    .why { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; color: var(--primary); }
+    .save { width: 36px; height: 36px; border-radius: 9999px; border: 2px solid var(--primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  </style>
+</helmet>
+<div class="wrap">
+  <div class="phone">
+    <div style="position: relative; height: 274px; flex-shrink: 0;">
+      <svg width="390" height="274" viewBox="0 0 390 274" style="position: absolute; inset: 0;"><rect width="390" height="274" fill="var(--land)"></rect><path d="M-10 196 Q120 184 210 212 T400 196 L400 274 L-10 274 Z" fill="var(--water)"></path><circle cx="304" cy="108" r="46" fill="var(--park)"></circle><path d="M-10 70 L400 30 M-10 160 L400 130 M88 -10 L128 290 M268 -10 L250 290" stroke="var(--road)" stroke-width="12" fill="none"></path></svg>
+      <div style="position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10,14,22,0) 40%, rgba(10,14,22,0.5) 100%);"></div>
+      <div style="position: absolute; top: 52px; left: 18px; right: 18px; display: flex; align-items: center; gap: 10px; background: var(--sheet); border: 1px solid var(--line); border-radius: 9999px; padding: 12px 14px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+        <div style="font-size: 14px; font-weight: 600; color: var(--muted);">Search places or spaces</div>
+        <div style="margin-left: auto; width: 28px; height: 28px; border-radius: 9999px; background: var(--secondary);"></div>
+      </div>
+      <div style="position: absolute; left: 128px; top: 130px; display: flex; flex-direction: column; align-items: center;"><div style="width: 44px; height: 44px; border-radius: 9999px; background: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 19px; box-shadow: 0 0 0 6px var(--primaryHalo);">🥐</div><div style="width: 2px; height: 10px; background: var(--primary);"></div></div>
+      <div style="position: absolute; left: 246px; top: 158px; display: flex; flex-direction: column; align-items: center;"><div style="width: 38px; height: 38px; border-radius: 9999px; background: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 17px; box-shadow: 0 0 0 5px var(--primaryHalo);">🍸</div><div style="width: 2px; height: 9px; background: var(--primary);"></div></div>
+      <div style="position: absolute; left: 68px; top: 190px; width: 22px; height: 22px; border-radius: 9999px; background: var(--sheet); border: 2.5px solid var(--sp1); opacity: 0.55;"></div>
+      <div style="position: absolute; left: 300px; top: 92px; width: 22px; height: 22px; border-radius: 9999px; background: var(--sheet); border: 2.5px solid var(--sp3); opacity: 0.55;"></div>
+    </div>
+
+    <div style="flex-grow: 1; margin-top: -22px; background: var(--sheet); border-radius: 26px 26px 0 0; display: flex; flex-direction: column; overflow: hidden;">
+      <div style="display: flex; justify-content: center; padding: 10px 0 8px;"><div style="width: 40px; height: 5px; border-radius: 3px; background: var(--line);"></div></div>
+      <div style="padding: 0 18px 14px;">
+        <div style="display: flex; gap: 4px; background: var(--chipBg); border-radius: 12px; padding: 4px;">
+          <div class="seg">Nearby</div>
+          <div class="seg segOn">For you</div>
+          <div class="seg">Spaces</div>
+        </div>
+      </div>
+
+      <div style="padding: 0 18px 14px;">
+        <div class="rc">
+          <div style="height: 132px; background: linear-gradient(145deg,#22405C,#152738); display: flex; align-items: center; justify-content: center; font-size: 34px; position: relative;">🥐
+            <div style="position: absolute; left: 12px; top: 12px; background: var(--primary); color: var(--onPrimary); font-size: 10px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; border-radius: 9999px; padding: 5px 10px;">Top pick today</div>
+          </div>
+          <div style="padding: 13px 14px; display: flex; align-items: center; gap: 12px;">
+            <div style="flex-grow: 1;">
+              <div class="why">✦ Because you like coffee</div>
+              <div class="nm" style="font-size: 17px; margin-top: 4px;">Manteigaria</div>
+              <div class="sb">Bakery · 0.8 km · open until 20:00</div>
+            </div>
+            <div class="save"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding: 0 18px 8px;"><div class="lbl">Popular near Lisbon trip</div></div>
+      <div class="row" style="border-bottom: 0; padding: 10px 18px;"><div class="th" style="background: var(--primaryHalo);">🍸</div><div style="flex-grow: 1;"><div class="nm">Park Bar</div><div class="sb">Rooftop · 1.4 km · 4 members went</div></div><div class="save"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></div></div>
+      <div class="row" style="border-bottom: 0; padding: 10px 18px;"><div class="th" style="background: var(--primaryHalo);">🍜</div><div style="flex-grow: 1;"><div class="nm">Ramen Kaze</div><div class="sb">Ramen · 1.1 km · similar to your saves</div></div><div class="save"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></div></div>
+      <div style="flex-grow: 1;"></div>
+      <div style="text-align: center; padding-bottom: 10px;"><div class="lbl" style="color: var(--primary);">Pull up for all 24 suggestions ↑</div></div>
+    </div>
+    <div class="tab"><div class="ti tiOn"><span style="font-size: 18px;">🗺️</span>Home</div><div class="ti"><span style="font-size: 18px;">👥</span>Spaces</div><div class="ti"><span style="font-size: 18px;">🔖</span>Saved</div><div class="ti"><span style="font-size: 18px;">👤</span>Account</div></div>
+  </div>
+  <div class="cap">
+    <div class="num">Option 1 · a — recommended</div>
+    <div class="h">Recommendations are a mode, not a row</div>
+    <div class="p">The sheet gets a three-way segment: <strong>Nearby</strong> (what you saw before), <strong>For you</strong>, <strong>Spaces</strong>. On For you the map re-pins to the suggestions themselves and dims your own places, so the map is still doing work. A hero card carries one top pick with a photo and its reason; the rest are rows with one-tap save.</div>
+    <div class="t">Recommendations get a full screen when they deserve one, and cost nothing when they don't. No new tab, no second home.</div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "artboards": [
+    {"file": "Main.dc.html", "x": 0, "y": 0, "w": 440, "h": 1110, "title": "Home A · Today"},
+    {"file": "Home2.dc.html", "x": 540, "y": 0, "w": 440, "h": 1110, "title": "Home B · Lately"},
+    {"file": "Home3.dc.html", "x": 1080, "y": 0, "w": 440, "h": 1110, "title": "Home C · Catch-up"},
+    {"file": "MapTab.dc.html", "x": 1700, "y": 0, "w": 440, "h": 1110, "title": "Map tab · settled"}
+  ],
+  "annotations": [
+    {"id": "rule", "x": 0, "y": -250, "w": 1520, "text": "THREE HOME CONCEPTS — rebuilt under one rule after the last round: at most three zones per screen, no zone is a horizontal rail, and no zone repeats a list that another tab owns.\nAll three assume four tabs — Home / Map / Spaces / Account — and all three carry recommendations without a dashboard.\nColour is still Nightfall as a placeholder; the palette decision has not been made."},
+    {"id": "mapnote", "x": 1700, "y": -250, "w": 440, "text": "The map screen you approved, now recommendation-free and living in its own tab. Included so you can see the whole four-tab shape, not for review."}
+  ],
+  "launch": {"view": "canvas"}
+}

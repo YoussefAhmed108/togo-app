@@ -1,0 +1,11 @@
+{
+  "artboards": [
+    {"file": "Main.dc.html", "x": 0, "y": 0, "w": 390, "h": 844, "title": "A · Map poster"},
+    {"file": "TealBand.dc.html", "x": 470, "y": 0, "w": 390, "h": 844, "title": "B · Teal band"},
+    {"file": "CaptureStory.dc.html", "x": 940, "y": 0, "w": 390, "h": 844, "title": "C · Capture story"}
+  ],
+  "annotations": [
+    {"id": "brief", "x": 0, "y": -170, "w": 1330, "text": "Sign in — three directions, same Waypoint tokens (neutral ground, teal fill #00838E, violet for people, Figtree, 12px fields, 14px buttons).\nA · Map poster: the city full of your pins, a place just pulled from a TikTok. Most atmospheric; the map is decorative.\nB · Teal band: the Home header band carried onto sign in, so the first screen and Home read as one. Quietest, most consistent.\nC · Capture story: shows the product's mechanism (video → place → space) before you sign in. Most explanatory; bracketed names are placeholders.\nPick one and I'll build it into the app."}
+  ],
+  "launch": {"view": "canvas"}
+}

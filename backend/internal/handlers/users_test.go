@@ -10,6 +10,8 @@ import (
 
 	"app/backend/internal/handlers"
 	"app/backend/internal/models"
+
+	"github.com/gorilla/mux"
 )
 
 func TestGetMe_Success(t *testing.T) {
@@ -63,5 +65,60 @@ func TestUpdateMe_MissingName(t *testing.T) {
 
 	if rr.Code != http.StatusBadRequest {
 		t.Errorf("expected 400, got %d", rr.Code)
+	}
+}
+
+// One user must never see or delete another user's saved starting points.
+func TestSavedLocations_ScopedToUser(t *testing.T) {
+	store := &mockUserStore{}
+	h := handlers.NewUserHandler(store, noopStorage())
+
+	create := func(userID uint64, body string) *httptest.ResponseRecorder {
+		req := injectUser(httptest.NewRequest(http.MethodPost, "/users/me/locations", bytes.NewBufferString(body)), userID, true)
+		rr := httptest.NewRecorder()
+		h.CreateLocation(rr, req)
+		return rr
+	}
+
+	if rr := create(1, `{"label":"Home","address":"1 Nile St","lat":30.0,"lng":31.2}`); rr.Code != http.StatusCreated {
+		t.Fatalf("create: expected 201, got %d — %s", rr.Code, rr.Body.String())
+	}
+	if rr := create(2, `{"label":"Work","address":"2 Nile St","lat":30.1,"lng":31.3}`); rr.Code != http.StatusCreated {
+		t.Fatalf("create other user: expected 201, got %d", rr.Code)
+	}
+	if rr := create(1, `{"label":"","address":"x","lat":1,"lng":1}`); rr.Code != http.StatusBadRequest {
+		t.Fatalf("blank label: expected 400, got %d", rr.Code)
+	}
+	if rr := create(1, `{"label":"Moon","address":"x","lat":999,"lng":1}`); rr.Code != http.StatusBadRequest {
+		t.Fatalf("bad coords: expected 400, got %d", rr.Code)
+	}
+
+	// User 1 sees only their own.
+	rr := httptest.NewRecorder()
+	h.ListLocations(rr, injectUser(httptest.NewRequest(http.MethodGet, "/users/me/locations", nil), 1, true))
+	var listResp struct {
+		Data []struct {
+			Label string `json:"label"`
+		} `json:"data"`
+	}
+	json.Unmarshal(rr.Body.Bytes(), &listResp)
+	if len(listResp.Data) != 1 || listResp.Data[0].Label != "Home" {
+		t.Fatalf("expected only Home, got %+v", listResp.Data)
+	}
+
+	// User 1 cannot delete user 2's location (id 2).
+	rr = httptest.NewRecorder()
+	del := mux.SetURLVars(httptest.NewRequest(http.MethodDelete, "/users/me/locations/2", nil), map[string]string{"id": "2"})
+	h.DeleteLocation(rr, injectUser(del, 1, true))
+	if rr.Code != http.StatusNotFound {
+		t.Fatalf("cross-user delete: expected 404, got %d", rr.Code)
+	}
+
+	// ...but can delete their own.
+	rr = httptest.NewRecorder()
+	del = mux.SetURLVars(httptest.NewRequest(http.MethodDelete, "/users/me/locations/1", nil), map[string]string{"id": "1"})
+	h.DeleteLocation(rr, injectUser(del, 1, true))
+	if rr.Code != http.StatusNoContent {
+		t.Fatalf("own delete: expected 204, got %d", rr.Code)
 	}
 }

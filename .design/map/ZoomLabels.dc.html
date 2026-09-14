@@ -1,0 +1,70 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap">
+  <style>
+    body { margin: 0; font-family: 'Figtree', 'Avenir Next', 'Helvetica Neue', sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #006873; } a:hover { color: #00838E; }
+  </style>
+</helmet>
+<!-- C · Names as you zoom: zoomed out, pins are icon dots; zoom in and names appear beside them, like street labels. Tap still opens the card. -->
+<div style="position: relative; width: 390px; height: 844px; overflow: hidden; background: #E6E7EC; color: #1C1C25;">
+  <svg width="390" height="844" viewBox="0 0 390 844" style="position: absolute; inset: 0;">
+    <rect width="390" height="844" fill="#E6E7EC"></rect>
+    <path d="M120 -10 C70 200 230 330 170 520 C130 650 230 760 200 860 L270 860 C300 760 200 650 240 520 C300 330 150 200 190 -10 Z" fill="#CFE0EF"></path>
+    <ellipse cx="320" cy="300" rx="70" ry="52" fill="#D6ECDD"></ellipse>
+    <path d="M-10 190 L400 150 M-10 420 L400 380 M-10 620 L400 590 M60 -10 L100 860 M300 -10 L275 860" stroke="#FBFBFD" stroke-width="14" fill="none"></path>
+  </svg>
+
+  <div style="position: absolute; left: 20px; right: 20px; top: 62px;">
+    <div style="height: 46px; display: flex; align-items: center; gap: 8px; padding: 0 14px; background: #F0F0F3; border: 1px solid #DCDCE0; border-radius: 999px; box-shadow: 0 3px 10px rgba(20,20,30,0.10); font-size: 13.5px; font-weight: 600; color: #5C5C69;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1C1C25" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>Search your places
+    </div>
+  </div>
+
+  <!-- zoomed-in: pin + name beside it, halo'd like a map label -->
+  <div style="position: absolute; left: 40px; top: 250px; display: flex; align-items: center; gap: 6px;">
+    <div style="width: 30px; height: 30px; border-radius: 50%; background: #7C63D6; border: 3px solid #fff; box-sizing: border-box; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 10px rgba(20,20,30,0.2);"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10"></path><path d="M17 21V3c-2 1.5-3 4-3 7h3"></path></svg></div>
+    <div style="font-size: 13px; font-weight: 800; color: #3F2E8F; text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff;">Smiley’s Grill</div>
+  </div>
+  <div style="position: absolute; left: 196px; top: 340px; display: flex; align-items: center; gap: 6px;">
+    <div style="width: 30px; height: 30px; border-radius: 50%; background: #7C63D6; border: 3px solid #fff; box-sizing: border-box; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 10px rgba(20,20,30,0.2);"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10"></path><path d="M17 21V3c-2 1.5-3 4-3 7h3"></path></svg></div>
+    <div style="font-size: 13px; font-weight: 800; color: #3F2E8F; text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff; max-width: 140px;">El Baraka Fried Chicken</div>
+  </div>
+  <div style="position: absolute; left: 120px; top: 500px; display: flex; align-items: center; gap: 6px;">
+    <div style="width: 30px; height: 30px; border-radius: 50%; background: #2E9E52; border: 3px solid #fff; box-sizing: border-box; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 10px rgba(20,20,30,0.2);"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14l-1 13H6z"></path><path d="M9 8V6a3 3 0 0 1 6 0v2"></path></svg></div>
+    <div style="font-size: 13px; font-weight: 800; color: #166534; text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff;">Citystars Mall</div>
+  </div>
+
+  <!-- zoom hint, bottom-right above peek bar -->
+  <div style="position: absolute; right: 16px; bottom: 178px; display: flex; flex-direction: column; gap: 8px;">
+    <div style="width: 44px; height: 44px; border-radius: 22px; background: #FDFDFF; box-shadow: 0 3px 10px rgba(20,20,30,0.12); display: flex; align-items: center; justify-content: center;"><div style="width: 16px; height: 16px; box-sizing: border-box; border-radius: 50%; border: 3px solid #4285F4; background: rgba(66,133,244,0.25);"></div></div>
+  </div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 84px; height: 78px; background: #F0F0F3; border-radius: 22px 22px 0 0; box-shadow: 0 -6px 24px rgba(20,20,30,0.12); display: flex; flex-direction: column; align-items: center; padding-top: 10px; box-sizing: border-box;">
+    <div style="width: 36px; height: 4px; border-radius: 2px; background: #BABAC1;"></div>
+    <div style="display: flex; align-items: center; justify-content: space-between; align-self: stretch; padding: 12px 20px 0;">
+      <div style="display: flex; flex-direction: column; gap: 1px;">
+        <div style="font-size: 15px; font-weight: 800;">3 places in view</div>
+        <div style="font-size: 12px; color: #5C5C69;">Pull up for the list</div>
+      </div>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5C5C69" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"></path></svg>
+    </div>
+  </div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 84px; background: #FDFDFF; border-top: 1px solid #DCDCE0; display: flex; padding-top: 10px; box-sizing: border-box;">
+    <div style="flex: 1; text-align: center; font-size: 11px; font-weight: 600; color: #5C5C69;">Home</div>
+    <div style="flex: 1; text-align: center; font-size: 11px; font-weight: 700; color: #006873;">Map</div>
+    <div style="flex: 1; text-align: center; font-size: 11px; font-weight: 600; color: #5C5C69;">Spaces</div>
+    <div style="flex: 1; text-align: center; font-size: 11px; font-weight: 600; color: #5C5C69;">Profile</div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
