@@ -65,7 +65,7 @@ func (r Result) LanguageCode() string {
 // Places lookup (~$0.032), so a "top 20" listicle must not cost $0.60.
 const maxPlaces = 8
 
-const systemPrompt = `You identify the venues featured in a TikTok. Most videos feature ONE ` +
+const systemPrompt = `You identify the venues featured in a TikTok or Instagram Reel. Most videos feature ONE ` +
 	`venue; listicles and roundups ("5 cafés you must try") feature several. Return one entry ` +
 	`in "places" per DISTINCT venue actually featured, in the order they appear, at most ` +
 	`8 — not venues merely mentioned in passing, and never the same venue twice. For each ` +
@@ -137,6 +137,20 @@ var schema = map[string]any{
 type Usage struct {
 	InputTokens  int `json:"input_tokens"`
 	OutputTokens int `json:"output_tokens"`
+}
+
+// Claude Haiku 4.5 list price in USD per token. The API reports exact token
+// counts but never dollars, so this is the one place to update when `model`
+// or Anthropic's price changes. No prompt caching is used, so there are no
+// cache-read/write tokens to price.
+const (
+	inputUSDPerToken  = 1.0 / 1e6
+	outputUSDPerToken = 5.0 / 1e6
+)
+
+// CostUSD is what this call cost at list price.
+func (u Usage) CostUSD() float64 {
+	return float64(u.InputTokens)*inputUSDPerToken + float64(u.OutputTokens)*outputUSDPerToken
 }
 
 // Analyze sends the frames and caption to Claude and returns every venue it

@@ -9,6 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {authService, isProfileComplete} from '../services/authService';
 import {recommendationService} from '../services/recommendationService';
 import {STORAGE_KEYS, onSessionExpired} from '../services/api';
+import {posthog} from '../services/analytics';
 import {AuthState, User} from '../types/auth';
 
 interface AuthContextValue extends AuthState {
@@ -152,6 +153,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
       STORAGE_KEYS.ACCESS_TOKEN,
       STORAGE_KEYS.REFRESH_TOKEN,
     ]);
+    posthog.reset(); // the next user on this device is a different person
     setState({
       user: null,
       accessToken: null,
@@ -159,6 +161,13 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
       isLoading: false,
     });
   }, []);
+
+  // The backend sends its events under the same id, so app and server
+  // events join on one PostHog person.
+  const userId = state.user?.id;
+  useEffect(() => {
+    if (userId != null) posthog.identify(String(userId));
+  }, [userId]);
 
   // A refresh that fails anywhere in the app ends the session here too.
   useEffect(() => onSessionExpired(() => void signOut()), [signOut]);

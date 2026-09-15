@@ -42,6 +42,11 @@ type Config struct {
 	// Leave empty to disable the TikTok share feature.
 	AnthropicAPIKey string
 
+	// PostHog project API key (phc_...) and ingestion host. Empty key disables
+	// server-side analytics.
+	PostHogKey  string
+	PostHogHost string
+
 	// Local file storage — used automatically when R2 credentials are absent.
 	// LocalBaseURL must be reachable from the device running the app:
 	//   iOS Simulator  → http://localhost:8080   (default)
@@ -80,6 +85,9 @@ func Load() *Config {
 		// GOOGLE_PLACES_KEY is kept as an override for existing deployments.
 		GooglePlacesKey: getEnv("GOOGLE_PLACES_KEY", getEnv("GOOGLE_MAPS_API_KEY", "")),
 		AnthropicAPIKey: getEnv("ANTHROPIC_API_KEY", ""),
+
+		PostHogKey:  getEnv("POSTHOG_API_KEY", ""),
+		PostHogHost: getEnv("POSTHOG_HOST", "https://us.i.posthog.com"),
 
 		LocalUploadDir: getEnv("LOCAL_UPLOAD_DIR", "./uploads"),
 		LocalBaseURL:   getEnv("LOCAL_BASE_URL", "http://localhost:8080"),

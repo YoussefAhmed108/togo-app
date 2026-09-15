@@ -1,5 +1,6 @@
 import api from './api';
 import {ApiDish} from './memoryService';
+import {posthog} from './analytics';
 
 export interface ApiPlace {
   id: number;
@@ -54,6 +55,8 @@ export const placeService = {
       google_place_id: googlePlaceId ?? null,
       source_url: sourceUrl ?? null,
     });
+    // End of the share funnel: tiktok_extract (server) → place_saved.
+    posthog.capture('place_saved', {from_tiktok: !!sourceUrl});
     return res.data.data;
   },
 

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"app/backend/internal/analytics"
 	"app/backend/internal/config"
 	"app/backend/internal/handlers"
 	"app/backend/internal/storage"
@@ -30,8 +31,9 @@ func main() {
 	// Presence only, never the values: "extraction is not configured" and
 	// "recommendations are empty" are both silent 3rd-party misconfigurations
 	// that this one line diagnoses at boot.
-	log.Printf("config: anthropic_key=%t places_key=%t r2=%t",
-		cfg.AnthropicAPIKey != "", cfg.GooglePlacesKey != "", cfg.R2AccountID != "")
+	log.Printf("config: anthropic_key=%t places_key=%t r2=%t posthog=%t",
+		cfg.AnthropicAPIKey != "", cfg.GooglePlacesKey != "", cfg.R2AccountID != "", cfg.PostHogKey != "")
+	analytics.Init(cfg.PostHogKey, cfg.PostHogHost)
 
 	var storageClient *storage.Client
 	if cfg.R2AccountID != "" {

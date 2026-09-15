@@ -2,6 +2,8 @@ import React from 'react';
 import {Linking} from 'react-native';
 import {NavigationContainer, LinkingOptions} from '@react-navigation/native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
+import {PostHogProvider} from 'posthog-react-native';
+import {posthog} from './services/analytics';
 import {AppSettingsProvider} from './context/AppSettingsContext';
 import {AuthProvider} from './context/AuthContext';
 import {LocationProvider} from './context/LocationContext';
@@ -59,7 +61,13 @@ export default function App() {
         <AuthProvider>
           <LocationProvider>
             <NavigationContainer linking={linking}>
-              <RootNavigator />
+              {/* Inside NavigationContainer: react-navigation v6 screen
+                  autocapture needs it. Touches give tap-level behaviour. */}
+              <PostHogProvider
+                client={posthog}
+                autocapture={{captureScreens: true, captureTouches: true}}>
+                <RootNavigator />
+              </PostHogProvider>
             </NavigationContainer>
           </LocationProvider>
         </AuthProvider>

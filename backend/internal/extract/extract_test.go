@@ -2,6 +2,7 @@ package extract
 
 import (
 	"context"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -17,6 +18,9 @@ func TestValidURL(t *testing.T) {
 		"https://www.tiktok.com/t/ZMxxxx/",
 		"https://m.tiktok.com/v/123.html",
 		"https://tiktok.com/@user/video/1",
+		"https://www.instagram.com/reel/C8xYz_12-ab/?igsh=abc",
+		"https://www.instagram.com/reels/C8xYz12ab/",
+		"https://instagram.com/share/reel/BAabc123",
 	}
 	for _, u := range valid {
 		if !ValidURL(u) {
@@ -30,6 +34,9 @@ func TestValidURL(t *testing.T) {
 		"file:///etc/passwd",
 		"", "not a url",
 		"https://nottiktok.com/@a/video/1",
+		"https://www.instagram.com/p/C8xYz12ab/",
+		"https://evilinstagram.com/reel/C8xYz12ab/",
+		"https://www.instagram.com/someuser/",
 	}
 	for _, u := range invalid {
 		if ValidURL(u) {
@@ -352,5 +359,13 @@ func TestAreaKey(t *testing.T) {
 	}
 	if AreaKey(base, downtown) == base {
 		t.Fatal("a located key must differ from the global one")
+	}
+}
+
+func TestUsageCostUSD(t *testing.T) {
+	// Haiku 4.5: $1 per million input tokens, $5 per million output.
+	got := Usage{InputTokens: 1_000_000, OutputTokens: 200_000}.CostUSD()
+	if math.Abs(got-2.0) > 1e-9 {
+		t.Fatalf("CostUSD = %v, want 2.0", got)
 	}
 }

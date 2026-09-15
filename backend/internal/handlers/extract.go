@@ -7,9 +7,12 @@ import (
 	"log"
 	"net/http"
 	"slices"
+	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
+	"app/backend/internal/analytics"
 	"app/backend/internal/extract"
 	"app/backend/internal/middleware"
 )
@@ -77,7 +80,7 @@ func (h *ExtractHandler) ExtractPlace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !extract.ValidURL(req.URL) {
-		writeError(w, http.StatusBadRequest, "not a TikTok URL")
+		writeError(w, http.StatusBadRequest, "not a TikTok or Instagram Reel URL")
 		return
 	}
 	var near *extract.LatLng
@@ -106,12 +109,18 @@ func (h *ExtractHandler) ExtractPlace(w http.ResponseWriter, r *http.Request) {
 	}
 	defer func() { logf("done in %v", time.Since(t0).Round(time.Millisecond)) }()
 
+	// One analytics event per extraction: which cache answered, what it cost.
+	run := &extractRun{cache: "none", outcome: "ok"}
+	userID := middleware.GetUserID(r)
+	defer func() { run.capture(userID, time.Since(t0)) }()
+
 	logf("start %s", req.URL)
 
 	// Every cache key carries the sharer's area: results are ranked near them.
 	urlKey := extract.AreaKey(extract.URLKey(req.URL), near)
 	var cached extractResponse
 	if extract.LookupURL(ctx, h.db, urlKey, &cached) {
+		run.cache = "url"
 		logf("cache: url hit")
 		writeJSON(w, http.StatusOK, cached)
 		return
@@ -120,7 +129,8 @@ func (h *ExtractHandler) ExtractPlace(w http.ResponseWriter, r *http.Request) {
 	meta, frames, transcript, err := extract.Fetch(ctx, req.URL)
 	if err != nil {
 		logf("fetch: %v", err)
-		writeError(w, http.StatusUnprocessableEntity, "could not read that TikTok")
+		run.outcome = "fetch_failed"
+		writeError(w, http.StatusUnprocessableEntity, "could not read that video")
 		return
 	}
 
@@ -131,6 +141,7 @@ func (h *ExtractHandler) ExtractPlace(w http.ResponseWriter, r *http.Request) {
 		if vk := extract.AreaKey(extract.VideoKey(meta.ID), near); vk != urlKey {
 			keys = append(keys, vk)
 			if extract.LookupURL(ctx, h.db, vk, &cached) {
+				run.cache = "video_id"
 				logf("cache: video-id hit")
 				writeJSON(w, http.StatusOK, cached)
 				return
@@ -139,11 +150,15 @@ func (h *ExtractHandler) ExtractPlace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tLLM := time.Now()
-	results, _, err := extract.Analyze(ctx, h.anthropicKey, meta, frames, transcript)
+	results, usage, err := extract.Analyze(ctx, h.anthropicKey, meta, frames, transcript)
 	logf("timing: claude %v", time.Since(tLLM).Round(time.Millisecond))
+	if usage != nil {
+		run.usage = *usage
+	}
 	if err != nil {
 		logf("analyze: %v", err)
-		writeError(w, http.StatusBadGateway, "could not analyse that TikTok")
+		run.outcome = "analyze_failed"
+		writeError(w, http.StatusBadGateway, "could not analyse that video")
 		return
 	}
 
@@ -154,6 +169,7 @@ func (h *ExtractHandler) ExtractPlace(w http.ResponseWriter, r *http.Request) {
 	}
 	if len(results) == 0 {
 		logf("result: no name read")
+		run.outcome = "no_place"
 		resp.Note = "no place confidently identified"
 		h.cache(ctx, keys, req.URL, resp)
 		writeJSON(w, http.StatusOK, resp)
@@ -170,12 +186,17 @@ func (h *ExtractHandler) ExtractPlace(w http.ResponseWriter, r *http.Request) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			resp.Places[i], answered[i] = h.resolve(ctx, logf, result, near)
+			resp.Places[i], answered[i] = h.resolve(ctx, logf, result, near, run)
 		}()
 	}
 	wg.Wait()
 	logf("timing: places %v (%d lookups)", time.Since(tPlaces).Round(time.Millisecond), len(results))
 
+	for _, p := range resp.Places {
+		if p.Selected != nil {
+			run.matched++
+		}
+	}
 	resp.extractedPlace = resp.Places[0]
 	for _, p := range resp.Places {
 		if p.Selected != nil {
@@ -192,7 +213,7 @@ func (h *ExtractHandler) ExtractPlace(w http.ResponseWriter, r *http.Request) {
 
 // resolve matches one venue read against Google Places. answered is false
 // when Google could not be reached, so the caller knows not to cache it.
-func (h *ExtractHandler) resolve(ctx context.Context, logf func(string, ...any), result extract.Result, near *extract.LatLng) (p extractedPlace, answered bool) {
+func (h *ExtractHandler) resolve(ctx context.Context, logf func(string, ...any), result extract.Result, near *extract.LatLng, run *extractRun) (p extractedPlace, answered bool) {
 	p = extractedPlace{
 		Name:       result.PlaceName,
 		Candidates: []extract.Candidate{},
@@ -208,6 +229,7 @@ func (h *ExtractHandler) resolve(ctx context.Context, logf func(string, ...any),
 		// The expensive part of a re-shared venue: a different video of the
 		// same restaurant resolves to the same query, so Google is asked once
 		// per venue rather than once per share.
+		run.queryHits.Add(1)
 		logf("cache: query hit %q (%d candidates)", query, len(cands))
 	} else {
 		var err error
@@ -219,6 +241,7 @@ func (h *ExtractHandler) resolve(ctx context.Context, logf func(string, ...any),
 			p.Note = "could not reach Google Places"
 			return p, false
 		}
+		run.placesCalls.Add(1)
 		// Empty results are cached too — a video Google cannot match cost the
 		// same as one it could, and it will be re-shared like any other.
 		if err := extract.StoreQuery(ctx, h.db, queryKey, query, cands); err != nil {
@@ -248,4 +271,34 @@ func (h *ExtractHandler) cache(ctx context.Context, keys []string, url string, r
 	if err := extract.StoreURL(ctx, h.db, keys, url, resp); err != nil {
 		log.Printf("extract/cache: store url: %v", err)
 	}
+}
+
+// extractRun records where one extraction was answered and what it cost, sent
+// as a single `tiktok_extract` event. Token and call counts are exact; dollars
+// are those counts times the list prices in the extract package.
+type extractRun struct {
+	cache       string // "url" or "video_id" when the URL cache answered, else "none"
+	outcome     string // "ok", "no_place", "fetch_failed", "analyze_failed"
+	usage       extract.Usage
+	placesCalls atomic.Int32 // paid Google lookups
+	queryHits   atomic.Int32 // lookups the query cache answered for free
+	matched     int          // venues that resolved to a Google place
+}
+
+func (x *extractRun) capture(userID uint64, took time.Duration) {
+	claudeUSD := x.usage.CostUSD()
+	placesUSD := float64(x.placesCalls.Load()) * extract.TextSearchUSD
+	analytics.Capture(strconv.FormatUint(userID, 10), "tiktok_extract", map[string]any{
+		"cache_level":             x.cache,
+		"outcome":                 x.outcome,
+		"claude_input_tokens":     x.usage.InputTokens,
+		"claude_output_tokens":    x.usage.OutputTokens,
+		"claude_cost_usd":         claudeUSD,
+		"places_calls":            x.placesCalls.Load(),
+		"places_query_cache_hits": x.queryHits.Load(),
+		"places_cost_usd":         placesUSD,
+		"cost_usd":                claudeUSD + placesUSD,
+		"places_matched":          x.matched,
+		"duration_ms":             took.Milliseconds(),
+	})
 }

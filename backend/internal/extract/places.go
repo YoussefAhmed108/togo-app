@@ -31,6 +31,12 @@ const searchTextURL = "https://places.googleapis.com/v1/places:searchText"
 // create-place form actually shows those fields.
 const fieldMask = "places.id,places.displayName,places.formattedAddress,places.location,places.googleMapsUri"
 
+// TextSearchUSD is the Text Search Pro list price per request (the SKU
+// fieldMask keeps us in). Google returns no cost with the response, and this
+// ignores the monthly free usage per SKU, so at low volume the real bill is
+// lower — Cloud Billing is the source of truth for totals.
+const TextSearchUSD = 0.032
+
 // LatLng is where the sharer is. It biases the search, it never restricts it:
 // a video filmed in another city must still resolve there.
 type LatLng struct {

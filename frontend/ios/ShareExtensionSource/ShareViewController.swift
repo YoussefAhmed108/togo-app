@@ -46,7 +46,7 @@ class ShareViewController: UIViewController {
     }
 
     private func tiktokURL(in text: String) -> String? {
-        let pattern = #"https?://(www\.|vm\.|vt\.|m\.)?tiktok\.com/\S+"#
+        let pattern = #"https?://((www\.|vm\.|vt\.|m\.)?tiktok\.com|(www\.)?instagram\.com)/\S+"#
         guard let regex = try? NSRegularExpression(pattern: pattern),
               let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
               let range = Range(match.range, in: text) else { return nil }

@@ -37,9 +37,14 @@ const (
 // tiktokURL matches every share format TikTok produces (long, vm/vt short, /t/, m.).
 var tiktokURL = regexp.MustCompile(`^https?://((www|m|vm|vt)\.)?tiktok\.com/`)
 
-// ValidURL reports whether u is a TikTok link. Callers must check this before
-// passing user input to yt-dlp — this is the trust boundary for the whole feature.
-func ValidURL(u string) bool { return tiktokURL.MatchString(u) }
+// reelURL matches an Instagram Reel. Reels only: /p/ posts are often image
+// carousels, which yt-dlp returns as a playlist the single-file -o cannot hold.
+var reelURL = regexp.MustCompile(`^https?://(www\.|m\.)?instagram\.com/(reels?|share/reel)/[\w-]+`)
+
+// ValidURL reports whether u is a TikTok or Instagram Reel link. Callers must
+// check this before passing user input to yt-dlp — this is the trust boundary
+// for the whole feature.
+func ValidURL(u string) bool { return tiktokURL.MatchString(u) || reelURL.MatchString(u) }
 
 // Meta is the metadata yt-dlp reports for a video.
 type Meta struct {
@@ -161,7 +166,7 @@ func frameFPS(duration float64, n int) float64 {
 // because two separate calls would double the failure surface.
 func Fetch(ctx context.Context, url string) (*Meta, [][]byte, string, error) {
 	if !ValidURL(url) {
-		return nil, nil, "", fmt.Errorf("not a TikTok URL")
+		return nil, nil, "", fmt.Errorf("not a TikTok or Instagram Reel URL")
 	}
 	url = videoURL(ctx, url)
 
