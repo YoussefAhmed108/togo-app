@@ -1,25 +1,28 @@
 /**
- * Live travel time to a place, from Google's Distance Matrix API.
+ * Live travel time to a place, in current traffic.
  *
  * Straight-line kilometres say nothing about a 40-minute crawl down the Ring
- * Road, so rows show "18 min · 4.2 km" when Google answers and fall back to
- * kilometres alone when it doesn't.
+ * Road, so rows show "18 min · 4.2 km" when an ETA is known and fall back to
+ * kilometres alone when it isn't.
+ *
+ * The backend asks Google and shares each answer across everyone in the same
+ * ~500 m cell for 5 minutes (backend/internal/eta). The phone snaps its own
+ * position to that cell before sending it, so the exact location never leaves
+ * the device, and it keeps a local copy so reopening a Space costs nothing.
  */
-import {GOOGLE_MAPS_API_KEY} from '../config/maps';
+import api from './api';
 
 export type LatLng = {lat: number; lng: number};
 
-/** Traffic moves, so an ETA is only good for a few minutes. */
+/** Must match eta.Cell and eta.TTL on the server. */
+const CELL = 0.005;
 const TTL_MS = 5 * 60 * 1000;
-/** Distance Matrix caps elements per request. */
-const BATCH = 25;
+
+const snap = (v: number) => (Math.floor(v / CELL) + 0.5) * CELL;
 
 const cache = new Map<string, {seconds: number; at: number}>();
-
-// Origin rounded to ~100 m — walking around the block should not refetch.
-function cacheKey(o: LatLng, d: LatLng): string {
-  return `${o.lat.toFixed(3)},${o.lng.toFixed(3)}|${d.lat.toFixed(5)},${d.lng.toFixed(5)}`;
-}
+const cacheKey = (o: LatLng, placeId: number) =>
+  `${snap(o.lat).toFixed(4)},${snap(o.lng).toFixed(4)}|${placeId}`;
 
 export function fmtEta(seconds: number): string {
   const mins = Math.max(1, Math.round(seconds / 60));
@@ -28,50 +31,39 @@ export function fmtEta(seconds: number): string {
 }
 
 /**
- * Driving seconds (in current traffic) keyed by destination id. Destinations
- * Google could not route to are simply absent from the result.
+ * Driving seconds keyed by place id, for places in `spaceId`. Places without
+ * an answer (unroutable, offline, rate limited) are simply absent.
  */
 export async function fetchEtas(
+  spaceId: number,
   origin: LatLng,
-  destinations: Array<{id: number} & LatLng>,
+  placeIds: number[],
 ): Promise<Record<number, number>> {
   const out: Record<number, number> = {};
-  if (!GOOGLE_MAPS_API_KEY) return out;
-
   const now = Date.now();
-  const pending: Array<{id: number} & LatLng> = [];
-  for (const d of destinations) {
-    const hit = cache.get(cacheKey(origin, d));
-    if (hit && now - hit.at < TTL_MS) out[d.id] = hit.seconds;
-    else pending.push(d);
+  const pending: number[] = [];
+  for (const id of placeIds) {
+    const hit = cache.get(cacheKey(origin, id));
+    if (hit && now - hit.at < TTL_MS) out[id] = hit.seconds;
+    else pending.push(id);
   }
 
-  for (let i = 0; i < pending.length; i += BATCH) {
-    const batch = pending.slice(i, i + BATCH);
-    const params = new URLSearchParams({
-      origins: `${origin.lat},${origin.lng}`,
-      destinations: batch.map(d => `${d.lat},${d.lng}`).join('|'),
-      mode: 'driving',
-      departure_time: 'now',
-      key: GOOGLE_MAPS_API_KEY,
-    });
-
+  // The server takes 25 per call — one Distance Matrix batch.
+  for (let i = 0; i < pending.length; i += 25) {
     try {
-      const res = await fetch(
-        `https://maps.googleapis.com/maps/api/distancematrix/json?${params.toString()}`,
-      );
-      const json = await res.json();
-      const elements = json?.rows?.[0]?.elements ?? [];
-      batch.forEach((d, idx) => {
-        const el = elements[idx];
-        if (el?.status !== 'OK') return;
-        const seconds = (el.duration_in_traffic ?? el.duration)?.value;
-        if (typeof seconds !== 'number') return;
-        cache.set(cacheKey(origin, d), {seconds, at: Date.now()});
-        out[d.id] = seconds;
+      const res = await api.get<{data: Record<string, number>}>(`/spaces/${spaceId}/eta`, {
+        params: {
+          lat: snap(origin.lat),
+          lng: snap(origin.lng),
+          place_ids: pending.slice(i, i + 25).join(','),
+        },
       });
+      for (const [id, seconds] of Object.entries(res.data.data ?? {})) {
+        cache.set(cacheKey(origin, Number(id)), {seconds, at: Date.now()});
+        out[Number(id)] = seconds;
+      }
     } catch {
-      // Offline or quota exhausted — callers keep showing plain distance.
+      // Offline or rate limited — callers keep showing plain distance.
     }
   }
 

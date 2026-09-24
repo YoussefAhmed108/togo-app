@@ -48,6 +48,9 @@ import {pickImage, PickedImage} from '../../utils/pickImage';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'SpaceDetail'>;
 
+/** Places whose live ETA is fetched on open; the rest wait for "See all". */
+const NEAREST_WITH_ETA = 3;
+
 // ── Distance helpers ──────────────────────────────────────────────────────────
 
 function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -1065,6 +1068,7 @@ export default function SpaceScreen({route, navigation}: Props) {
   const {origin, hasFix} = useLocation();
   /** Live driving time per place id — absent until Google answers. */
   const [etas, setEtas] = useState<Record<number, number>>({});
+  const [showAllPlaces, setShowAllPlaces] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -1161,19 +1165,6 @@ export default function SpaceScreen({route, navigation}: Props) {
     }
   }, [members, spaceId]);
 
-  // Live travel times. Without a real fix the origin is a fallback guess, and an
-  // ETA from the wrong city is worse than none.
-  useEffect(() => {
-    if (!hasFix || places.length === 0) return;
-    let alive = true;
-    fetchEtas(origin, places.map(p => ({id: p.id, lat: p.lat, lng: p.lng}))).then(result => {
-      if (alive) setEtas(prev => ({...prev, ...result}));
-    });
-    return () => {
-      alive = false;
-    };
-  }, [places, origin, hasFix]);
-
   const distKm = (p: ApiSpacePlace) => haversineKm(origin.lat, origin.lng, p.lat, p.lng);
   const sortedPlaces = [...places].sort((a, b) => distKm(a) - distKm(b));
   const hero = sortedPlaces[0] ?? null;
@@ -1192,6 +1183,23 @@ export default function SpaceScreen({route, navigation}: Props) {
     if (chip.startsWith('tag:')) return p.tags.includes(chip.slice(4));
     return regionOf(p.address) === chip.slice(7);
   });
+  const listedPlaces = showAllPlaces ? visiblePlaces : visiblePlaces.slice(0, NEAREST_WITH_ETA);
+
+  // Live travel times, for what is on screen: the nearest few on open, the
+  // rest only once the full list is opened — each traffic reading is paid for.
+  // Without a real fix the origin is a fallback guess, and an ETA from the
+  // wrong city is worse than none.
+  const etaIds = Array.from(new Set([...(hero ? [hero.id] : []), ...listedPlaces.map(p => p.id)])).join(',');
+  useEffect(() => {
+    if (!hasFix || !etaIds) return;
+    let alive = true;
+    fetchEtas(spaceId, origin, etaIds.split(',').map(Number)).then(result => {
+      if (alive) setEtas(prev => ({...prev, ...result}));
+    });
+    return () => {
+      alive = false;
+    };
+  }, [spaceId, etaIds, origin, hasFix]);
 
   const travelLine = (p: ApiSpacePlace) =>
     [
@@ -1312,7 +1320,7 @@ export default function SpaceScreen({route, navigation}: Props) {
               {visiblePlaces.length === 0 ? (
                 <Text style={s.noMatch}>No places match this filter.</Text>
               ) : (
-                visiblePlaces.map(place => (
+                listedPlaces.map(place => (
                   <View key={place.id} style={s.row}>
                     <View style={s.thumb}>
                       <Text style={s.thumbEmoji}>{placeEmoji(place.tags)}</Text>
@@ -1344,6 +1352,11 @@ export default function SpaceScreen({route, navigation}: Props) {
                     </TouchableOpacity>
                   </View>
                 ))
+              )}
+              {listedPlaces.length < visiblePlaces.length && (
+                <TouchableOpacity style={s.seeAll} hitSlop={8} onPress={() => setShowAllPlaces(true)}>
+                  <Text style={s.link}>See all {visiblePlaces.length} places</Text>
+                </TouchableOpacity>
               )}
             </View>
 
@@ -1689,6 +1702,7 @@ const s = StyleSheet.create({
   },
   thumbEmoji: {fontSize: 20},
   rowName: {fontFamily: fonts.semibold, fontSize: 13.5, color: colors.text},
+  seeAll: {alignSelf: 'flex-start', paddingVertical: 4},
   noMatch: {
     fontFamily: fonts.regular,
     fontSize: 12.5,

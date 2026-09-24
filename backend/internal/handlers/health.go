@@ -6,9 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -76,7 +78,14 @@ func (h *HealthHandler) Deep(w http.ResponseWriter, r *http.Request) {
 
 	run("db", func(ctx context.Context) error { return h.db.PingContext(ctx) })
 	run("r2", h.storage.Ping)
-	run("maps", func(ctx context.Context) error { return checkGoogleMaps(ctx, h.mapsKey) })
+	// Places (extraction, recommendations) and Routes (live ETA) are enabled
+	// separately on the Google project, so each gets its own probe.
+	run("maps", func(ctx context.Context) error {
+		return checkGoogle(ctx, h.mapsKey, "https://places.googleapis.com/v1/places:searchNearby")
+	})
+	run("routes", func(ctx context.Context) error {
+		return checkGoogle(ctx, h.mapsKey, "https://routes.googleapis.com/distanceMatrix/v2:computeRouteMatrix")
+	})
 	run("claude", func(ctx context.Context) error { return checkAnthropic(ctx, h.claudeKey) })
 
 	wg.Wait()
@@ -96,30 +105,28 @@ func (h *HealthHandler) Deep(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]any{"status": status, "checks": checks})
 }
 
-// checkGoogleMaps validates the key without spending quota: a Places request
-// with no location returns INVALID_REQUEST when the key is good and
-// REQUEST_DENIED when it is not. Google does not bill either outcome.
-func checkGoogleMaps(ctx context.Context, key string) error {
+// checkGoogle validates the key against one Google API without spending
+// quota: an empty POST is a 400 INVALID_ARGUMENT when the key works for that
+// API, and a 403 (API not enabled, key restricted) or API_KEY_INVALID when it
+// does not. Google bills neither.
+func checkGoogle(ctx context.Context, key, endpoint string) error {
 	if key == "" {
 		return fmt.Errorf("GOOGLE_MAPS_API_KEY not set")
 	}
-	req, _ := http.NewRequestWithContext(ctx, http.MethodGet,
-		"https://maps.googleapis.com/maps/api/place/nearbysearch/json?key="+key, nil)
+	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, strings.NewReader("{}"))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Goog-Api-Key", key)
+	req.Header.Set("X-Goog-FieldMask", "*")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("unreachable: %w", err)
 	}
 	defer resp.Body.Close()
-
-	var body struct {
-		Status string `json:"status"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
-		return fmt.Errorf("bad response: %w", err)
-	}
-	if body.Status == "REQUEST_DENIED" {
-		return fmt.Errorf("key rejected")
+	body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+	if resp.StatusCode == http.StatusForbidden || resp.StatusCode == http.StatusUnauthorized ||
+		strings.Contains(string(body), "API_KEY_INVALID") {
+		return fmt.Errorf("key rejected (HTTP %d)", resp.StatusCode)
 	}
 	return nil
 }

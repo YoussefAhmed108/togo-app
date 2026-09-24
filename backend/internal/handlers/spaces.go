@@ -20,6 +20,10 @@ type SpaceHandler struct {
 	spaces  repository.SpaceStore
 	places  repository.PlaceStore
 	storage *storage.Client
+	// ETA cache and Google key, set in RegisterRoutes. Nil db = no cache;
+	// empty key = cached answers only.
+	db      *sql.DB
+	mapsKey string
 }
 
 func NewSpaceHandler(spaces repository.SpaceStore, places repository.PlaceStore, storage *storage.Client) *SpaceHandler {

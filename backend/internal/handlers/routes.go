@@ -30,12 +30,19 @@ func RegisterRoutes(r *mux.Router, deps Dependencies) {
 	userH := NewUserHandler(userRepo, deps.Storage)
 	placeH := NewPlaceHandler(placeRepo, spaceRepo, deps.Storage)
 	spaceH := NewSpaceHandler(spaceRepo, placeRepo, deps.Storage)
+	spaceH.db, spaceH.mapsKey = deps.DB, deps.Config.GooglePlacesKey
 	uploadH := NewUploadHandler(deps.Storage)
 	extractH := NewExtractHandler(deps.Config.AnthropicAPIKey, deps.Config.GooglePlacesKey, deps.DB)
 	// A cache MISS downloads a video and calls two paid APIs (~$0.041), so
 	// extraction stays capped per user regardless of hit rate. Worst case per
 	// user, all misses: 10/hr, 40/day ≈ $1.64/day.
 	extractLimiter := middleware.NewRateLimiter(10, 40)
+	// A request is at most 25 traffic-aware elements ($0.25) when nothing is
+	// cached. Normal use is one call per Space open plus one for "See all",
+	// and a new call only when the user crosses a ~500 m cell.
+	// ponytail: counts requests, not billed elements — worst case a user
+	// spoofing origins costs ~$37/day. Budget per-user elements if that shows up.
+	etaLimiter := middleware.NewRateLimiter(30, 150)
 	recH := NewRecommendationHandler(userRepo, placeRepo, spaceRepo, deps.DB, deps.Config.GooglePlacesKey)
 
 	// ── Local-mode routes (registered on the root router, not under /api/v1) ──
@@ -137,6 +144,7 @@ func RegisterRoutes(r *mux.Router, deps Dependencies) {
 	protected.HandleFunc("/spaces/{id}/memories", spaceH.ListSpaceMemories).Methods(http.MethodGet)
 	protected.HandleFunc("/spaces/{id}/places", spaceH.ListSpacePlaces).Methods(http.MethodGet)
 	protected.HandleFunc("/spaces/{id}/places", spaceH.AddPlaceToSpace).Methods(http.MethodPost)
+	protected.HandleFunc("/spaces/{id}/eta", etaLimiter.Limit(spaceH.SpaceETA)).Methods(http.MethodGet)
 	protected.HandleFunc("/spaces/{id}/places/{placeId}", spaceH.RemovePlaceFromSpace).Methods(http.MethodDelete)
 
 	// Recommendations

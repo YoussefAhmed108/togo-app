@@ -8,6 +8,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 DROP TABLE IF EXISTS place_lookups;
 DROP TABLE IF EXISTS url_extractions;
+DROP TABLE IF EXISTS eta_cache;
 DROP TABLE IF EXISTS recommendations_cache;
 DROP TABLE IF EXISTS user_interests;
 DROP TABLE IF EXISTS space_places;
@@ -262,4 +263,17 @@ CREATE TABLE memory_dishes (
   created_at TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_md_memory FOREIGN KEY (memory_id) REFERENCES memories(id) ON DELETE CASCADE,
   INDEX idx_memory_dishes_memory (memory_id)
+);
+
+-- ----------------------------------------------------------
+-- Live travel time (migration 015)
+-- One row per (~500 m origin cell, venue coordinates), served for 5 minutes.
+-- ----------------------------------------------------------
+CREATE TABLE eta_cache (
+  origin_cell VARCHAR(24) NOT NULL,
+  dest        VARCHAR(24) NOT NULL,
+  seconds     INT         NOT NULL, -- -1 = Google cannot route there
+  cached_at   TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (origin_cell, dest),
+  INDEX idx_eta_cache_age (cached_at)
 );

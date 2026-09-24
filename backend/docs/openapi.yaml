@@ -1063,6 +1063,52 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
 
+  /spaces/{id}/eta:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    get:
+      tags: [Spaces]
+      summary: Live driving time to places in a space
+      description: |
+        Requires member role. Driving seconds in current traffic, keyed by place id.
+        The origin is snapped to a ~500 m cell and answers are shared for 5 minutes.
+        Places Google cannot route to are omitted. Rate limited to 30/hour, 150/day.
+      security:
+        - bearerAuth: []
+      parameters:
+        - {name: lat, in: query, required: true, schema: {type: number}}
+        - {name: lng, in: query, required: true, schema: {type: number}}
+        - name: place_ids
+          in: query
+          required: true
+          description: Comma-separated place ids in this space, 1-25.
+          schema: {type: string, example: "12,40,41"}
+      responses:
+        "200":
+          description: Seconds by place id
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    additionalProperties: {type: integer}
+                    example: {"12": 1080, "40": 540}
+        "400":
+          description: Missing origin or bad place_ids
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          description: Rate limited
+
   /spaces/{id}/places:
     parameters:
       - name: id

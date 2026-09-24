@@ -1,10 +1,10 @@
 package recommendations
 
-// GoogleQuery holds what we send to the Google Places Nearby Search API for a
-// given interest category.
+// GoogleQuery holds what we send to Google Places Nearby Search for a given
+// interest category. Types are Places API (New) Table A types. Nearby Search
+// (New) takes no keyword, so a sharper category needs a narrower type.
 type GoogleQuery struct {
-	Type    string // e.g. "restaurant", "cafe"
-	Keyword string // optional extra keyword for sharper results
+	Type string // e.g. "restaurant", "cafe"
 }
 
 // CategoryMap maps a user-facing interest category slug to a Google Places query.
