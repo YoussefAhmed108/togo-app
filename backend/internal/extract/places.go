@@ -5,13 +5,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"net/url"
+	"sync"
 	"time"
 )
 
 // Candidate is one Google Places match, flattened to what the create-place
 // form binds to. GooglePlaceID is the dedupe key — the same venue shared from
-// several TikToks must not create several rows.
+// several TikToks must not create several rows. Name is filled by the caller
+// from the video read (see SearchText).
 type Candidate struct {
 	GooglePlaceID string  `json:"google_place_id"`
 	Name          string  `json:"name"`
@@ -21,21 +25,34 @@ type Candidate struct {
 	MapsURL       string  `json:"maps_url"`
 }
 
-// searchTextURL is the Places API (New) endpoint. The legacy
-// maps.googleapis.com/place/textsearch endpoint used elsewhere in this repo is
-// deprecated and closed to new projects.
-const searchTextURL = "https://places.googleapis.com/v1/places:searchText"
+// Venue search is two Places API (New) calls, both chosen for price:
+//
+//   - Text Search with only place IDs in the field mask is the "Essentials
+//     (IDs Only)" SKU, which Google does not charge for at all.
+//   - Place Details for each candidate asks only for address and location,
+//     the Essentials SKU: $5 / 1,000 with 10,000 free a month.
+//
+// The single Text Search Pro call this replaced was $32 / 1,000. What it
+// gave up is Google's own display name and Maps link (both Pro fields): the
+// name is what the model read off the video, which the caller fills in, and
+// the link is built from the place ID. Chain branches share a name anyway;
+// the address is what tells them apart in the picker.
+//
+// URLs are vars so tests can point them at a fake Google.
+var (
+	searchTextURL = "https://places.googleapis.com/v1/places:searchText"
+	detailsURL    = "https://places.googleapis.com/v1/places/"
+)
 
-// fieldMask keeps the request in the cheaper Pro SKU. Adding rating,
-// opening hours or phone moves it to Enterprise — only do that if the
-// create-place form actually shows those fields.
-const fieldMask = "places.id,places.displayName,places.formattedAddress,places.location,places.googleMapsUri"
+// maxCandidates is how many branches the picker shows. Each one is a paid
+// Details call, so it is also the per-search cost multiplier.
+const maxCandidates = 3
 
-// TextSearchUSD is the Text Search Pro list price per request (the SKU
-// fieldMask keeps us in). Google returns no cost with the response, and this
-// ignores the monthly free usage per SKU, so at low volume the real bill is
-// lower — Cloud Billing is the source of truth for totals.
-const TextSearchUSD = 0.032
+// DetailsUSD is the Place Details Essentials list price per call. Google
+// returns no cost with the response, and this ignores the 10,000 free a
+// month, so at low volume the real bill is lower — Cloud Billing is the
+// source of truth for totals.
+const DetailsUSD = 0.005
 
 // LatLng is where the sharer is. It biases the search, it never restricts it:
 // a video filmed in another city must still resolve there.
@@ -47,16 +64,16 @@ type LatLng struct {
 // biasRadiusM is the Places API (New) maximum for a circle bias — city scale.
 const biasRadiusM = 50000.0
 
-// SearchText returns up to 5 candidates. Billing is per request, not per
-// result, so extra candidates are free — the form shows a picker when the top
-// hit is wrong, which matters for chains with many branches.
+// SearchText returns up to 3 candidates with address and location, and no
+// name: the caller names them. Candidates whose details fail are dropped; an
+// error means Google could not be reached at all, so nothing is cached.
 //
 // near, when set, ranks results around the sharer. Without it "Fresh Noodles"
 // resolves to whichever branches Google ranks first worldwide (NYC, Paris…).
 func SearchText(ctx context.Context, apiKey, query, languageCode string, near *LatLng) ([]Candidate, error) {
 	payload := map[string]any{
 		"textQuery":      query,
-		"maxResultCount": 5,
+		"maxResultCount": maxCandidates,
 	}
 	if near != nil {
 		payload["locationBias"] = map[string]any{
@@ -76,61 +93,98 @@ func SearchText(ctx context.Context, apiKey, query, languageCode string, near *L
 		return nil, err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, searchTextURL, bytes.NewReader(body))
-	if err != nil {
+	logf(ctx, "places: query=%q lang=%q biased=%t", query, languageCode, near != nil)
+	var found struct {
+		Places []struct {
+			ID string `json:"id"`
+		} `json:"places"`
+	}
+	// IDs only: anything more in this mask moves the search off the free SKU.
+	if err := placesCall(ctx, apiKey, http.MethodPost, searchTextURL, "places.id", body, &found); err != nil {
 		return nil, err
+	}
+	logf(ctx, "places: %d result(s)", len(found.Places))
+
+	cands := make([]Candidate, len(found.Places))
+	ok := make([]bool, len(found.Places))
+	var wg sync.WaitGroup
+	for i, p := range found.Places {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			u := detailsURL + url.PathEscape(p.ID)
+			if languageCode != "" {
+				u += "?languageCode=" + url.QueryEscape(languageCode)
+			}
+			var d struct {
+				Address  string `json:"formattedAddress"`
+				Location struct {
+					Lat float64 `json:"latitude"`
+					Lng float64 `json:"longitude"`
+				} `json:"location"`
+			}
+			if err := placesCall(ctx, apiKey, http.MethodGet, u, "formattedAddress,location", nil, &d); err != nil {
+				logf(ctx, "places: details %s: %v", p.ID, err)
+				return
+			}
+			cands[i] = Candidate{GooglePlaceID: p.ID, Address: d.Address, Lat: d.Location.Lat, Lng: d.Location.Lng, MapsURL: mapsURL(p.ID, "")}
+			ok[i] = true
+		}()
+	}
+	wg.Wait()
+
+	// Keep Google's ranking; the first is what the form pre-selects.
+	out := make([]Candidate, 0, len(cands))
+	for i, c := range cands {
+		if ok[i] {
+			out = append(out, c)
+		}
+	}
+	if len(found.Places) > 0 && len(out) == 0 {
+		return nil, fmt.Errorf("places: every details call failed")
+	}
+	return out, nil
+}
+
+// placesCall sends one Places API (New) request and decodes the answer into
+// out. The field mask decides the SKU, so every caller states it explicitly.
+func placesCall(ctx context.Context, apiKey, method, u, fieldMask string, body []byte, out any) error {
+	var rd io.Reader
+	if body != nil {
+		rd = bytes.NewReader(body)
+	}
+	req, err := http.NewRequestWithContext(ctx, method, u, rd)
+	if err != nil {
+		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Goog-Api-Key", apiKey)
 	req.Header.Set("X-Goog-FieldMask", fieldMask)
-
-	logf(ctx, "places: query=%q lang=%q biased=%t", query, languageCode, near != nil)
 	resp, err := (&http.Client{Timeout: 15 * time.Second}).Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("places: %w", err)
+		return fmt.Errorf("places: %w", err)
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		logf(ctx, "places: HTTP %d", resp.StatusCode)
+	raw, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if err != nil {
+		return fmt.Errorf("places read: %w", err)
 	}
-
-	var out struct {
-		Places []struct {
-			ID          string                `json:"id"`
-			DisplayName struct{ Text string } `json:"displayName"`
-			Address     string                `json:"formattedAddress"`
-			Location    struct {
-				Lat float64 `json:"latitude"`
-				Lng float64 `json:"longitude"`
-			} `json:"location"`
-			GoogleMapsURI string `json:"googleMapsUri"`
-		} `json:"places"`
+	var e struct {
 		Error *struct {
 			Message string `json:"message"`
 			Status  string `json:"status"`
 		} `json:"error"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
-		return nil, fmt.Errorf("places decode: %w", err)
+	if json.Unmarshal(raw, &e) == nil && e.Error != nil {
+		return fmt.Errorf("places %s: %s", e.Error.Status, e.Error.Message)
 	}
-	if out.Error != nil {
-		return nil, fmt.Errorf("places %s: %s", out.Error.Status, out.Error.Message)
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("places: HTTP %d", resp.StatusCode)
 	}
-
-	logf(ctx, "places: %d result(s)", len(out.Places))
-
-	cands := make([]Candidate, 0, len(out.Places))
-	for _, p := range out.Places {
-		cands = append(cands, Candidate{
-			GooglePlaceID: p.ID,
-			Name:          p.DisplayName.Text,
-			Address:       p.Address,
-			Lat:           p.Location.Lat,
-			Lng:           p.Location.Lng,
-			MapsURL:       mapsURL(p.ID, p.GoogleMapsURI),
-		})
+	if err := json.Unmarshal(raw, out); err != nil {
+		return fmt.Errorf("places decode: %w", err)
 	}
-	return cands, nil
+	return nil
 }
 
 func mapsURL(id, uri string) string {

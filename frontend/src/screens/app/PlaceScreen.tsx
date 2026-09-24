@@ -48,6 +48,8 @@ import {displayAddress} from '../../utils/address';
 import {pickImage, PickedImage} from '../../utils/pickImage';
 import {useAuth} from '../../hooks/useAuth';
 import {getBlocked, showMemoryActions} from '../../services/moderation';
+import {useLocation} from '../../hooks/useLocation';
+import {Eta, fetchLiveEta, fmtEta} from '../../services/etaService';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'PlaceDetail'>;
 
@@ -271,6 +273,9 @@ export default function PlaceScreen({route, navigation}: Props) {
   const me = user?.id;
 
   const [place, setPlace] = useState<ApiPlace | null>(null);
+  const {origin, hasFix} = useLocation();
+  /** Real traffic time from here, when opened from a Space. */
+  const [liveEta, setLiveEta] = useState<Eta | null>(null);
   const [memories, setMemories] = useState<ApiMemoryWithSpace[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -295,6 +300,20 @@ export default function PlaceScreen({route, navigation}: Props) {
       setLoading(false);
     }
   }, [placeId, me]);
+
+  // Opening a place is the one moment worth paying for real traffic. It is
+  // scoped to the Space it was opened from; the server only prices places in
+  // a Space the user belongs to. Without a real fix, no time beats a wrong one.
+  useEffect(() => {
+    if (fromSpaceId == null || !hasFix) return;
+    let alive = true;
+    fetchLiveEta(fromSpaceId, origin, placeId).then(eta => {
+      if (alive) setLiveEta(eta);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [fromSpaceId, placeId, origin, hasFix]);
 
   useEffect(() => {
     loadData();
@@ -415,6 +434,12 @@ export default function PlaceScreen({route, navigation}: Props) {
                 {displayAddress(place.address)}
               </Text>
             </View>
+          )}
+
+          {liveEta && (
+            <Text style={s.etaText} accessibilityLabel={`${fmtEta(liveEta)} drive in current traffic`}>
+              {fmtEta(liveEta)} drive in current traffic
+            </Text>
           )}
 
           {place.tags.length > 0 && (
@@ -653,6 +678,7 @@ const s = themedStyles(() => ({
   placeName: {fontFamily: fonts.bold, fontSize: 24, letterSpacing: -0.5, color: colors.text, marginBottom: 8},
   addressRow: {flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: spacing.md},
   addressText: {flex: 1, fontFamily: fonts.regular, fontSize: 12.5, color: colors.textSecondary},
+  etaText: {fontFamily: fonts.bold, fontSize: 13, color: colors.primaryDeep, marginTop: -spacing.sm, marginBottom: spacing.md},
   tagsRow: {flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: spacing.md},
   tagPill: {backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.full, minHeight: 36, justifyContent: 'center', paddingHorizontal: 13},
   tagLabel: {fontFamily: fonts.semibold, fontSize: 12, color: colors.text},

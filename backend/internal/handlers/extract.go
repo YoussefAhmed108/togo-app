@@ -245,9 +245,16 @@ func (h *ExtractHandler) resolve(ctx context.Context, logf func(string, ...any),
 		return p, false
 	}
 	if len(cands) > 0 {
+		// The search no longer pays for Google's display name, so candidates
+		// carry the name the model read. Rows cached before that still have
+		// Google's spelling, which is kept.
+		for i := range cands {
+			if cands[i].Name == "" {
+				cands[i].Name = result.PlaceName
+			}
+		}
 		p.Candidates = cands
 		p.Selected = &cands[0]
-		// Google's spelling is canonical; ours is OCR off a video frame.
 		p.Name = cands[0].Name
 		logf("result: %q -> %q (%s) conf=%.2f", result.PlaceName, cands[0].Name,
 			cands[0].GooglePlaceID, result.Confidence)
@@ -278,12 +285,19 @@ func (h *ExtractHandler) resolve(ctx context.Context, logf func(string, ...any),
 		// The venue's own name at the landmark's coordinates. No place ID: the
 		// landmark's would make every venue inside it dedupe to one place.
 		pin := extract.Candidate{Name: result.PlaceName, Address: spot.Address, Lat: spot.Lat, Lng: spot.Lng, MapsURL: spot.MapsURL}
+		// The landmark is named by the query's first part ("City Stars Mall"
+		// of "City Stars Mall, Nasr City, Cairo"), unless it came from a
+		// cache row that still has Google's name.
+		landmark := spot.Name
+		if landmark == "" {
+			landmark = strings.TrimSpace(strings.Split(fb, ",")[0])
+		}
 		p.Selected = &pin
 		p.Candidates = []extract.Candidate{pin}
-		p.Fallback = spot.Name
-		p.Note = "not on Google Maps — pinned near " + spot.Name
+		p.Fallback = landmark
+		p.Note = "not on Google Maps — pinned near " + landmark
 		run.fallbacks.Add(1)
-		logf("result: %q not in Places, fallback %q -> %q", query, fb, spot.Name)
+		logf("result: %q not in Places, fallback %q -> %q", query, fb, landmark)
 		return p, true
 	}
 	logf("result: %q matched nothing in Places", query)
@@ -311,7 +325,8 @@ func (h *ExtractHandler) search(ctx context.Context, logf func(string, ...any), 
 		logf("places %q: %v", query, err)
 		return nil, false
 	}
-	run.placesCalls.Add(1)
+	// The search itself is free; each candidate's details call is billed.
+	run.placesCalls.Add(int32(len(cands)))
 	// Empty results are cached too — a video Google cannot match cost the
 	// same as one it could, and it will be re-shared like any other.
 	if err := extract.StoreQuery(ctx, h.db, queryKey, query, cands); err != nil {
@@ -336,7 +351,7 @@ type extractRun struct {
 	cache       string // "url" or "video_id" when the URL cache answered, else "none"
 	outcome     string // "ok", "no_place", "fetch_failed", "analyze_failed"
 	usage       extract.Usage
-	placesCalls atomic.Int32 // paid Google lookups
+	placesCalls atomic.Int32 // paid Google calls (one Place Details per candidate)
 	queryHits   atomic.Int32 // lookups the query cache answered for free
 	fallbacks   atomic.Int32 // venues pinned at a nearby landmark instead
 	matched     int          // venues that got a pin, fallbacks included
@@ -344,7 +359,7 @@ type extractRun struct {
 
 func (x *extractRun) capture(userID uint64, took time.Duration) {
 	claudeUSD := x.usage.CostUSD()
-	placesUSD := float64(x.placesCalls.Load()) * extract.TextSearchUSD
+	placesUSD := float64(x.placesCalls.Load()) * extract.DetailsUSD
 	analytics.Capture(strconv.FormatUint(userID, 10), "tiktok_extract", map[string]any{
 		"platform":                x.platform,
 		"cache_level":             x.cache,

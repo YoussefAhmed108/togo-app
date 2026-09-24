@@ -40,7 +40,7 @@ import {recommendationService, ApiRecommendation} from '../../services/recommend
 import {colors, fonts, radius, shadows, spacing, themedStyles} from '../../theme';
 import {categoryTint} from '../../components/home/PlaceCard';
 import {useLocation} from '../../hooks/useLocation';
-import {fetchEtas, fmtEta} from '../../services/etaService';
+import {Eta, fetchEtas, fmtEta} from '../../services/etaService';
 import {regionOf, regionsOf} from '../../utils/region';
 import {useAuth} from '../../hooks/useAuth';
 import {getBlocked, showMemoryActions} from '../../services/moderation';
@@ -1068,8 +1068,8 @@ export default function SpaceScreen({route, navigation}: Props) {
   const [memStatus, setMemStatus] = useState<MemStatus>('all');
 
   const {origin, hasFix} = useLocation();
-  /** Live driving time per place id — absent until Google answers. */
-  const [etas, setEtas] = useState<Record<number, number>>({});
+  /** Driving time per place id — an estimate, or live if one is fresh. */
+  const [etas, setEtas] = useState<Record<number, Eta>>({});
   const [showAllPlaces, setShowAllPlaces] = useState(false);
 
   const load = useCallback(async () => {

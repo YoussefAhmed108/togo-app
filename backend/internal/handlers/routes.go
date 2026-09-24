@@ -37,11 +37,12 @@ func RegisterRoutes(r *mux.Router, deps Dependencies) {
 	// extraction stays capped per user regardless of hit rate. Worst case per
 	// user, all misses: 10/hr, 40/day ≈ $1.64/day.
 	extractLimiter := middleware.NewRateLimiter(10, 40)
-	// A request is at most 25 traffic-aware elements ($0.25) when nothing is
-	// cached. Normal use is one call per Space open plus one for "See all",
-	// and a new call only when the user crosses a ~500 m cell.
+	// A list request is at most 25 no-traffic elements ($0.125) uncached; a
+	// live request is one traffic element ($0.01). Normal use is one list per
+	// Space open, one for "See all" and one live per place opened, and a new
+	// call only when the user crosses a ~500 m cell.
 	// ponytail: counts requests, not billed elements — worst case a user
-	// spoofing origins costs ~$37/day. Budget per-user elements if that shows up.
+	// spoofing origins costs ~$19/day. Budget per-user elements if that shows up.
 	etaLimiter := middleware.NewRateLimiter(30, 150)
 	recH := NewRecommendationHandler(userRepo, placeRepo, spaceRepo, deps.DB, deps.Config.GooglePlacesKey)
 

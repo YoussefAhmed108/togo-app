@@ -9,15 +9,19 @@ import (
 	"app/backend/internal/middleware"
 )
 
-// maxETAPlaces caps what one request can spend ($0.25 uncached). The app asks
-// for the nearest 3 on open and the rest only when the full list is opened.
+// maxETAPlaces caps what one list request can spend ($0.125 uncached). The
+// app asks for the nearest 3 on open and the rest only when the full list is
+// opened.
 const maxETAPlaces = 25
 
-// GET /api/v1/spaces/{id}/eta?lat=&lng=&place_ids=1,2,3
+// GET /api/v1/spaces/{id}/eta?lat=&lng=&place_ids=1,2,3[&live=1]
 //
-// Driving seconds in current traffic, keyed by place id. Places Google cannot
-// route are absent. Only places in the space are priced, so this is not a
-// general-purpose route-matrix proxy for any member.
+// Drive times keyed by place id: {"12": {"seconds": 1080, "live": false}}.
+// A list gets estimates (no-traffic time × learned traffic factor, or a fresh
+// live reading where one exists). live=1 pays for real traffic and takes
+// exactly one place — it is what the place screen asks for when opened.
+// Places Google cannot route are absent. Only places in the space are priced,
+// so this is not a general-purpose route-matrix proxy for any member.
 func (h *SpaceHandler) SpaceETA(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r)
 	spaceID, ok := parseSpaceID(w, r)
@@ -41,8 +45,9 @@ func (h *SpaceHandler) SpaceETA(w http.ResponseWriter, r *http.Request) {
 			want = append(want, id)
 		}
 	}
-	if len(want) == 0 || len(want) > maxETAPlaces {
-		writeError(w, http.StatusBadRequest, "place_ids must list 1-25 ids")
+	live := q.Get("live") == "1"
+	if len(want) == 0 || len(want) > maxETAPlaces || (live && len(want) != 1) {
+		writeError(w, http.StatusBadRequest, "place_ids must list 1-25 ids, or exactly 1 with live=1")
 		return
 	}
 
@@ -62,7 +67,7 @@ func (h *SpaceHandler) SpaceETA(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if len(ids) == 0 {
-		writeJSON(w, http.StatusOK, map[uint64]int{})
+		writeJSON(w, http.StatusOK, map[uint64]eta.Result{})
 		return
 	}
 
@@ -75,5 +80,15 @@ func (h *SpaceHandler) SpaceETA(w http.ResponseWriter, r *http.Request) {
 	for _, p := range places {
 		dests = append(dests, eta.Dest{ID: p.ID, Lat: p.Lat, Lng: p.Lng})
 	}
-	writeJSON(w, http.StatusOK, eta.Lookup(r.Context(), h.db, h.mapsKey, lat, lng, dests))
+	if live {
+		out := map[uint64]eta.Result{}
+		if len(dests) == 1 {
+			if res, ok := eta.Live(r.Context(), h.db, h.mapsKey, lat, lng, dests[0]); ok {
+				out[dests[0].ID] = res
+			}
+		}
+		writeJSON(w, http.StatusOK, out)
+		return
+	}
+	writeJSON(w, http.StatusOK, eta.Estimate(r.Context(), h.db, h.mapsKey, lat, lng, dests))
 }

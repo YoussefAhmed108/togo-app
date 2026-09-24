@@ -1073,10 +1073,14 @@ paths:
           format: int64
     get:
       tags: [Spaces]
-      summary: Live driving time to places in a space
+      summary: Driving time to places in a space
       description: |
-        Requires member role. Driving seconds in current traffic, keyed by place id.
-        The origin is snapped to a ~500 m cell and answers are shared for 5 minutes.
+        Requires member role. Drive times keyed by place id.
+        Without `live`, each time is an estimate (no-traffic drive time × a traffic
+        factor learned per trip and hour of the week), or a live reading if one is
+        under 5 minutes old. With `live=1` (exactly one place), it is the real
+        traffic time, which also teaches the factor.
+        The origin is snapped to a ~500 m cell and answers are shared by everyone in it.
         Places Google cannot route to are omitted. Rate limited to 30/hour, 150/day.
       security:
         - bearerAuth: []
@@ -1086,11 +1090,15 @@ paths:
         - name: place_ids
           in: query
           required: true
-          description: Comma-separated place ids in this space, 1-25.
+          description: Comma-separated place ids in this space, 1-25 (exactly 1 with live=1).
           schema: {type: string, example: "12,40,41"}
+        - name: live
+          in: query
+          description: 1 to pay for the real traffic time of one place.
+          schema: {type: integer, enum: [1]}
       responses:
         "200":
-          description: Seconds by place id
+          description: Drive time by place id
           content:
             application/json:
               schema:
@@ -1098,8 +1106,12 @@ paths:
                 properties:
                   data:
                     type: object
-                    additionalProperties: {type: integer}
-                    example: {"12": 1080, "40": 540}
+                    additionalProperties:
+                      type: object
+                      properties:
+                        seconds: {type: integer}
+                        live: {type: boolean, description: "true = real traffic; false = estimate"}
+                    example: {"12": {"seconds": 1080, "live": false}, "40": {"seconds": 540, "live": true}}
         "400":
           description: Missing origin or bad place_ids
         "401":
