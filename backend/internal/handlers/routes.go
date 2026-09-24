@@ -110,6 +110,7 @@ func RegisterRoutes(r *mux.Router, deps Dependencies) {
 	// Users
 	protected.HandleFunc("/users/me", userH.GetMe).Methods(http.MethodGet)
 	protected.HandleFunc("/users/me", userH.UpdateMe).Methods(http.MethodPut)
+	protected.HandleFunc("/users/me", userH.DeleteMe).Methods(http.MethodDelete)
 	protected.HandleFunc("/users/me/interests", userH.SaveInterests).Methods(http.MethodPost)
 	protected.HandleFunc("/users/me/locations", userH.ListLocations).Methods(http.MethodGet)
 	protected.HandleFunc("/users/me/locations", userH.CreateLocation).Methods(http.MethodPost)
@@ -118,6 +119,7 @@ func RegisterRoutes(r *mux.Router, deps Dependencies) {
 	// Places — /places/extract must be registered before /places/{id},
 	// or mux treats "extract" as a place id.
 	protected.HandleFunc("/places/extract", extractLimiter.Limit(extractH.ExtractPlace)).Methods(http.MethodPost)
+	protected.HandleFunc("/places/extract/feedback", extractH.ExtractFeedback).Methods(http.MethodPost)
 	protected.HandleFunc("/places", placeH.ListPlaces).Methods(http.MethodGet)
 	protected.HandleFunc("/places", placeH.CreatePlace).Methods(http.MethodPost)
 	protected.HandleFunc("/places/{id}", placeH.GetPlace).Methods(http.MethodGet)
@@ -142,9 +144,9 @@ func RegisterRoutes(r *mux.Router, deps Dependencies) {
 	protected.HandleFunc("/spaces/{id}/members/{userId}", spaceH.RemoveMember).Methods(http.MethodDelete)
 	protected.HandleFunc("/spaces/{id}/members/{userId}", spaceH.SetMemberRole).Methods(http.MethodPatch)
 	protected.HandleFunc("/spaces/{id}/memories", spaceH.ListSpaceMemories).Methods(http.MethodGet)
+	protected.HandleFunc("/spaces/{id}/eta", etaLimiter.Limit(spaceH.SpaceETA)).Methods(http.MethodGet)
 	protected.HandleFunc("/spaces/{id}/places", spaceH.ListSpacePlaces).Methods(http.MethodGet)
 	protected.HandleFunc("/spaces/{id}/places", spaceH.AddPlaceToSpace).Methods(http.MethodPost)
-	protected.HandleFunc("/spaces/{id}/eta", etaLimiter.Limit(spaceH.SpaceETA)).Methods(http.MethodGet)
 	protected.HandleFunc("/spaces/{id}/places/{placeId}", spaceH.RemovePlaceFromSpace).Methods(http.MethodDelete)
 
 	// Recommendations

@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useAuth} from '../../hooks/useAuth';
-import {colors, fonts, radius, spacing, typography} from '../../theme';
+import {colors, fonts, radius, spacing, typography, themedStyles} from '../../theme';
 
 interface Category {
   slug: string;
@@ -141,7 +141,7 @@ export function InterestPickerScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   safe: {flex: 1, backgroundColor: colors.background},
   scroll: {flexGrow: 1, paddingHorizontal: 20, paddingTop: 48, paddingBottom: spacing.lg},
 
@@ -180,4 +180,4 @@ const styles = StyleSheet.create({
   continueBtnText: {fontFamily: fonts.bold, fontSize: 15, color: colors.white},
   skipBtn: {alignItems: 'center', paddingTop: 12, minHeight: 40},
   skipBtnText: {fontFamily: fonts.semibold, fontSize: 13, color: colors.textSecondary},
-});
+}));

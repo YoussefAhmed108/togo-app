@@ -3,7 +3,7 @@ import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import MapView, {PROVIDER_GOOGLE} from 'react-native-maps';
 import {AppLogo} from './AppLogo';
-import {colors, fonts} from '../theme';
+import {colors, fonts, themedStyles} from '../theme';
 
 // ponytail: a real, muted Google map stands in for the design's drawn city —
 // no SVG dependency. Fixed on central Cairo, the product's home market.
@@ -113,7 +113,7 @@ const floating = {
   elevation: 4,
 };
 
-const s = StyleSheet.create({
+const s = themedStyles(() => ({
   hero: {overflow: 'hidden', backgroundColor: '#E6E7EC'},
 
   pin: {position: 'absolute', alignItems: 'center'},
@@ -202,4 +202,4 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   backIcon: {fontSize: 28, color: colors.text, lineHeight: 30, marginLeft: -2},
-});
+}));

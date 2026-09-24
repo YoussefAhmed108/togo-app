@@ -1,3 +1,5 @@
+import {StyleSheet} from 'react-native';
+
 // Waypoint design system — neutral ground, white cards, teal identity (a1),
 // violet for people and spaces (a2). Source: .design/proto (oklch tokens,
 // converted to hex because RN cannot parse oklch).
@@ -197,7 +199,26 @@ export const shadows = {
 
 export const typography = buildTypography(colors);
 
+// Every themedStyles sheet, rebuilt in place when the theme changes.
+const sheets: Array<{sheet: object; make: () => StyleSheet.NamedStyles<any>}> = [];
+
+/**
+ * StyleSheet.create for styles that read `colors`/`typography`. A plain
+ * module-level StyleSheet.create copies the colours once, at import, so a
+ * theme switch never reached it until the app restarted. This keeps the same
+ * object and refills it on applyTheme; the key={themeName} remount in the
+ * navigators then re-renders with the new values.
+ */
+export function themedStyles<T extends StyleSheet.NamedStyles<T> | StyleSheet.NamedStyles<any>>(
+  make: () => T & StyleSheet.NamedStyles<any>,
+): T {
+  const sheet = StyleSheet.create(make());
+  sheets.push({sheet, make});
+  return sheet;
+}
+
 export function applyTheme(themeName: AppThemeName) {
   Object.assign(colors, THEME_PRESETS[themeName]);
   Object.assign(typography, buildTypography(colors));
+  for (const {sheet, make} of sheets) Object.assign(sheet, StyleSheet.create(make()));
 }

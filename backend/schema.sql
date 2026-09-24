@@ -221,6 +221,7 @@ CREATE TABLE url_extractions (
   url_hash    CHAR(64)   NOT NULL PRIMARY KEY,
   url         VARCHAR(2048) NOT NULL,
   result_json MEDIUMTEXT NOT NULL,
+  confirmed   BOOLEAN    NOT NULL DEFAULT FALSE, -- served only once a user said it was right
   created_at  TIMESTAMP  NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_url_extractions_age (created_at)
 );

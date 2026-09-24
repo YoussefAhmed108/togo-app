@@ -1,6 +1,6 @@
 import React, {useCallback, useState} from 'react';
 import {WaypointLoader} from '../../components/WaypointLoader';
-import {ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {ScrollView, Text, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
@@ -8,7 +8,7 @@ import {SpaceCard, NewSpaceCard, SpaceItem} from '../../components/home/SpaceCar
 import {apiSpaceToItem} from '../HomeScreen';
 import {homeService} from '../../services/homeService';
 import {AppStackParamList} from '../../types/navigation';
-import {colors, fonts, spacing} from '../../theme';
+import {colors, fonts, spacing, themedStyles} from '../../theme';
 
 type Nav = NativeStackNavigationProp<AppStackParamList>;
 
@@ -63,7 +63,7 @@ export default function SpacesScreen() {
   );
 }
 
-const s = StyleSheet.create({
+const s = themedStyles(() => ({
   safe: {flex: 1, backgroundColor: colors.background},
   content: {padding: 20, paddingBottom: spacing.xl},
   header: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20},
@@ -79,4 +79,4 @@ const s = StyleSheet.create({
   addPlus: {fontSize: 20, color: colors.white},
   grid: {flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 16},
   cell: {width: '48%'},
-});
+}));

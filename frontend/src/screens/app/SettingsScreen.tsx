@@ -6,7 +6,6 @@ import {
   Modal,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -15,9 +14,11 @@ import {
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {LocationMapPicker, PickedLocation} from '../../components/LocationMapPicker';
 import {savedLocationService, StartingPoint} from '../../services/savedLocationService';
+import {authService} from '../../services/authService';
+import {contactSupport} from '../../services/moderation';
 import {useAuth} from '../../hooks/useAuth';
 import {useAppSettings} from '../../hooks/useAppSettings';
-import {colors, fonts, radius, spacing, THEME_OPTIONS} from '../../theme';
+import {colors, fonts, radius, spacing, THEME_OPTIONS, themedStyles} from '../../theme';
 
 export default function SettingsScreen() {
   const {user, signOut, updateDisplayName} = useAuth();
@@ -108,6 +109,28 @@ export default function SettingsScreen() {
       {text: 'Cancel', style: 'cancel'},
       {text: 'Log Out', style: 'destructive', onPress: () => signOut()},
     ]);
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'This permanently deletes your account, your places, memories, and any spaces you own. It cannot be undone.',
+      [
+        {text: 'Cancel', style: 'cancel'},
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await authService.deleteMe();
+              await signOut();
+            } catch {
+              Alert.alert('Delete Failed', 'Could not delete your account. Please try again.');
+            }
+          },
+        },
+      ],
+    );
   };
 
   const themeLabel = THEME_OPTIONS.find(o => o.id === themeName)?.name ?? 'Light';
@@ -253,8 +276,17 @@ export default function SettingsScreen() {
           <InfoRow label="Username" value={`@${user?.username ?? 'Not set'}`} />
         </View>
 
+        <TouchableOpacity
+          style={s.btnG}
+          activeOpacity={0.8}
+          onPress={() => contactSupport('Waypoint support')}>
+          <Text style={s.btnGText}>Contact support</Text>
+        </TouchableOpacity>
         <TouchableOpacity style={s.btnG} activeOpacity={0.8} onPress={handleLogout}>
           <Text style={[s.btnGText, s.logout]}>Log out</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={s.btnG} activeOpacity={0.8} onPress={handleDeleteAccount}>
+          <Text style={[s.btnGText, s.logout]}>Delete account</Text>
         </TouchableOpacity>
       </ScrollView>
 
@@ -308,7 +340,7 @@ function InfoRow({label, value}: {label: string; value: string}) {
   );
 }
 
-const s = StyleSheet.create({
+const s = themedStyles(() => ({
   safe: {flex: 1, backgroundColor: colors.background},
   content: {padding: 20, paddingBottom: spacing.xxl},
   flex: {flex: 1, minWidth: 0},
@@ -446,4 +478,4 @@ const s = StyleSheet.create({
   },
   segText: {fontFamily: fonts.bold, fontSize: 13, color: colors.textSecondary},
   segTextOn: {color: colors.text},
-});
+}));

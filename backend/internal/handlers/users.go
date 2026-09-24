@@ -239,3 +239,13 @@ func (h *UserHandler) DeleteLocation(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+
+// DELETE /api/v1/users/me — App Store guideline 5.1.1(v) requires in-app deletion.
+// ponytail: uploaded images stay in object storage; sweep orphaned keys if that matters.
+func (h *UserHandler) DeleteMe(w http.ResponseWriter, r *http.Request) {
+	if err := h.users.DeleteUser(r.Context(), middleware.GetUserID(r)); err != nil {
+		serverError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}

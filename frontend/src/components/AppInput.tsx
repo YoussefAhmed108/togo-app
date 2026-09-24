@@ -1,13 +1,12 @@
 import React, {useState} from 'react';
 import {
-  StyleSheet,
   Text,
   TextInput,
   TextInputProps,
   TouchableOpacity,
   View,
 } from 'react-native';
-import {colors, fonts, radius, spacing, typography} from '../theme';
+import {colors, fonts, radius, spacing, typography, themedStyles} from '../theme';
 
 interface Props extends TextInputProps {
   label?: string;
@@ -51,7 +50,7 @@ export function AppInput({label, error, isPassword, style, ...rest}: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   wrapper: {marginBottom: spacing.md},
   label: {
     ...typography.label,
@@ -81,4 +80,4 @@ const styles = StyleSheet.create({
   },
   toggle: {fontFamily: fonts.bold, fontSize: 13, color: colors.primaryDeep},
   error: {...typography.caption, color: colors.error, marginTop: 6},
-});
+}));

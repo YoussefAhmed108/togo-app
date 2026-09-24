@@ -23,6 +23,7 @@ type mockUserStore struct {
 	deleteRefreshToken func(context.Context, string) error
 	saveInterests      func(context.Context, uint64, []string) error
 	getInterests       func(context.Context, uint64) ([]string, error)
+	deleteUser         func(uint64) error
 }
 
 func (m *mockUserStore) CreateUser(ctx context.Context, email, hash string, phone *string) (uint64, error) {
@@ -78,6 +79,10 @@ func (m *mockUserStore) CreateLocation(_ context.Context, userID uint64, label, 
 	m.locationOwners[id] = userID
 	return id, nil
 }
+func (m *mockUserStore) DeleteUser(_ context.Context, id uint64) error {
+	return m.deleteUser(id)
+}
+
 func (m *mockUserStore) DeleteLocation(_ context.Context, userID, id uint64) (bool, error) {
 	for i, l := range m.locations {
 		if l.ID == id && m.locationOwners[id] == userID {

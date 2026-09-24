@@ -23,7 +23,7 @@ import {useAuth} from '../../hooks/useAuth';
 import {AppStackParamList} from '../../types/navigation';
 import {displayAddress} from '../../utils/address';
 import {getEmoji} from '../HomeScreen';
-import {colors, fonts, radius} from '../../theme';
+import {colors, fonts, radius, themedStyles} from '../../theme';
 
 type Nav = NativeStackNavigationProp<AppStackParamList>;
 
@@ -492,7 +492,7 @@ const floatShadow = {
   elevation: 4,
 };
 
-const s = StyleSheet.create({
+const s = themedStyles(() => ({
   root: {flex: 1, backgroundColor: colors.background},
   flex: {flex: 1, minWidth: 0},
 
@@ -697,4 +697,4 @@ const s = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: 20,
   },
-});
+}));

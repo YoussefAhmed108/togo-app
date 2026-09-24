@@ -25,6 +25,8 @@ type UserStore interface {
 	ListLocations(ctx context.Context, userID uint64) ([]*models.SavedLocation, error)
 	CreateLocation(ctx context.Context, userID uint64, label, address string, lat, lng float64) (uint64, error)
 	DeleteLocation(ctx context.Context, userID, id uint64) (bool, error)
+	// DeleteUser removes the account; every owned row cascades via FKs.
+	DeleteUser(ctx context.Context, id uint64) error
 }
 
 // PlaceStore is the interface satisfied by PlaceRepository.

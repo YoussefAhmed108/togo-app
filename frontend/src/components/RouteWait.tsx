@@ -1,6 +1,6 @@
 import React, {useEffect, useRef} from 'react';
-import {AccessibilityInfo, ActivityIndicator, Animated, Easing, StyleSheet, Text, View} from 'react-native';
-import {colors, fonts} from '../theme';
+import {AccessibilityInfo, ActivityIndicator, Animated, Easing, Text, View} from 'react-native';
+import {colors, fonts, themedStyles} from '../theme';
 
 /**
  * The TikTok wait, as the logo's route: the W draws itself while a small video
@@ -166,7 +166,7 @@ export function RouteWait({stage}: {stage: number}) {
   );
 }
 
-const s = StyleSheet.create({
+const s = themedStyles(() => ({
   wrap: {paddingHorizontal: 32},
   drawing: {width: BOX, height: BOX * 0.8, alignSelf: 'center', marginBottom: 20},
   abs: {position: 'absolute'},
@@ -222,4 +222,4 @@ const s = StyleSheet.create({
   stageText: {fontFamily: fonts.medium, fontSize: 14, color: colors.textSecondary},
   stageTextOn: {fontFamily: fonts.bold, color: colors.text},
   note: {fontFamily: fonts.regular, fontSize: 12, color: colors.textSecondary, marginTop: 28},
-});
+}));

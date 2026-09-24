@@ -34,6 +34,8 @@ export type AppStackParamList = {
     spaceId?: number;
     /** The TikTok the places came from. */
     sourceUrl?: string;
+    /** The extraction's feedback_keys, for the "right places?" prompt. */
+    feedbackKeys?: string[];
   };
   SpaceDetail: {
     spaceId: number;

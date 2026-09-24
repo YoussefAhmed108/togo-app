@@ -8,7 +8,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import {colors, fonts, radius} from '../../theme';
+import {colors, fonts, radius, themedStyles} from '../../theme';
 
 export interface MemberPreviewItem {
   userId: number;
@@ -85,7 +85,7 @@ export function NewSpaceCard({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   tile: {
     height: 100,
     borderRadius: radius.md,
@@ -117,4 +117,4 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   pillText: {fontFamily: fonts.semibold, fontSize: 11, color: colors.white},
-});
+}));

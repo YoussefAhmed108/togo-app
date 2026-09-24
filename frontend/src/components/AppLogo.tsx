@@ -1,6 +1,6 @@
 import React from 'react';
-import {StyleSheet, Text, View} from 'react-native';
-import {colors, fonts} from '../theme';
+import {Text, View} from 'react-native';
+import {colors, fonts, themedStyles} from '../theme';
 
 interface Props {
   size?: 'sm' | 'md' | 'lg';
@@ -98,11 +98,11 @@ export function AppLogo({size = 'md', markOnly = false, inkColor, ringed}: Props
   );
 }
 
-const s = StyleSheet.create({
+const s = themedStyles(() => ({
   row: {flexDirection: 'row', alignItems: 'center', gap: 9},
   tile: {backgroundColor: TEAL, overflow: 'hidden'},
   ring: {borderWidth: 2, borderColor: 'rgba(255,255,255,0.85)'},
   abs: {position: 'absolute'},
   white: {backgroundColor: colors.white},
   name: {fontFamily: fonts.bold, letterSpacing: -0.2},
-});
+}));

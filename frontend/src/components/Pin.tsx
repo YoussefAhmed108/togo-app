@@ -1,6 +1,6 @@
 import React from 'react';
-import {StyleSheet, View} from 'react-native';
-import {colors} from '../theme';
+import {View} from 'react-native';
+import {colors, themedStyles} from '../theme';
 
 interface Props {
   size?: number;
@@ -49,11 +49,11 @@ export function Pin({size = 24, color = colors.primary, filled = false}: Props) 
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   wrap: {alignItems: 'center'},
   body: {
     alignItems: 'center',
     justifyContent: 'center',
     transform: [{rotate: '-45deg'}],
   },
-});
+}));

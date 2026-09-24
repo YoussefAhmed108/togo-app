@@ -589,14 +589,15 @@ func memoryResponse(m *models.Memory, s *storage.Client) map[string]any {
 		dishes = append(dishes, map[string]any{"id": d.ID, "name": d.Name, "rating": d.Rating})
 	}
 	return map[string]any{
-		"dishes":     dishes,
-		"id":         m.ID,
-		"place_id":   m.PlaceID,
-		"space_id":   m.SpaceID,
-		"space_name": m.SpaceName,
-		"image_url":  s.CDNUrl(m.ImageKey),
-		"caption":    m.Caption,
-		"created_at": m.CreatedAt,
+		"dishes":      dishes,
+		"id":          m.ID,
+		"place_id":    m.PlaceID,
+		"space_id":    m.SpaceID,
+		"space_name":  m.SpaceName,
+		"uploader_id": m.UploaderID,
+		"image_url":   s.CDNUrl(m.ImageKey),
+		"caption":     m.Caption,
+		"created_at":  m.CreatedAt,
 	}
 }
 

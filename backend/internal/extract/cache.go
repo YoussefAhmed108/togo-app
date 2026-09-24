@@ -6,7 +6,8 @@ package extract
 // Search, ~$0.009 Claude vision, and a video download that dominates the wall
 // clock. Two independent caches, because they catch different things:
 //
-//	URL cache    — the same video shared again. Skips everything.
+//	URL cache    — the same video shared again. Skips everything. Only
+//	               served once a user confirmed the answer was right.
 //	Query cache  — the same VENUE, from a different video. Skips Google.
 //
 // The query cache is the one that compounds. Any city has a bounded set of
@@ -101,7 +102,8 @@ func AreaKey(key string, near *LatLng) string {
 }
 
 // LookupURL returns a cached extraction payload, or ok=false when absent,
-// stale, or unreadable.
+// stale, unreadable, or not yet confirmed by a user. An unconfirmed answer is
+// never served: a wrong pin shared from the cache would reach every re-sharer.
 func LookupURL(ctx context.Context, db *sql.DB, key string, out any) bool {
 	if db == nil {
 		return false
@@ -109,7 +111,7 @@ func LookupURL(ctx context.Context, db *sql.DB, key string, out any) bool {
 	var body string
 	var createdAt time.Time
 	err := db.QueryRowContext(ctx,
-		`SELECT result_json, created_at FROM url_extractions WHERE url_hash = ?`,
+		`SELECT result_json, created_at FROM url_extractions WHERE url_hash = ? AND confirmed`,
 		key,
 	).Scan(&body, &createdAt)
 	if err != nil || time.Since(createdAt) > urlTTL {
@@ -124,7 +126,9 @@ func LookupURL(ctx context.Context, db *sql.DB, key string, out any) bool {
 // caller passes both the request-URL key and, once yt-dlp has resolved the
 // video, the video-ID key — that is what lets a vm.tiktok.com link and the
 // canonical link hit each other.
-func StoreURL(ctx context.Context, db *sql.DB, keys []string, raw string, payload any) error {
+//
+// confirmed=false stores it pending: LookupURL skips it until ConfirmURL.
+func StoreURL(ctx context.Context, db *sql.DB, keys []string, raw string, payload any, confirmed bool) error {
 	if db == nil || len(keys) == 0 {
 		return nil
 	}
@@ -137,11 +141,34 @@ func StoreURL(ctx context.Context, db *sql.DB, keys []string, raw string, payloa
 			continue
 		}
 		if _, err := db.ExecContext(ctx,
-			`INSERT INTO url_extractions (url_hash, url, result_json)
-			 VALUES (?, ?, ?)
-			 ON DUPLICATE KEY UPDATE result_json = VALUES(result_json), created_at = CURRENT_TIMESTAMP`,
-			k, truncate(raw, 2048), string(body),
+			`INSERT INTO url_extractions (url_hash, url, result_json, confirmed)
+			 VALUES (?, ?, ?, ?)
+			 ON DUPLICATE KEY UPDATE result_json = VALUES(result_json), confirmed = VALUES(confirmed), created_at = CURRENT_TIMESTAMP`,
+			k, truncate(raw, 2048), string(body), confirmed,
 		); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// ConfirmURL makes a stored extraction servable — a user said it was right.
+func ConfirmURL(ctx context.Context, db *sql.DB, keys []string) error {
+	return execKeys(ctx, db, `UPDATE url_extractions SET confirmed = TRUE WHERE url_hash = ?`, keys)
+}
+
+// ForgetURL drops a stored extraction — a user said it was wrong, so the next
+// share of that video is read afresh instead of repeating the mistake.
+func ForgetURL(ctx context.Context, db *sql.DB, keys []string) error {
+	return execKeys(ctx, db, `DELETE FROM url_extractions WHERE url_hash = ?`, keys)
+}
+
+func execKeys(ctx context.Context, db *sql.DB, stmt string, keys []string) error {
+	if db == nil {
+		return nil
+	}
+	for _, k := range keys {
+		if _, err := db.ExecContext(ctx, stmt, k); err != nil {
 			return err
 		}
 	}

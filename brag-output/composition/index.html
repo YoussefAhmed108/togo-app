@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en" data-resolution="landscape">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @font-face { font-family: Figtree; font-weight: 400; src: url(assets/fonts/Figtree-Regular.ttf); }
+      @font-face { font-family: Figtree; font-weight: 500; src: url(assets/fonts/Figtree-Medium.ttf); }
+      @font-face { font-family: Figtree; font-weight: 600; src: url(assets/fonts/Figtree-SemiBold.ttf); }
+      @font-face { font-family: Figtree; font-weight: 700; src: url(assets/fonts/Figtree-Bold.ttf); }
+      :root {
+        --bg: #F0F0F3; --surface: #FDFDFF; --text: #1C1C25; --text2: #5C5C69;
+        --teal: #00838E; --teal-ink: #006873; --teal-bg: #00717C; --teal-deep: #005F68;
+        --teal-light: #D5F2F3; --violet: #6A69DB; --violet-soft: #DBDBFF; --border: #DCDCE0;
+        --orange: #E65719; --orange-tint: #FFE7DC; --orange-ink: #9A3412;
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); }
+      #root { position: relative; width: 100%; height: 100%; font-family: Figtree, system-ui, sans-serif; color: var(--text); background: var(--bg); }
+      .clip { position: absolute; }
+
+      /* Left copy column */
+      .copy { left: 160px; top: 0; width: 860px; height: 1080px; display: flex; flex-direction: column; justify-content: center; }
+      .h { font-size: 104px; font-weight: 700; letter-spacing: -3px; line-height: 1.02; }
+      .h .t { color: var(--teal-ink); }
+      .sub { margin-top: 36px; font-size: 40px; font-weight: 500; color: var(--text2); line-height: 1.3; max-width: 780px; }
+      .ch { opacity: 0; }
+
+      /* Phone */
+      #phone { left: 1180px; top: 70px; width: 480px; height: 940px; border-radius: 72px; background: #15151C; padding: 16px;
+               box-shadow: 0 60px 120px rgba(20,20,30,0.22), 0 12px 30px rgba(20,20,30,0.12); }
+      #screen { position: relative; width: 100%; height: 100%; border-radius: 58px; overflow: hidden; background: var(--bg); }
+      .scr { left: 0; top: 0; width: 448px; height: 908px; overflow: hidden; }
+      .notch { position: absolute; left: 50%; top: 14px; width: 120px; height: 34px; margin-left: -60px; border-radius: 20px; background: #15151C; z-index: 50; }
+
+      /* Screen A: sample video */
+      #scrA { background: linear-gradient(170deg, #3A2A1E 0%, #1E1510 60%, #0E0A08 100%); color: #fff; }
+      .plate { position: absolute; left: 64px; top: 230px; width: 300px; height: 300px; border-radius: 50%;
+               background: radial-gradient(circle at 50% 50%, #F2E6D2 0 52%, #E7D6BC 53% 60%, #CDB694 61% 100%); box-shadow: 0 30px 60px rgba(0,0,0,0.5); }
+      .food { position: absolute; border-radius: 50%; }
+      .rail { position: absolute; right: 22px; top: 470px; display: flex; flex-direction: column; gap: 30px; align-items: center; }
+      .rail .ic { width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,0.18); display: flex; align-items: center; justify-content: center; }
+      .rail .lbl { font-size: 17px; font-weight: 600; text-align: center; margin-top: 6px; }
+      .cap { position: absolute; left: 26px; right: 100px; bottom: 60px; }
+      .cap .u { font-size: 24px; font-weight: 700; }
+      .cap .d { font-size: 21px; font-weight: 500; margin-top: 8px; line-height: 1.35; color: rgba(255,255,255,0.9); }
+      .tag-sample { position: absolute; left: 26px; top: 70px; font-size: 17px; font-weight: 600; background: rgba(0,0,0,0.45); padding: 6px 12px; border-radius: 10px; }
+      #sheet { position: absolute; left: 0; right: 0; bottom: 0; height: 330px; background: var(--surface); border-radius: 34px 34px 0 0; padding: 30px 28px; color: var(--text); }
+      #sheet .st { font-size: 22px; font-weight: 700; margin-bottom: 26px; }
+      .apps { display: flex; gap: 22px; }
+      .app { width: 84px; text-align: center; font-size: 17px; font-weight: 600; color: var(--text2); }
+      .app .ai { width: 84px; height: 84px; border-radius: 22px; background: var(--bg); margin-bottom: 10px; display: flex; align-items: center; justify-content: center; }
+      .app.wp .ai { background: var(--surface); border: 2px solid var(--border); }
+      .app.wp { color: var(--text); }
+
+      /* Route mark (WaypointLoader geometry) */
+      .route { position: relative; }
+      .route .reveal { position: absolute; left: 0; top: 0; height: 100%; overflow: hidden; }
+
+      /* Screen B: analysing */
+      #scrB { background: var(--bg); }
+      #scrB .ttl { position: absolute; left: 0; right: 0; top: 380px; text-align: center; font-size: 34px; font-weight: 700; }
+      .stages { position: absolute; left: 60px; right: 60px; top: 460px; display: flex; flex-direction: column; gap: 22px; }
+      .stage { display: flex; align-items: center; gap: 18px; font-size: 25px; font-weight: 600; color: var(--text2); }
+      .dotc { width: 34px; height: 34px; border-radius: 50%; border: 3px solid #BABAC1; position: relative; flex: none; }
+      .dotc .fill { position: absolute; inset: -3px; border-radius: 50%; background: var(--teal); opacity: 0; display: flex; align-items: center; justify-content: center; }
+      #scrB .note { position: absolute; left: 0; right: 0; bottom: 70px; text-align: center; font-size: 20px; color: var(--text2); font-weight: 500; }
+
+      /* Screen C: map + result */
+      #scrC { background: #E9ECEA; }
+      .map { position: absolute; inset: 0; }
+      .road { position: absolute; background: #FFFFFF; border-radius: 6px; }
+      .nile { position: absolute; left: -40px; top: 0; width: 90px; height: 1000px; background: #BFE3EA; transform: rotate(14deg); transform-origin: top left; }
+      .block { position: absolute; background: #DFE3E0; border-radius: 8px; }
+      #pin { position: absolute; left: 196px; top: 190px; width: 56px; height: 72px; }
+      .card { position: absolute; left: 16px; right: 16px; bottom: 16px; background: var(--surface); border-radius: 30px; padding: 26px 26px 24px; box-shadow: 0 -6px 30px rgba(20,20,30,0.1); }
+      .from { font-size: 18px; font-weight: 700; color: var(--teal-ink); letter-spacing: 0.3px; }
+      .pname { font-size: 34px; font-weight: 700; margin-top: 6px; letter-spacing: -0.5px; }
+      .addr { font-size: 19px; color: var(--text2); margin-top: 4px; font-weight: 500; }
+      .chip { display: inline-flex; align-items: center; gap: 8px; margin-top: 16px; padding: 8px 16px; border-radius: 999px; background: var(--orange-tint); color: var(--orange-ink); font-size: 18px; font-weight: 700; }
+      .chip i { width: 10px; height: 10px; border-radius: 50%; background: var(--orange); display: block; }
+      .vote { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+      .vote .q { font-size: 20px; font-weight: 600; }
+      .vbtn { display: flex; gap: 10px; }
+      .vb { padding: 10px 20px; border-radius: 14px; border: 2px solid var(--border); font-size: 19px; font-weight: 700; background: var(--surface); }
+      #yes { position: relative; }
+      #yesfill { position: absolute; inset: -2px; border-radius: 14px; background: var(--teal-bg); color: #fff; display: flex; align-items: center; justify-content: center; opacity: 0; }
+      #dest { position: absolute; left: 0; right: 0; bottom: 0; height: 470px; background: var(--surface); border-radius: 34px 34px 0 0; padding: 34px 28px; box-shadow: 0 -10px 40px rgba(20,20,30,0.18); }
+      #dest .st { font-size: 28px; font-weight: 700; margin-bottom: 22px; }
+      .drow { display: flex; align-items: center; gap: 16px; padding: 18px 0; border-bottom: 1px solid var(--border); font-size: 22px; font-weight: 600; }
+      .dic { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; }
+      .box { margin-left: auto; width: 34px; height: 34px; border-radius: 10px; border: 3px solid #BABAC1; position: relative; }
+      .box .fill { position: absolute; inset: -3px; border-radius: 10px; background: var(--teal); opacity: 0; display: flex; align-items: center; justify-content: center; }
+      .save { position: absolute; left: 28px; right: 28px; bottom: 30px; height: 66px; border-radius: 20px; background: var(--teal-bg); color: #fff; font-size: 24px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+      #saved { position: absolute; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px; opacity: 0; }
+      .okc { width: 130px; height: 130px; border-radius: 50%; background: var(--teal-bg); display: flex; align-items: center; justify-content: center; }
+      #saved .t1 { font-size: 40px; font-weight: 700; }
+      #saved .t2 { font-size: 22px; color: var(--text2); font-weight: 500; }
+
+      /* Screen D: space */
+      #scrD { background: var(--bg); }
+      .shead { position: absolute; left: 0; right: 0; top: 0; height: 300px; background: linear-gradient(160deg, var(--teal-bg), var(--teal-deep)); color: #fff; padding: 90px 30px 0; }
+      .shead .k { font-size: 17px; font-weight: 700; letter-spacing: 1.2px; color: rgba(255,255,255,0.85); }
+      .shead .n { font-size: 38px; font-weight: 700; margin-top: 6px; letter-spacing: -0.5px; }
+      .avs { display: flex; margin-top: 20px; align-items: center; }
+      .av { width: 50px; height: 50px; border-radius: 50%; border: 3px solid var(--teal-bg); margin-right: -12px; display: flex; align-items: center; justify-content: center; font-size: 19px; font-weight: 700; color: #26256B; }
+      .avs .m { margin-left: 26px; font-size: 19px; font-weight: 600; color: #fff; }
+      .rows { position: absolute; left: 16px; right: 16px; top: 280px; display: flex; flex-direction: column; gap: 14px; }
+      .prow { background: var(--surface); border-radius: 24px; padding: 20px 22px; display: flex; align-items: center; gap: 18px; box-shadow: 0 4px 14px rgba(20,20,30,0.06); }
+      .prow.hl { outline: 3px solid var(--teal); }
+      .pic { width: 64px; height: 64px; border-radius: 18px; flex: none; }
+      .prow .nm { font-size: 23px; font-weight: 700; }
+      .prow .eta { font-size: 19px; color: var(--text2); font-weight: 600; margin-top: 4px; }
+      .prow .eta b { color: var(--teal-ink); }
+      .newb { margin-left: auto; font-size: 15px; font-weight: 700; color: var(--teal-ink); background: var(--teal-light); padding: 6px 12px; border-radius: 10px; letter-spacing: 0.6px; }
+
+      /* Touch indicator */
+      #touch { left: 0; top: 0; width: 64px; height: 64px; margin: -32px 0 0 -32px; border-radius: 50%; background: rgba(28,28,37,0.28); border: 3px solid rgba(255,255,255,0.9); z-index: 60; opacity: 0; }
+
+      /* Scene 5 */
+      #s5 { left: 0; top: 0; width: 1920px; height: 1080px; background: linear-gradient(160deg, var(--teal-bg), var(--teal-deep)); color: #fff; display: flex; flex-direction: column; justify-content: center; padding-left: 160px; }
+      #s5 .big { font-size: 190px; font-weight: 700; letter-spacing: -6px; line-height: 1; }
+      #s5 .big2 { font-size: 110px; font-weight: 700; letter-spacing: -3px; margin-top: 40px; }
+      #s5 .big2 .z { color: var(--violet-soft); }
+      #s5 .fn { position: absolute; left: 160px; bottom: 90px; font-size: 26px; font-weight: 500; color: rgba(255,255,255,0.85); }
+
+      /* Scene 6 */
+      #s6 { left: 0; top: 0; width: 1920px; height: 1080px; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+      #s6 .wm { font-size: 150px; font-weight: 700; letter-spacing: -5px; margin-top: 30px; }
+      #s6 .tl { font-size: 46px; font-weight: 600; color: var(--text2); margin-top: 18px; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="20.5" data-width="1920" data-height="1080">
+
+      <!-- ===== Left copy, scenes 1-4 ===== -->
+      <div id="c1" class="clip copy" data-start="0" data-duration="3" data-track-index="1">
+        <div class="h" id="hook"></div>
+        <div class="sub" id="c1s">Share it to <span style="color:var(--teal-ink);font-weight:700">Waypoint</span>.</div>
+      </div>
+      <div id="c2" class="clip copy" data-start="3" data-duration="4" data-track-index="1">
+        <div class="h">It reads the<br /><span class="t">video</span> for you.</div>
+        <div class="sub">Caption and on-screen text in. A real map match out.</div>
+      </div>
+      <div id="c3" class="clip copy" data-start="7" data-duration="4.5" data-track-index="1">
+        <div class="h">Pinned.<br />Tagged.<br /><span class="t">Saved.</span></div>
+        <div class="sub">One tap to confirm it's the right branch.</div>
+      </div>
+      <div id="c4" class="clip copy" data-start="11.5" data-duration="3" data-track-index="1">
+        <div class="h">Shared with<br />your <span class="t">people.</span></div>
+        <div class="sub">Travel times in live Cairo traffic.</div>
+      </div>
+
+      <!-- ===== Phone, scenes 1-4 ===== -->
+      <div id="phone" class="clip" data-start="0" data-duration="14.5" data-track-index="2">
+        <div id="screen">
+          <div class="notch"></div>
+
+          <!-- A: sample TikTok -->
+          <div id="scrA" class="clip scr" data-start="0" data-duration="3.4" data-track-index="3">
+            <div class="tag-sample">Sample video</div>
+            <div class="plate">
+              <div class="food" style="left:70px;top:70px;width:160px;height:160px;background:radial-gradient(circle at 40% 40%,#D98A3D,#B5561E)"></div>
+              <div class="food" style="left:100px;top:95px;width:60px;height:40px;background:#8B3A12;opacity:.7"></div>
+              <div class="food" style="left:150px;top:150px;width:46px;height:30px;background:#F3C27A"></div>
+              <div class="food" style="left:92px;top:160px;width:36px;height:24px;background:#F3C27A"></div>
+            </div>
+            <div class="rail">
+              <div><div class="ic"><svg width="30" height="28" viewBox="0 0 30 28"><path d="M15 26 3 14a7 7 0 0 1 12-9 7 7 0 0 1 12 9z" fill="#fff"/></svg></div><div class="lbl">12.4K</div></div>
+              <div><div class="ic"><svg width="30" height="28" viewBox="0 0 30 28"><path d="M4 4h22v15H12l-6 5v-5H4z" fill="#fff"/></svg></div><div class="lbl">318</div></div>
+              <div id="shareBtn"><div class="ic"><svg width="30" height="28" viewBox="0 0 30 28"><path d="M17 3l11 10-11 10v-6C9 17 5 20 2 25c1-8 5-14 15-15z" fill="#fff"/></svg></div><div class="lbl">Share</div></div>
+            </div>
+            <div class="cap" id="capA">
+              <div class="u">@sample.cairo.eats</div>
+              <div class="d">The koshary spot everyone's queueing for downtown</div>
+            </div>
+            <div id="sheet" data-layout-allow-overlap>
+              <div class="st">Share to</div>
+              <div class="apps">
+                <div class="app"><div class="ai"><svg width="34" height="34" viewBox="0 0 34 34"><rect x="8" y="4" width="18" height="22" rx="4" fill="none" stroke="#5C5C69" stroke-width="3"/><rect x="4" y="9" width="18" height="22" rx="4" fill="#F0F0F3" stroke="#5C5C69" stroke-width="3"/></svg></div>Copy link</div>
+                <div class="app wp" id="wpApp"><div class="ai">
+                  <svg width="58" height="46" viewBox="0 0 100 80"><polyline points="16,30 33,72 50,42 67,72 84,30" fill="none" stroke="#00838E" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/><circle cx="84" cy="30" r="12" fill="#DBDBFF"/><circle cx="84" cy="30" r="5" fill="#6A69DB"/></svg>
+                </div>Waypoint</div>
+                <div class="app"><div class="ai"><svg width="34" height="10" viewBox="0 0 34 10"><circle cx="5" cy="5" r="4" fill="#5C5C69"/><circle cx="17" cy="5" r="4" fill="#5C5C69"/><circle cx="29" cy="5" r="4" fill="#5C5C69"/></svg></div>More</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- B: Analysing TikTok (RouteWait) -->
+          <div id="scrB" class="clip scr" data-start="3" data-duration="4.4" data-track-index="4">
+            <div class="route" id="routeB" style="position:absolute;left:104px;top:150px;width:240px;height:192px">
+              <svg width="240" height="192" viewBox="0 0 100 80" style="position:absolute;left:0;top:0"><polyline points="16,30 33,72 50,42 67,72 84,30" fill="none" stroke="#DCDCE0" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <div class="reveal" id="revB" style="width:0">
+                <svg width="240" height="192" viewBox="0 0 100 80"><polyline points="16,30 33,72 50,42 67,72 84,30" fill="none" stroke="#00838E" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><circle cx="16" cy="30" r="8" fill="#00838E"/></svg>
+              </div>
+              <svg id="destB" width="240" height="192" viewBox="0 0 100 80" style="position:absolute;left:0;top:0;transform-origin:84% 37.5%"><circle cx="84" cy="30" r="11" fill="#DBDBFF"/><circle cx="84" cy="30" r="4.5" fill="#6A69DB"/></svg>
+            </div>
+            <div class="ttl">Analysing TikTok…</div>
+            <div class="stages">
+              <div class="stage" id="st1"><div class="dotc"><div class="fill"><svg width="18" height="14" viewBox="0 0 18 14"><path d="M2 7l5 5L16 2" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/></svg></div></div>Reading the video</div>
+              <div class="stage" id="st2"><div class="dotc"><div class="fill"><svg width="18" height="14" viewBox="0 0 18 14"><path d="M2 7l5 5L16 2" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/></svg></div></div>Finding the place</div>
+              <div class="stage" id="st3"><div class="dotc"><div class="fill"><svg width="18" height="14" viewBox="0 0 18 14"><path d="M2 7l5 5L16 2" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/></svg></div></div>Matching it on the map</div>
+            </div>
+            <div class="note">This usually takes about 20 seconds.</div>
+          </div>
+
+          <!-- C: found on the map, vote, destinations, saved -->
+          <div id="scrC" class="clip scr" data-start="7" data-duration="4.9" data-track-index="5">
+            <div class="map">
+              <div class="nile"></div>
+              <div class="road" style="left:0;top:250px;width:448px;height:18px"></div>
+              <div class="road" style="left:210px;top:0;width:16px;height:908px"></div>
+              <div class="road" style="left:0;top:120px;width:448px;height:10px;transform:rotate(-8deg)"></div>
+              <div class="road" style="left:330px;top:0;width:10px;height:908px"></div>
+              <div class="block" style="left:240px;top:140px;width:80px;height:95px"></div>
+              <div class="block" style="left:350px;top:140px;width:80px;height:95px"></div>
+              <div class="block" style="left:240px;top:285px;width:80px;height:80px"></div>
+              <div class="block" style="left:110px;top:285px;width:85px;height:80px"></div>
+              <div class="block" style="left:350px;top:285px;width:80px;height:80px"></div>
+              <div class="block" style="left:110px;top:140px;width:85px;height:95px"></div>
+            </div>
+            <svg id="pin" viewBox="0 0 56 72"><path d="M28 70C28 70 4 42 4 26a24 24 0 0 1 48 0c0 16-24 44-24 44z" fill="#E65719"/><circle cx="28" cy="26" r="10" fill="#fff"/></svg>
+            <div class="card" id="cardC">
+              <div class="from">Found from your TikTok</div>
+              <div class="pname">Koshary Corner</div>
+              <div class="addr">Downtown, Cairo · sample</div>
+              <div class="chip"><i></i>Food &amp; drink</div>
+              <div class="vote">
+                <div class="q">Is this the right place?</div>
+                <div class="vbtn"><div class="vb" id="yes">Yes<div id="yesfill">Yes</div></div><div class="vb">No</div></div>
+              </div>
+            </div>
+            <div id="dest" data-layout-allow-overlap>
+              <div class="st">Add this place to…</div>
+              <div class="drow"><div class="dic" style="background:#D5F2F3;color:#006873">★</div>Saved Places<div class="box"><div class="fill" id="b1"><svg width="18" height="14" viewBox="0 0 18 14"><path d="M2 7l5 5L16 2" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/></svg></div></div></div>
+              <div class="drow"><div class="dic" style="background:#DBDBFF;color:#4338CA">F</div>Friday dinner crew<div class="box"><div class="fill" id="b2"><svg width="18" height="14" viewBox="0 0 18 14"><path d="M2 7l5 5L16 2" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/></svg></div></div></div>
+              <div class="save" id="saveBtn">Save to 2</div>
+            </div>
+            <div id="saved" data-layout-allow-overlap>
+              <div class="okc"><svg width="64" height="50" viewBox="0 0 18 14"><path d="M2 7l5 5L16 2" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <div class="t1">Place saved!</div>
+              <div class="t2">Koshary Corner · 2 lists</div>
+            </div>
+          </div>
+
+          <!-- D: the Space -->
+          <div id="scrD" class="clip scr" data-start="11.5" data-duration="3" data-track-index="6">
+            <div class="shead">
+              <div class="k">SPACE</div>
+              <div class="n">Friday dinner crew</div>
+              <div class="avs">
+                <div class="av" style="background:#DBDBFF">N</div>
+                <div class="av" style="background:#D5F2F3;color:#005F68">O</div>
+                <div class="av" style="background:#FFE7DC;color:#9A3412">M</div>
+                <div class="av" style="background:#FCE4EF;color:#9D174D">S</div>
+                <div class="m">4 members</div>
+              </div>
+            </div>
+            <div class="rows">
+              <div class="prow hl" id="r1"><div class="pic" style="background:radial-gradient(circle at 40% 40%,#D98A3D,#B5561E)"></div><div><div class="nm">Koshary Corner</div><div class="eta"><b>18 min</b> · 4.2 km</div></div><div class="newb">NEW</div></div>
+              <div class="prow" id="r2"><div class="pic" style="background:linear-gradient(135deg,#7CCED2,#00838E)"></div><div><div class="nm">Nile-side café</div><div class="eta"><b>27 min</b> · 9.8 km</div></div></div>
+              <div class="prow" id="r3"><div class="pic" style="background:linear-gradient(135deg,#F3C27A,#E65719)"></div><div><div class="nm">Zamalek bakery</div><div class="eta"><b>12 min</b> · 2.6 km</div></div></div>
+            </div>
+          </div>
+
+          <div id="touch" class="clip" data-start="0" data-duration="11" data-track-index="7"></div>
+        </div>
+      </div>
+
+      <!-- ===== Scene 5: the number ===== -->
+      <div id="s5" class="clip" data-start="14.5" data-duration="2.7" data-track-index="8">
+        <div class="big" id="n1">$0.0417 a share.</div>
+        <div class="big2" id="n2">Same video again: <span class="z">$0.</span></div>
+        <div class="fn" id="n3">Measured cost of one extraction, August 2026.</div>
+      </div>
+
+      <!-- ===== Scene 6: outro ===== -->
+      <div id="s6" class="clip" data-start="17" data-duration="3.5" data-track-index="9">
+        <div class="route" style="width:300px;height:240px">
+          <svg width="300" height="240" viewBox="0 0 100 80" style="position:absolute;left:0;top:0"><polyline points="16,30 33,72 50,42 67,72 84,30" fill="none" stroke="#DCDCE0" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div class="reveal" id="revL" style="width:0">
+            <svg width="300" height="240" viewBox="0 0 100 80"><polyline points="16,30 33,72 50,42 67,72 84,30" fill="none" stroke="#00838E" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><circle cx="16" cy="30" r="8" fill="#00838E"/></svg>
+          </div>
+          <svg id="destL" width="300" height="240" viewBox="0 0 100 80" style="position:absolute;left:0;top:0;transform-origin:84% 37.5%"><circle cx="84" cy="30" r="11" fill="#DBDBFF"/><circle cx="84" cy="30" r="4.5" fill="#6A69DB"/></svg>
+        </div>
+        <div class="wm" id="wm">Waypoint</div>
+        <div class="tl" id="tagl">From TikTok to table.</div>
+      </div>
+
+      <!-- ===== Audio ===== -->
+      <audio id="music" data-start="0" data-duration="20.5" data-track-index="10" data-volume="0.45" src="assets/music/happy-beats-business-moves-vol-1-by-ende-dot-app.mp3"></audio>
+      <audio id="sfx-01" data-start="0.35" data-duration="0.3" data-track-index="11" data-volume="0.5" src="assets/sfx/keypress-003.wav"></audio>
+      <audio id="sfx-02" data-start="0.6" data-duration="0.3" data-track-index="12" data-volume="0.5" src="assets/sfx/keypress-011.wav"></audio>
+      <audio id="sfx-03" data-start="0.85" data-duration="0.3" data-track-index="11" data-volume="0.5" src="assets/sfx/keypress-019.wav"></audio>
+      <audio id="sfx-04" data-start="1.1" data-duration="0.3" data-track-index="12" data-volume="0.5" src="assets/sfx/keypress-027.wav"></audio>
+      <audio id="sfx-05" data-start="1.9" data-duration="0.3" data-track-index="13" data-volume="0.8" src="assets/sfx/click_002.ogg"></audio>
+      <audio id="sfx-06" data-start="2.7" data-duration="0.3" data-track-index="13" data-volume="0.8" src="assets/sfx/click_002.ogg"></audio>
+      <audio id="sfx-07" data-start="4.02" data-duration="0.4" data-track-index="14" data-volume="0.6" src="assets/sfx/select_008.ogg"></audio>
+      <audio id="sfx-08" data-start="5.03" data-duration="0.4" data-track-index="14" data-volume="0.6" src="assets/sfx/select_008.ogg"></audio>
+      <audio id="sfx-09" data-start="6.03" data-duration="0.4" data-track-index="14" data-volume="0.6" src="assets/sfx/select_008.ogg"></audio>
+      <audio id="sfx-10" data-start="7.45" data-duration="0.5" data-track-index="15" data-volume="0.7" src="assets/sfx/drop_002.ogg"></audio>
+      <audio id="sfx-11" data-start="8.9" data-duration="0.3" data-track-index="13" data-volume="0.8" src="assets/sfx/click_002.ogg"></audio>
+      <audio id="sfx-12" data-start="9.6" data-duration="0.3" data-track-index="13" data-volume="0.6" src="assets/sfx/click_002.ogg"></audio>
+      <audio id="sfx-13" data-start="10.0" data-duration="0.3" data-track-index="13" data-volume="0.6" src="assets/sfx/click_002.ogg"></audio>
+      <audio id="sfx-14" data-start="10.55" data-duration="0.8" data-track-index="15" data-volume="0.6" src="assets/sfx/impactGlass_light_002.ogg"></audio>
+      <audio id="sfx-15" data-start="11.75" data-duration="0.5" data-track-index="16" data-volume="0.35" src="assets/sfx/card-slide-1.ogg"></audio>
+      <audio id="sfx-16" data-start="12.25" data-duration="0.5" data-track-index="16" data-volume="0.35" src="assets/sfx/card-slide-1.ogg"></audio>
+      <audio id="sfx-17" data-start="12.75" data-duration="0.5" data-track-index="16" data-volume="0.35" src="assets/sfx/card-slide-1.ogg"></audio>
+      <audio id="sfx-18" data-start="15.52" data-duration="0.6" data-track-index="15" data-volume="0.6" src="assets/sfx/chip-lay-1.ogg"></audio>
+      <audio id="sfx-19" data-start="17.52" data-duration="1" data-track-index="15" data-volume="0.8" src="assets/sfx/impactSoft_medium_001.ogg"></audio>
+    </div>
+
+    <script>
+      // Typed hook: one span per character, revealed in order.
+      const hookText = "Saw a place on TikTok?";
+      const hookEl = document.getElementById("hook");
+      hookEl.innerHTML = hookText.split("").map((c, i) =>
+        (i === 12 ? "<br />" : "") + `<span class="ch">${c === " " ? "&nbsp;" : c}</span>`
+      ).join("");
+      hookEl.querySelectorAll(".ch").forEach((s, i) => { if (i >= 15) s.style.color = "#006873"; });
+
+      const tl = gsap.timeline({ paused: true });
+      const E = "power3.out";
+
+      // ---------- Scene 1: hook (0-3) ----------
+      tl.fromTo("#phone", { y: 80, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: E }, 0);
+      hookEl.querySelectorAll(".ch").forEach((s, i) => tl.set(s, { opacity: 1 }, 0.3 + i * 0.045));
+      tl.fromTo("#c1s", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: E }, 1.45);
+      // Tap Share
+      tl.set("#touch", { x: 402, y: 640 }, 1.5);
+      tl.to("#touch", { opacity: 1, duration: 0.15 }, 1.65);
+      tl.to("#touch", { scale: 0.75, duration: 0.1, yoyo: true, repeat: 1 }, 1.88);
+      tl.fromTo("#sheet", { y: 340 }, { y: 0, duration: 0.45, ease: E }, 2.05);
+      tl.to("#capA", { opacity: 0, duration: 0.2 }, 2.05);
+      // Tap the Waypoint icon in the share row
+      tl.to("#touch", { x: 180, y: 700, duration: 0.4, ease: "power2.inOut" }, 2.2);
+      tl.to("#touch", { scale: 0.75, duration: 0.1, yoyo: true, repeat: 1 }, 2.68);
+      tl.to("#wpApp .ai", { scale: 0.9, duration: 0.1, yoyo: true, repeat: 1 }, 2.68);
+      tl.to("#touch", { opacity: 0, duration: 0.15 }, 2.9);
+      tl.to("#c1", { opacity: 0, x: -40, duration: 0.3, ease: "power2.in" }, 2.7);
+
+      // ---------- Scene 2: analysing (3-7) ----------
+      tl.fromTo("#scrB", { x: 448 }, { x: 0, duration: 0.45, ease: E }, 3.0);
+      tl.fromTo("#c2", { opacity: 0, x: 40 }, { opacity: 1, x: 0, duration: 0.45, ease: E }, 3.05);
+      tl.fromTo("#revB", { width: 0 }, { width: 240, duration: 1.1, ease: "power2.inOut" }, 3.3);
+      tl.fromTo("#destB", { scale: 0 }, { scale: 1, duration: 0.3, ease: "back.out(2)" }, 4.3);
+      // beat-grid: stage 1 at 4.02s, stage 2 at 5.03s, stage 3 at 6.03s (every other beat, held for reading)
+      [["#st1", 4.02], ["#st2", 5.03], ["#st3", 6.03]].forEach(([id, t]) => {
+        tl.to(`${id} .fill`, { opacity: 1, duration: 0.2 }, t);
+        tl.fromTo(`${id} .fill`, { scale: 0.4 }, { scale: 1, duration: 0.3, ease: "back.out(2)" }, t);
+        tl.to(id, { color: "#1C1C25", duration: 0.2 }, t);
+      });
+      tl.to("#c2", { opacity: 0, x: -40, duration: 0.3, ease: "power2.in" }, 6.7);
+
+      // ---------- Scene 3: found + saved (7-11.5) ----------
+      tl.fromTo("#scrC", { x: 448 }, { x: 0, duration: 0.45, ease: E }, 7.0);
+      tl.fromTo("#c3", { opacity: 0, x: 40 }, { opacity: 1, x: 0, duration: 0.45, ease: E }, 7.05);
+      tl.fromTo("#pin", { y: -220, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: "bounce.out" }, 7.1);
+      tl.fromTo("#cardC", { y: 420 }, { y: 0, duration: 0.5, ease: E }, 7.5);
+      tl.set("#touch", { x: 290, y: 846, scale: 1 }, 8.5);
+      tl.to("#touch", { opacity: 1, duration: 0.15 }, 8.6);
+      tl.to("#touch", { scale: 0.75, duration: 0.1, yoyo: true, repeat: 1 }, 8.88);
+      tl.to("#yesfill", { opacity: 1, duration: 0.12 }, 8.92);
+      tl.to("#touch", { opacity: 0, duration: 0.12 }, 9.05);
+      tl.fromTo("#dest", { y: 480 }, { y: 0, duration: 0.45, ease: E }, 9.1);
+      tl.to("#cardC", { opacity: 0, duration: 0.25 }, 9.2);
+      tl.to("#b1", { opacity: 1, duration: 0.15 }, 9.6);
+      tl.to("#b2", { opacity: 1, duration: 0.15 }, 10.0);
+      tl.set("#touch", { x: 224, y: 845 }, 10.1);
+      tl.to("#touch", { opacity: 1, duration: 0.12 }, 10.15);
+      tl.to("#touch", { scale: 0.75, duration: 0.1, yoyo: true, repeat: 1 }, 10.33);
+      tl.to("#saveBtn", { scale: 0.96, duration: 0.1, yoyo: true, repeat: 1 }, 10.33);
+      tl.to("#touch", { opacity: 0, duration: 0.12 }, 10.5);
+      tl.to("#saved", { opacity: 1, duration: 0.25 }, 10.5);
+      tl.to("#dest", { opacity: 0, duration: 0.2 }, 10.6);
+      tl.fromTo("#saved .okc", { scale: 0.5 }, { scale: 1, duration: 0.45, ease: "back.out(2.2)" }, 10.5);
+      tl.to("#c3", { opacity: 0, x: -40, duration: 0.3, ease: "power2.in" }, 11.2);
+
+      // ---------- Scene 4: the Space (11.5-14.5) ----------
+      tl.fromTo("#scrD", { x: 448 }, { x: 0, duration: 0.45, ease: E }, 11.5);
+      tl.fromTo("#c4", { opacity: 0, x: 40 }, { opacity: 1, x: 0, duration: 0.45, ease: E }, 11.55);
+      // beat-grid: rows at 11.75 / 12.25 / 12.75, then the full list holds ~1.5s
+      [["#r1", 11.75], ["#r2", 12.25], ["#r3", 12.75]].forEach(([id, t]) =>
+        tl.fromTo(id, { y: 60, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: E }, t));
+      tl.to("#phone", { x: 120, opacity: 0, duration: 0.35, ease: "power2.in" }, 14.15);
+      tl.to("#c4", { opacity: 0, x: -40, duration: 0.3, ease: "power2.in" }, 14.2);
+
+      // ---------- Scene 5: the number (14.5-17) ----------
+      tl.fromTo("#s5", { y: 1080 }, { y: 0, duration: 0.45, ease: E }, 14.5);
+      tl.fromTo("#n1", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.4, ease: E }, 14.75);
+      tl.fromTo("#n2", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.4, ease: E }, 15.5);
+      tl.fromTo("#n3", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 15.8);
+
+      // ---------- Scene 6: outro (17-20.5) ----------
+      // beat-locked: 17.02s outro cut
+      tl.fromTo("#s6", { opacity: 0 }, { opacity: 1, duration: 0.2 }, 17.0);
+      tl.fromTo("#revL", { width: 0 }, { width: 300, duration: 0.5, ease: "power2.inOut" }, 17.02);
+      // beat-locked: 17.52s logo lands
+      tl.fromTo("#destL", { scale: 0 }, { scale: 1, duration: 0.35, ease: "back.out(2.4)" }, 17.52);
+      tl.fromTo("#wm", { opacity: 0, y: 50, scale: 0.94 }, { opacity: 1, y: 0, scale: 1, duration: 0.45, ease: E }, 17.52);
+      tl.fromTo("#tagl", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: E }, 18.0);
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

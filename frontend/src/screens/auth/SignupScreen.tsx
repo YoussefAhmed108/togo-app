@@ -3,7 +3,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -14,7 +13,7 @@ import {AppInput} from '../../components/AppInput';
 import {AuthMapHero} from '../../components/AuthMapHero';
 import {ErrorBanner} from '../../components/ErrorBanner';
 import {useAuth} from '../../hooks/useAuth';
-import {colors, fonts, radius, shadows, spacing, typography} from '../../theme';
+import {colors, fonts, radius, shadows, spacing, typography, themedStyles} from '../../theme';
 import {AuthStackParamList} from '../../types/navigation';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Signup'>;
@@ -43,9 +42,7 @@ export function SignupScreen({navigation}: Props) {
       e.email = 'Enter a valid email address';
     }
     const rawPhone = phone.trim().replace(/\s/g, '');
-    if (!rawPhone) {
-      e.phone = 'Phone number is required';
-    } else if (!/^\+?[0-9\-().]{7,20}$/.test(rawPhone)) {
+    if (rawPhone && !/^\+?[0-9\-().]{7,20}$/.test(rawPhone)) {
       e.phone = 'Enter a valid phone number';
     }
     if (!password) {
@@ -114,7 +111,7 @@ export function SignupScreen({navigation}: Props) {
             />
 
             <AppInput
-              placeholder="Phone number"
+              placeholder="Phone number (optional)"
               keyboardType="phone-pad"
               value={phone}
               onChangeText={t => {
@@ -200,7 +197,7 @@ function PasswordStrength({password}: {password: string}) {
   );
 }
 
-const ps = StyleSheet.create({
+const ps = themedStyles(() => ({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -212,9 +209,9 @@ const ps = StyleSheet.create({
   bars: {flexDirection: 'row', gap: 6, flex: 1},
   bar: {flex: 1, height: 3, borderRadius: 9999},
   label: {fontFamily: fonts.semibold, fontSize: 13, minWidth: 48, textAlign: 'right'},
-});
+}));
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   safe: {flex: 1, backgroundColor: colors.background},
   flex: {flex: 1},
   scroll: {flexGrow: 1, paddingBottom: spacing.xl},
@@ -246,4 +243,4 @@ const styles = StyleSheet.create({
   },
   footerText: {fontFamily: fonts.regular, fontSize: 15, color: colors.textSecondary},
   footerLink: {fontFamily: fonts.display, fontSize: 15, color: colors.primary},
-});
+}));

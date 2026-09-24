@@ -3,7 +3,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -14,7 +13,7 @@ import {AppInput} from '../../components/AppInput';
 import {AuthMapHero} from '../../components/AuthMapHero';
 import {ErrorBanner} from '../../components/ErrorBanner';
 import {useAuth} from '../../hooks/useAuth';
-import {colors, fonts, spacing} from '../../theme';
+import {colors, fonts, spacing, themedStyles} from '../../theme';
 import {AuthStackParamList} from '../../types/navigation';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
@@ -120,7 +119,7 @@ export function LoginScreen({navigation}: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   root: {flex: 1, backgroundColor: colors.background},
   flex: {flex: 1},
   scroll: {flexGrow: 1, paddingBottom: spacing.xl},
@@ -144,4 +143,4 @@ const styles = StyleSheet.create({
   footer: {flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 20},
   footerText: {fontFamily: fonts.regular, fontSize: 13, color: colors.textSecondary},
   footerLink: {fontFamily: fonts.bold, fontSize: 13, color: colors.primary},
-});
+}));

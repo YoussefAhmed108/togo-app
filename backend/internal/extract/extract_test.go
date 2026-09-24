@@ -369,3 +369,33 @@ func TestUsageCostUSD(t *testing.T) {
 		t.Fatalf("CostUSD = %v, want 2.0", got)
 	}
 }
+
+func TestPlatform(t *testing.T) {
+	cases := map[string]string{
+		"https://www.instagram.com/reel/C9xYz12AbCd/":  "instagram",
+		"https://www.instagram.com/share/reel/abc123/": "instagram",
+		"https://vm.tiktok.com/ZSVgcpVGR/":             "tiktok",
+		"https://www.tiktok.com/@u/video/1":            "tiktok",
+	}
+	for u, want := range cases {
+		if got := Platform(u); got != want {
+			t.Errorf("Platform(%q) = %q, want %q", u, got, want)
+		}
+	}
+}
+
+func TestParseDuration(t *testing.T) {
+	// Instagram reports no duration in its metadata, so ffprobe's answer is the
+	// only thing standing between a 63s reel and sampling its first 6 seconds.
+	for out, want := range map[string]float64{
+		"62.900000\n": 62.9,
+		"N/A\n":       0,
+		"":            0,
+		"0.000000":    0,
+		"-1":          0,
+	} {
+		if got := parseDuration(out); got != want {
+			t.Errorf("parseDuration(%q) = %v, want %v", out, got, want)
+		}
+	}
+}

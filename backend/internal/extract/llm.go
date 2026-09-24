@@ -26,6 +26,10 @@ type Result struct {
 	Language   string  `json:"language"` // ISO 639-1, or "" when the model is unsure
 	Evidence   string  `json:"evidence"` // where the name was actually seen
 	Confidence float64 `json:"confidence"`
+	// Fallbacks are Places queries for somewhere close to the venue — the mall,
+	// building, street or neighbourhood it is in — most specific first. Tried in
+	// order only when the venue itself is not on Google Maps.
+	Fallbacks []string `json:"fallbacks"`
 }
 
 // Query builds the Google Places text query.
@@ -91,7 +95,13 @@ const systemPrompt = `You identify the venues featured in a TikTok or Instagram 
 	`name. If exactly one plausible name appears anywhere — caption, transcript, or a sign — ` +
 	`return it with the confidence it deserves rather than nothing; a weak lead the user can ` +
 	`correct beats an empty result. Return an empty "places" list only when NO candidate ` +
-	`name appears at all. Do not guess a chain from decor alone.`
+	`name appears at all. Do not guess a chain from decor alone. ` +
+	`ALWAYS fill "fallbacks" for every venue: 1-3 Google Maps search queries for somewhere close ` +
+	`to it, used only if the venue itself is not on Google Maps — the mall, hotel, building or ` +
+	`landmark it is inside or next to, then its street, then its neighbourhood — most specific ` +
+	`first, each a complete query with the city ("City Stars Mall, Nasr City, Cairo"). Take ` +
+	`them from what the video shows or says, or from what you know about where that venue is. ` +
+	`Never anything broader than a neighbourhood, and never the venue's own name again.`
 
 // placeSchema keeps `language` a bare ISO 639-1 code. It was an ar/en/mixed enum
 // while Cairo was the only market; a free code costs nothing here and is what
@@ -117,8 +127,11 @@ var placeSchema = map[string]any{
 		"confidence": map[string]any{"type": "number",
 			"description": "0-1. REQUIRED. If you filled place_name you saw a name, so this must " +
 				"be greater than 0. Use 0 only when place_name is empty."},
+		"fallbacks": map[string]any{"type": "array", "items": map[string]any{"type": "string"},
+			"description": "1-3 searchable queries for a mall, building, street or neighbourhood " +
+				"next to the venue, most specific first, each including the city."},
 	},
-	"required":             []string{"place_name", "area", "city", "country", "language", "evidence", "confidence"},
+	"required":             []string{"place_name", "area", "city", "country", "language", "evidence", "confidence", "fallbacks"},
 	"additionalProperties": false,
 }
 
@@ -245,8 +258,8 @@ func Analyze(ctx context.Context, apiKey string, meta *Meta, frames [][]byte, tr
 	// The model's actual read, which is what every wrong-place bug report needs
 	// to be diagnosed — the response the user sees keeps only the Google name.
 	for i, r := range places {
-		logf(ctx, "claude: [%d] name=%q area=%q city=%q country=%q lang=%q conf=%.2f evidence=%q",
-			i, r.PlaceName, r.Area, r.City, r.Country, r.Language, r.Confidence, truncate(r.Evidence, 200))
+		logf(ctx, "claude: [%d] name=%q area=%q city=%q country=%q lang=%q conf=%.2f evidence=%q fallbacks=%q",
+			i, r.PlaceName, r.Area, r.City, r.Country, r.Language, r.Confidence, truncate(r.Evidence, 200), r.Fallbacks)
 	}
 	return places, usage, nil
 }

@@ -42,10 +42,12 @@ import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {AppStackParamList} from '../../types/navigation';
 import {placeService, ApiPlace, ApiMemoryWithSpace} from '../../services/placeService';
 import memoryService, {DishDraft} from '../../services/memoryService';
-import {colors, fonts, radius, spacing} from '../../theme';
+import {colors, fonts, radius, spacing, themedStyles} from '../../theme';
 import {Pin} from '../../components/Pin';
 import {displayAddress} from '../../utils/address';
 import {pickImage, PickedImage} from '../../utils/pickImage';
+import {useAuth} from '../../hooks/useAuth';
+import {getBlocked, showMemoryActions} from '../../services/moderation';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'PlaceDetail'>;
 
@@ -89,11 +91,11 @@ function Stars({
   );
 }
 
-const st = StyleSheet.create({
+const st = themedStyles(() => ({
   row: {flexDirection: 'row', gap: 2},
   star: {color: colors.textSecondary},
   starOn: {color: colors.primary},
-});
+}));
 
 // ── Memory Upload Modal ───────────────────────────────────────────────────────
 
@@ -265,6 +267,8 @@ function MemoryUploadModal({placeId, spaceId, spaceName, onDismiss, onUploaded}:
 export default function PlaceScreen({route, navigation}: Props) {
   const {placeId, placeName, fromSpaceId} = route.params;
   const insets = useSafeAreaInsets();
+  const {user} = useAuth();
+  const me = user?.id;
 
   const [place, setPlace] = useState<ApiPlace | null>(null);
   const [memories, setMemories] = useState<ApiMemoryWithSpace[]>([]);
@@ -278,18 +282,19 @@ export default function PlaceScreen({route, navigation}: Props) {
 
   const loadData = useCallback(async () => {
     try {
-      const [placeData, memoriesData] = await Promise.all([
+      const [placeData, memoriesData, blocked] = await Promise.all([
         placeService.getPlace(placeId),
         placeService.getMemories(placeId),
+        me != null ? getBlocked(me) : Promise.resolve(new Set<number>()),
       ]);
       setPlace(placeData);
-      setMemories(memoriesData);
+      setMemories(memoriesData.filter(m => !blocked.has(m.uploader_id)));
     } catch (err: any) {
       Alert.alert('Error', err?.message ?? 'Could not load place.');
     } finally {
       setLoading(false);
     }
-  }, [placeId]);
+  }, [placeId, me]);
 
   useEffect(() => {
     loadData();
@@ -369,6 +374,8 @@ export default function PlaceScreen({route, navigation}: Props) {
     );
   }
 
+  const source = /instagram\.com/i.test(place.source_url ?? '') ? 'Instagram' : 'TikTok';
+
   return (
     <View style={[s.root, {paddingTop: insets.top}]}>
       {/* ── Header ──────────────────────────────────────────────────── */}
@@ -423,15 +430,15 @@ export default function PlaceScreen({route, navigation}: Props) {
           {!!place.source_url && (
             <TouchableOpacity
               style={s.sourceCard}
-              onPress={() => Linking.openURL(place.source_url!).catch(() => Alert.alert('Could not open TikTok'))}
+              onPress={() => Linking.openURL(place.source_url!).catch(() => Alert.alert(`Could not open ${source}`))}
               activeOpacity={0.8}
               accessibilityRole="link"
-              accessibilityLabel="Open the TikTok this place was found in">
+              accessibilityLabel={`Open the ${source} post this place was found in`}>
               <View style={s.sourceIcon}>
                 <View style={s.sourcePlay} />
               </View>
               <View style={s.sourceBody}>
-                <Text style={s.sourceTitle}>Found on TikTok</Text>
+                <Text style={s.sourceTitle}>Found on {source}</Text>
                 <Text style={s.sourceUrl} numberOfLines={1}>
                   {place.source_url.replace(/^https?:\/\/(www\.)?/, '')}
                 </Text>
@@ -517,6 +524,19 @@ export default function PlaceScreen({route, navigation}: Props) {
                         style={s.photo}
                         resizeMode="cover"
                       />
+                      {me != null && mem.uploader_id !== me && (
+                        <TouchableOpacity
+                          style={s.memMore}
+                          hitSlop={8}
+                          accessibilityLabel="Report or block"
+                          onPress={() =>
+                            showMemoryActions(mem, me, id =>
+                              setMemories(prev => prev.filter(m => m.uploader_id !== id)),
+                            )
+                          }>
+                          <Text style={s.memMoreText}>•••</Text>
+                        </TouchableOpacity>
+                      )}
                       {mem.caption && (
                         <Text style={s.photoCaption} numberOfLines={2}>
                           {mem.caption}
@@ -570,7 +590,7 @@ export default function PlaceScreen({route, navigation}: Props) {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const s = StyleSheet.create({
+const s = themedStyles(() => ({
   root: {flex: 1, backgroundColor: colors.background},
   loadWrap: {
     flex: 1,
@@ -671,6 +691,16 @@ const s = StyleSheet.create({
 
   photoGrid: {flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md},
   photoCard: {width: '47.5%'},
+  memMore: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: radius.full,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  },
+  memMoreText: {fontFamily: fonts.bold, fontSize: 12, color: colors.white},
   photo: {width: '100%', aspectRatio: 1, borderRadius: radius.lg, backgroundColor: colors.surfaceDim},
   photoCaption: {
     fontFamily: fonts.regular,
@@ -701,11 +731,11 @@ const s = StyleSheet.create({
   addMemoryBtn: {flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: spacing.md, borderRadius: radius.lg, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.border, minHeight: 64},
   addMemoryIcon: {fontSize: 18, color: colors.textSecondary},
   addMemoryLabel: {fontFamily: fonts.semibold, fontSize: 12, color: colors.textSecondary},
-});
+}));
 
 // ── Add Memory modal styles ───────────────────────────────────────────────────
 
-const mu = StyleSheet.create({
+const mu = themedStyles(() => ({
   backdrop: {flex: 1, backgroundColor: colors.overlay},
   container: {
     backgroundColor: colors.background,
@@ -840,4 +870,4 @@ const mu = StyleSheet.create({
   },
   uploadBtnOff: {backgroundColor: colors.sandDeep},
   uploadLabel: {fontFamily: fonts.bold, fontSize: 15, color: colors.white},
-});
+}));

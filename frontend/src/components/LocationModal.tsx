@@ -3,7 +3,6 @@ import {
   Modal,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -11,7 +10,7 @@ import {
 import {savedLocationService, StartingPoint} from '../services/savedLocationService';
 import {LocationMapPicker, PickedLocation} from './LocationMapPicker';
 import {LocationMode, LocationState} from '../context/LocationContext';
-import {colors, fonts, radius, spacing, typography} from '../theme';
+import {colors, fonts, radius, spacing, typography, themedStyles} from '../theme';
 
 export type {LocationMode, LocationState} from '../context/LocationContext';
 
@@ -150,7 +149,7 @@ export function LocationModal({visible, location, onConfirm, onClose}: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   backdrop: {flex: 1, backgroundColor: colors.overlay},
   sheet: {
     backgroundColor: colors.background,
@@ -246,4 +245,4 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   mapBtnText: {fontFamily: fonts.display, fontSize: 17, color: colors.white},
-});
+}));

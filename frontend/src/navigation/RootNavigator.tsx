@@ -1,5 +1,5 @@
 import React from 'react';
-import {StyleSheet, View} from 'react-native';
+import {View} from 'react-native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {useAuth} from '../hooks/useAuth';
 import {useAppSettings} from '../hooks/useAppSettings';
@@ -7,7 +7,7 @@ import {AuthNavigator} from './AuthNavigator';
 import {AppNavigator} from './AppNavigator';
 import {ProfileSetupScreen} from '../screens/auth/ProfileSetupScreen';
 import {InterestPickerScreen} from '../screens/auth/InterestPickerScreen';
-import {colors} from '../theme';
+import {colors, themedStyles} from '../theme';
 import {WaypointLoader} from '../components/WaypointLoader';
 
 const Stack = createNativeStackNavigator();
@@ -51,11 +51,11 @@ export default function RootNavigator() {
   return <AuthNavigator />;
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   loader: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.background,
   },
-});
+}));

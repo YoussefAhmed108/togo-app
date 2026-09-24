@@ -18,7 +18,7 @@ import {pickImage} from '../../utils/pickImage';
 import {AppStackParamList} from '../../types/navigation';
 import {spaceService, ApiSpace} from '../../services/spaceService';
 import memoryService from '../../services/memoryService';
-import {colors, fonts, radius} from '../../theme';
+import {colors, fonts, radius, themedStyles} from '../../theme';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'CreateSpace'>;
 
@@ -312,7 +312,7 @@ export default function CreateSpaceScreen({navigation}: Props) {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const s = StyleSheet.create({
+const s = themedStyles(() => ({
   safe: {flex: 1, backgroundColor: colors.background},
   flex: {flex: 1},
   mut: {fontFamily: fonts.regular, fontSize: 11.5, color: colors.textSecondary},
@@ -490,4 +490,4 @@ const s = StyleSheet.create({
   inviteHint: {marginTop: 12, lineHeight: 17},
   error: {fontFamily: fonts.regular, fontSize: 12, color: colors.error, marginBottom: 8},
   doneWrap: {paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12},
-});
+}));

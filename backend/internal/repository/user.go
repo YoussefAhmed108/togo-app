@@ -107,6 +107,13 @@ func (r *UserRepository) DeleteRefreshToken(ctx context.Context, tokenHash strin
 	return err
 }
 
+// DeleteUser removes the user. Places, spaces they own, memories, memberships
+// and tokens all go with it through ON DELETE CASCADE.
+func (r *UserRepository) DeleteUser(ctx context.Context, id uint64) error {
+	_, err := r.DB.ExecContext(ctx, `DELETE FROM users WHERE id = ?`, id)
+	return err
+}
+
 // SaveInterests replaces the user's interest categories atomically.
 func (r *UserRepository) SaveInterests(ctx context.Context, userID uint64, categories []string) error {
 	return withTx(ctx, r.DB, func(tx *sql.Tx) error {

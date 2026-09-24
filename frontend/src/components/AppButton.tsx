@@ -1,12 +1,11 @@
 import React from 'react';
 import {
   ActivityIndicator,
-  StyleSheet,
   Text,
   TouchableOpacity,
   TouchableOpacityProps,
 } from 'react-native';
-import {colors, fonts, radius} from '../theme';
+import {colors, fonts, radius, themedStyles} from '../theme';
 
 interface Props extends TouchableOpacityProps {
   title: string;
@@ -61,7 +60,7 @@ export function AppButton({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   base: {
     minHeight: 48,
     borderRadius: radius.lg,
@@ -82,4 +81,4 @@ const styles = StyleSheet.create({
   labelOutline: {color: colors.text},
   labelDisabled: {color: colors.disabledFg},
   labelGhost: {fontFamily: fonts.medium, color: colors.textSecondary},
-});
+}));

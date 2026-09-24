@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -45,6 +46,14 @@ var reelURL = regexp.MustCompile(`^https?://(www\.|m\.)?instagram\.com/(reels?|s
 // check this before passing user input to yt-dlp — this is the trust boundary
 // for the whole feature.
 func ValidURL(u string) bool { return tiktokURL.MatchString(u) || reelURL.MatchString(u) }
+
+// Platform names the source of a valid share link: "instagram" or "tiktok".
+func Platform(u string) string {
+	if reelURL.MatchString(u) {
+		return "instagram"
+	}
+	return "tiktok"
+}
 
 // Meta is the metadata yt-dlp reports for a video.
 type Meta struct {
@@ -196,6 +205,15 @@ func Fetch(ctx context.Context, url string) (*Meta, [][]byte, string, error) {
 	if err := json.Unmarshal(raw, &meta); err != nil {
 		return nil, nil, "", fmt.Errorf("decode metadata: %w", err)
 	}
+	// Instagram reports no duration at all, and every frame timestamp is derived
+	// from it: without this a 63s reel was sampled at 1fps from t=0, so the
+	// model only ever saw its first 6 seconds — and the venue is named in the
+	// outro. Ask the file itself whenever the metadata is missing or absurd.
+	if meta.Duration < 1 {
+		if d := probeDuration(ctx, filepath.Join(dir, "v.mp4")); d > 0 {
+			meta.Duration = d
+		}
+	}
 	logf(ctx, "meta: id=%s uploader=@%s dur=%.1fs caption=%dch tags=%q",
 		meta.ID, meta.Uploader, meta.Duration, len(meta.Description), truncate(meta.Hashtags(), 120))
 
@@ -204,7 +222,7 @@ func Fetch(ctx context.Context, url string) (*Meta, [][]byte, string, error) {
 	var source string
 	if _, statErr := os.Stat(filepath.Join(dir, "v.mp4")); statErr == nil {
 		source = "video"
-		frames, err = extractFrames(ctx, dir)
+		frames, err = extractFrames(ctx, dir, meta.Duration)
 	} else if urls := slideURLs(ctx, dir); len(urls) > 0 {
 		source = "photo"
 		logf(ctx, "photo post: %d slides selected", len(urls))
@@ -271,13 +289,9 @@ func download(ctx context.Context, url, dir string) (int, error) {
 	return downloadTries, fmt.Errorf("yt-dlp failed %dx: %w", downloadTries, last)
 }
 
-func extractFrames(ctx context.Context, dir string) ([][]byte, error) {
-	var meta Meta
-	if raw, err := os.ReadFile(filepath.Join(dir, "v.info.json")); err == nil {
-		_ = json.Unmarshal(raw, &meta)
-	}
+func extractFrames(ctx context.Context, dir string, duration float64) ([][]byte, error) {
 	vf := fmt.Sprintf("fps=%f:start_time=%f,scale='min(%d,iw)':-2",
-		frameFPS(meta.Duration, nFrames), frameOffset(meta.Duration, nFrames), frameWidth)
+		frameFPS(duration, nFrames), frameOffset(duration, nFrames), frameWidth)
 
 	logf(ctx, "ffmpeg: %s", vf)
 	cmd := exec.CommandContext(ctx, "ffmpeg", "-v", "error",
@@ -305,6 +319,27 @@ func extractFrames(ctx context.Context, dir string) ([][]byte, error) {
 		return nil, fmt.Errorf("ffmpeg produced no frames")
 	}
 	return frames, nil
+}
+
+// probeDuration asks ffprobe how long the downloaded file actually is. 0 when
+// it cannot tell, which leaves the caller's metadata value alone.
+func probeDuration(ctx context.Context, path string) float64 {
+	out, err := exec.CommandContext(ctx, "ffprobe", "-v", "error",
+		"-show_entries", "format=duration", "-of", "default=nw=1:nk=1", path).Output()
+	if err != nil {
+		logf(ctx, "ffprobe duration: %v", err)
+		return 0
+	}
+	return parseDuration(string(out))
+}
+
+// parseDuration reads ffprobe's bare-value output ("62.900000\n", or "N/A").
+func parseDuration(out string) float64 {
+	d, err := strconv.ParseFloat(strings.TrimSpace(out), 64)
+	if err != nil || d <= 0 {
+		return 0
+	}
+	return d
 }
 
 // lsDir names what yt-dlp actually left behind. Only used on the failure path,

@@ -122,3 +122,15 @@ func TestSavedLocations_ScopedToUser(t *testing.T) {
 		t.Fatalf("own delete: expected 204, got %d", rr.Code)
 	}
 }
+
+func TestDeleteMe_DeletesCaller(t *testing.T) {
+	var deleted uint64
+	store := &mockUserStore{deleteUser: func(id uint64) error { deleted = id; return nil }}
+	req := injectUser(httptest.NewRequest(http.MethodDelete, "/users/me", nil), 7, true)
+	rr := httptest.NewRecorder()
+	handlers.NewUserHandler(store, noopStorage()).DeleteMe(rr, req)
+
+	if rr.Code != http.StatusNoContent || deleted != 7 {
+		t.Fatalf("expected 204 deleting user 7, got %d deleting %d", rr.Code, deleted)
+	}
+}

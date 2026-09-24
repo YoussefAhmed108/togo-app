@@ -6,8 +6,10 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"regexp"
 	"slices"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -43,6 +45,10 @@ type extractedPlace struct {
 	Area       string              `json:"area"` // read but not searched on yet — for multi-branch later
 	Evidence   string              `json:"evidence"`
 	Note       string              `json:"note,omitempty"`
+	// Fallback names the nearby spot the pin was placed at when the venue
+	// itself is not on Google Maps. Selected then has no google_place_id — it
+	// is the venue's name at the landmark's coordinates, not the landmark.
+	Fallback string `json:"fallback,omitempty"`
 }
 
 // extractResponse lists every venue in Places. The embedded top-level fields
@@ -52,6 +58,9 @@ type extractResponse struct {
 	extractedPlace
 	Places  []extractedPlace `json:"places"`
 	Caption string           `json:"caption"`
+	// FeedbackKeys are the cache rows this answer is stored under; the client
+	// echoes them to /places/extract/feedback once the user says right/wrong.
+	FeedbackKeys []string `json:"feedback_keys"`
 }
 
 // ExtractPlace handles POST /api/v1/places/extract.
@@ -110,7 +119,7 @@ func (h *ExtractHandler) ExtractPlace(w http.ResponseWriter, r *http.Request) {
 	defer func() { logf("done in %v", time.Since(t0).Round(time.Millisecond)) }()
 
 	// One analytics event per extraction: which cache answered, what it cost.
-	run := &extractRun{cache: "none", outcome: "ok"}
+	run := &extractRun{platform: extract.Platform(req.URL), cache: "none", outcome: "ok"}
 	userID := middleware.GetUserID(r)
 	defer func() { run.capture(userID, time.Since(t0)) }()
 
@@ -171,7 +180,9 @@ func (h *ExtractHandler) ExtractPlace(w http.ResponseWriter, r *http.Request) {
 		logf("result: no name read")
 		run.outcome = "no_place"
 		resp.Note = "no place confidently identified"
-		h.cache(ctx, keys, req.URL, resp)
+		// Nothing was pinned, so there is nothing for a user to confirm.
+		resp.FeedbackKeys = keys
+		h.cache(ctx, keys, req.URL, resp, true)
 		writeJSON(w, http.StatusOK, resp)
 		return
 	}
@@ -205,8 +216,11 @@ func (h *ExtractHandler) ExtractPlace(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	// A transport failure is not an answer — cache only a fully answered read.
+	// A pinned answer is stored pending and served only once a user confirms
+	// it; one with no pin at all has nothing to confirm.
 	if !slices.Contains(answered, false) {
-		h.cache(ctx, keys, req.URL, resp)
+		resp.FeedbackKeys = keys
+		h.cache(ctx, keys, req.URL, resp, run.matched == 0)
 	}
 	writeJSON(w, http.StatusOK, resp)
 }
@@ -223,52 +237,93 @@ func (h *ExtractHandler) resolve(ctx context.Context, logf func(string, ...any),
 	}
 
 	query, lang := result.Query(), result.LanguageCode()
-	queryKey := extract.AreaKey(extract.QueryKey(query, lang), near)
-	cands, hit := extract.LookupQuery(ctx, h.db, queryKey)
-	if hit {
-		// The expensive part of a re-shared venue: a different video of the
-		// same restaurant resolves to the same query, so Google is asked once
-		// per venue rather than once per share.
-		run.queryHits.Add(1)
-		logf("cache: query hit %q (%d candidates)", query, len(cands))
-	} else {
-		var err error
-		cands, err = extract.SearchText(ctx, h.placesKey, query, lang, near)
-		if err != nil {
-			// The video read is still useful on its own — seed the name, skip
-			// the pin.
-			logf("places %q: %v", query, err)
-			p.Note = "could not reach Google Places"
-			return p, false
-		}
-		run.placesCalls.Add(1)
-		// Empty results are cached too — a video Google cannot match cost the
-		// same as one it could, and it will be re-shared like any other.
-		if err := extract.StoreQuery(ctx, h.db, queryKey, query, cands); err != nil {
-			logf("cache: store query: %v", err)
-		}
-	}
-
-	if cands != nil {
-		p.Candidates = cands
+	cands, ok := h.search(ctx, logf, query, lang, near, run)
+	if !ok {
+		// The video read is still useful on its own — seed the name, skip
+		// the pin.
+		p.Note = "could not reach Google Places"
+		return p, false
 	}
 	if len(cands) > 0 {
+		p.Candidates = cands
 		p.Selected = &cands[0]
 		// Google's spelling is canonical; ours is OCR off a video frame.
 		p.Name = cands[0].Name
 		logf("result: %q -> %q (%s) conf=%.2f", result.PlaceName, cands[0].Name,
 			cands[0].GooglePlaceID, result.Confidence)
-	} else {
-		logf("result: %q matched nothing in Places", query)
-		p.Note = "no Google Places match"
+		return p, true
 	}
+
+	// The venue is not on Google Maps (new, tiny, or a stall). Pin it at the
+	// nearest spot the model named instead of leaving it unpinned.
+	//
+	// ponytail: each fallback miss is another paid lookup, so at most 3 and
+	// stop at the first hit; area-level queries warm the query cache fast.
+	for i, fb := range result.Fallbacks {
+		if i == 3 {
+			break
+		}
+		if fb = strings.TrimSpace(fb); fb == "" {
+			continue
+		}
+		fcands, ok := h.search(ctx, logf, fb, lang, near, run)
+		if !ok {
+			p.Note = "could not reach Google Places"
+			return p, false
+		}
+		if len(fcands) == 0 {
+			continue
+		}
+		spot := fcands[0]
+		// The venue's own name at the landmark's coordinates. No place ID: the
+		// landmark's would make every venue inside it dedupe to one place.
+		pin := extract.Candidate{Name: result.PlaceName, Address: spot.Address, Lat: spot.Lat, Lng: spot.Lng, MapsURL: spot.MapsURL}
+		p.Selected = &pin
+		p.Candidates = []extract.Candidate{pin}
+		p.Fallback = spot.Name
+		p.Note = "not on Google Maps — pinned near " + spot.Name
+		run.fallbacks.Add(1)
+		logf("result: %q not in Places, fallback %q -> %q", query, fb, spot.Name)
+		return p, true
+	}
+	logf("result: %q matched nothing in Places", query)
+	p.Note = "no Google Places match"
 	return p, true
+}
+
+// searchText is a var so tests can stand in for Google.
+var searchText = extract.SearchText
+
+// search runs one Places text query through the query cache. ok is false only
+// when Google could not be reached.
+func (h *ExtractHandler) search(ctx context.Context, logf func(string, ...any), query, lang string, near *extract.LatLng, run *extractRun) ([]extract.Candidate, bool) {
+	queryKey := extract.AreaKey(extract.QueryKey(query, lang), near)
+	if cands, hit := extract.LookupQuery(ctx, h.db, queryKey); hit {
+		// The expensive part of a re-shared venue: a different video of the
+		// same restaurant resolves to the same query, so Google is asked once
+		// per venue rather than once per share.
+		run.queryHits.Add(1)
+		logf("cache: query hit %q (%d candidates)", query, len(cands))
+		return cands, true
+	}
+	cands, err := searchText(ctx, h.placesKey, query, lang, near)
+	if err != nil {
+		logf("places %q: %v", query, err)
+		return nil, false
+	}
+	run.placesCalls.Add(1)
+	// Empty results are cached too — a video Google cannot match cost the
+	// same as one it could, and it will be re-shared like any other.
+	if err := extract.StoreQuery(ctx, h.db, queryKey, query, cands); err != nil {
+		logf("cache: store query: %v", err)
+	}
+	return cands, true
 }
 
 // cache stores a finished response under every key identifying the video. A
 // write failure is logged and swallowed — the user already has their answer.
-func (h *ExtractHandler) cache(ctx context.Context, keys []string, url string, resp extractResponse) {
-	if err := extract.StoreURL(ctx, h.db, keys, url, resp); err != nil {
+func (h *ExtractHandler) cache(ctx context.Context, keys []string, url string, resp extractResponse, confirmed bool) {
+	if err := extract.StoreURL(ctx, h.db, keys, url, resp, confirmed); err != nil {
 		log.Printf("extract/cache: store url: %v", err)
 	}
 }
@@ -277,18 +332,21 @@ func (h *ExtractHandler) cache(ctx context.Context, keys []string, url string, r
 // as a single `tiktok_extract` event. Token and call counts are exact; dollars
 // are those counts times the list prices in the extract package.
 type extractRun struct {
+	platform    string // "tiktok" or "instagram"
 	cache       string // "url" or "video_id" when the URL cache answered, else "none"
 	outcome     string // "ok", "no_place", "fetch_failed", "analyze_failed"
 	usage       extract.Usage
 	placesCalls atomic.Int32 // paid Google lookups
 	queryHits   atomic.Int32 // lookups the query cache answered for free
-	matched     int          // venues that resolved to a Google place
+	fallbacks   atomic.Int32 // venues pinned at a nearby landmark instead
+	matched     int          // venues that got a pin, fallbacks included
 }
 
 func (x *extractRun) capture(userID uint64, took time.Duration) {
 	claudeUSD := x.usage.CostUSD()
 	placesUSD := float64(x.placesCalls.Load()) * extract.TextSearchUSD
 	analytics.Capture(strconv.FormatUint(userID, 10), "tiktok_extract", map[string]any{
+		"platform":                x.platform,
 		"cache_level":             x.cache,
 		"outcome":                 x.outcome,
 		"claude_input_tokens":     x.usage.InputTokens,
@@ -299,6 +357,43 @@ func (x *extractRun) capture(userID uint64, took time.Duration) {
 		"places_cost_usd":         placesUSD,
 		"cost_usd":                claudeUSD + placesUSD,
 		"places_matched":          x.matched,
+		"places_fallbacks":        x.fallbacks.Load(),
 		"duration_ms":             took.Milliseconds(),
 	})
+}
+
+// cacheKey is the shape of every key StoreURL writes: a hex SHA-256.
+var cacheKey = regexp.MustCompile(`^[0-9a-f]{64}$`)
+
+// ExtractFeedback handles POST /api/v1/places/extract/feedback: the user says
+// whether an extraction was right. Right makes it servable from the URL cache;
+// wrong deletes it, so the next share of that video is read afresh.
+func (h *ExtractHandler) ExtractFeedback(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Keys    []string `json:"feedback_keys"`
+		Correct *bool    `json:"correct"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Correct == nil ||
+		len(req.Keys) == 0 || len(req.Keys) > 2 {
+		writeError(w, http.StatusBadRequest, "feedback_keys and correct are required")
+		return
+	}
+	for _, k := range req.Keys {
+		if !cacheKey.MatchString(k) {
+			writeError(w, http.StatusBadRequest, "invalid feedback key")
+			return
+		}
+	}
+	apply := extract.ForgetURL
+	if *req.Correct {
+		apply = extract.ConfirmURL
+	}
+	if err := apply(r.Context(), h.db, req.Keys); err != nil {
+		log.Printf("extract/feedback: %v", err)
+		writeError(w, http.StatusInternalServerError, "could not record feedback")
+		return
+	}
+	analytics.Capture(strconv.FormatUint(middleware.GetUserID(r), 10), "tiktok_extract_feedback",
+		map[string]any{"correct": *req.Correct})
+	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }

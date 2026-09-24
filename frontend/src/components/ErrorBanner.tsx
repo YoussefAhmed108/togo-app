@@ -1,6 +1,6 @@
 import React from 'react';
-import {StyleSheet, Text, View} from 'react-native';
-import {colors, fonts, radius, spacing} from '../theme';
+import {Text, View} from 'react-native';
+import {colors, fonts, radius, spacing, themedStyles} from '../theme';
 
 interface Props {
   message: string | null;
@@ -15,7 +15,7 @@ export function ErrorBanner({message}: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   container: {
     backgroundColor: colors.errorLight,
     borderRadius: radius.md,
@@ -26,4 +26,4 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   text: {fontFamily: fonts.regular, fontSize: 15, color: colors.error},
-});
+}));

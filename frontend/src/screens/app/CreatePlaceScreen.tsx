@@ -23,7 +23,7 @@ import {spaceDetailService} from '../../services/spaceDetailService';
 import {homeService, ApiSpace} from '../../services/homeService';
 import {extractService, ExtractResult, PlaceCandidate} from '../../services/extractService';
 import {GOOGLE_MAPS_API_KEY} from '../../config/maps';
-import {colors, fonts, radius, spacing} from '../../theme';
+import {colors, fonts, radius, spacing, themedStyles} from '../../theme';
 import {Pin} from '../../components/Pin';
 import {displayAddress} from '../../utils/address';
 import {useLocation} from '../../hooks/useLocation';
@@ -118,6 +118,14 @@ export default function CreatePlaceScreen({route, navigation}: Props) {
   const [extracting, setExtracting] = useState(false);
   const [extractResult, setExtractResult] = useState<ExtractResult | null>(null);
   const [showCandidates, setShowCandidates] = useState(false);
+  // "Is this the right place?" — the backend serves a cached extraction only
+  // after someone confirms it, so this answer is what keeps the cache clean.
+  const [voted, setVoted] = useState<boolean | null>(null);
+  const vote = (correct: boolean) => {
+    if (voted !== null) return;
+    setVoted(correct);
+    extractService.feedback(extractResult?.feedback_keys, correct);
+  };
   // ponytail: the extract endpoint reports no progress, so stages advance on a
   // timer matched to the ~20s pipeline. Stream real stage events if it ever does.
   const [stage, setStage] = useState(0);
@@ -142,7 +150,8 @@ export default function CreatePlaceScreen({route, navigation}: Props) {
 
   const applyCandidate = useCallback((c: PlaceCandidate) => {
     setName(c.name);
-    setGooglePlaceId(c.google_place_id);
+    // A fallback pin (venue not on Google) has no place id of its own.
+    setGooglePlaceId(c.google_place_id || null);
     setPickedLocation({lat: c.lat, lng: c.lng, address: c.address});
     skipNextGeocode.current = true;
     mapRef.current?.animateToRegion(
@@ -183,7 +192,9 @@ export default function CreatePlaceScreen({route, navigation}: Props) {
         // A roundup: each venue gets its own destinations on the review screen.
         // `places` is absent from a backend that predates multi-place.
         if ((result.places ?? []).filter(p => p.selected).length > 1) {
-          navigation.replace('ReviewPlaces', {places: result.places, spaceId, sourceUrl: tiktokUrl});
+          navigation.replace('ReviewPlaces', {
+            places: result.places, spaceId, sourceUrl: tiktokUrl, feedbackKeys: result.feedback_keys,
+          });
           return;
         }
 
@@ -552,6 +563,25 @@ export default function CreatePlaceScreen({route, navigation}: Props) {
                   : 'Search above or drag the map to set the spot'}
               </Text>
             </View>
+            {!!extractResult?.fallback && (
+              <Text style={s.heroNote}>
+                Not on Google Maps yet — pinned near {extractResult.fallback}. Drag the map to fine-tune.
+              </Text>
+            )}
+            {!!extractResult?.selected && voted === null && (
+              <View style={s.voteRow}>
+                <Text style={s.voteAsk}>Is this the right place?</Text>
+                <TouchableOpacity style={s.voteBtn} onPress={() => vote(true)} accessibilityLabel="Yes, right place">
+                  <Text style={s.voteBtnText}>Yes</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={s.voteBtn} onPress={() => vote(false)} accessibilityLabel="No, wrong place">
+                  <Text style={s.voteBtnText}>No</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            {voted === false && (
+              <Text style={s.heroNote}>Thanks — search above or drag the map to the right spot.</Text>
+            )}
           </View>
 
           {/* Tags, coloured by kind — picked ones fill solid. */}
@@ -679,7 +709,7 @@ export default function CreatePlaceScreen({route, navigation}: Props) {
                 </TouchableOpacity>
               ))}
             </ScrollView>
-            <TouchableOpacity style={s.sheetSecondary} onPress={() => setShowCandidates(false)}>
+            <TouchableOpacity style={s.sheetSecondary} onPress={() => { vote(false); setShowCandidates(false); }}>
               <Text style={s.sheetSecondaryText}>None of these — search manually</Text>
             </TouchableOpacity>
           </View>
@@ -751,7 +781,7 @@ function CheckBox({on}: {on: boolean}) {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const s = StyleSheet.create({
+const s = themedStyles(() => ({
   safe: {flex: 1, backgroundColor: colors.background},
 
   // TikTok extraction overlay
@@ -976,6 +1006,25 @@ const s = StyleSheet.create({
   editGlyph: {fontSize: 16, color: colors.text},
   heroAddrRow: {flexDirection: 'row', alignItems: 'center', gap: 6},
   heroAddr: {flex: 1, fontFamily: fonts.regular, fontSize: 12.5, color: colors.textSecondary},
+  heroNote: {fontFamily: fonts.regular, fontSize: 12.5, color: colors.textSecondary},
+  voteRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingTop: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+  },
+  voteAsk: {flex: 1, fontFamily: fonts.semibold, fontSize: 13.5, color: colors.text},
+  voteBtn: {
+    minHeight: 36,
+    paddingHorizontal: 16,
+    borderRadius: 18,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  voteBtnText: {fontFamily: fonts.bold, fontSize: 13.5, color: colors.primaryDeep},
 
   tagsHead: {flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12},
   tagsTitle: {fontFamily: fonts.bold, fontSize: 15, color: colors.text},
@@ -1103,7 +1152,7 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   successBtnText: {fontFamily: fonts.bold, fontSize: 15, color: colors.white},
-});
+}));
 
 const autoStyles = {
   container: {flex: 0, zIndex: 30},

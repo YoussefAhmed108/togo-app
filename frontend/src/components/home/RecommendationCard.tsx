@@ -1,6 +1,6 @@
 import React from 'react';
-import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
-import {colors, fonts, radius, spacing} from '../../theme';
+import {Text, TouchableOpacity, View} from 'react-native';
+import {colors, fonts, radius, spacing, themedStyles} from '../../theme';
 import {categoryTint} from './PlaceCard';
 import {displayAddress} from '../../utils/address';
 
@@ -70,7 +70,7 @@ export function RecommendationCard({item, onPress}: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -98,4 +98,4 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
   chevron: {fontSize: 24, color: colors.textMuted, marginLeft: spacing.sm},
-});
+}));

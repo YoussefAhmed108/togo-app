@@ -1,5 +1,5 @@
 import React, {useCallback, useState} from 'react';
-import {ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {ScrollView, Text, TouchableOpacity, View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import type {CompositeNavigationProp} from '@react-navigation/native';
@@ -16,7 +16,7 @@ import {homeService, ApiSpace, ApiPlace} from '../services/homeService';
 import {placeService} from '../services/placeService';
 import {recommendationService} from '../services/recommendationService';
 import {AppStackParamList, TabParamList} from '../types/navigation';
-import {colors, fonts, radius} from '../theme';
+import {colors, fonts, radius, themedStyles} from '../theme';
 
 // Home sits in the tab bar but pushes onto the stack around it.
 type Nav = CompositeNavigationProp<
@@ -373,7 +373,7 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   root: {flex: 1, backgroundColor: colors.background},
   content: {paddingHorizontal: 20, paddingBottom: 40},
   flex: {flex: 1, minWidth: 0},
@@ -540,4 +540,4 @@ const styles = StyleSheet.create({
 
   grid: {flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12},
   gridCell: {width: '48%'},
-});
+}));

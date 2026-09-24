@@ -1,6 +1,6 @@
 import React, {useEffect, useRef} from 'react';
-import {AccessibilityInfo, Animated, Easing, StyleSheet, View} from 'react-native';
-import {colors} from '../theme';
+import {AccessibilityInfo, Animated, Easing, View} from 'react-native';
+import {colors, themedStyles} from '../theme';
 
 /**
  * The app's loading state: the logo's route draws itself, the destination
@@ -117,10 +117,10 @@ export function ScreenLoader({style}: {style?: object}) {
   );
 }
 
-const s = StyleSheet.create({
+const s = themedStyles(() => ({
   abs: {position: 'absolute'},
   track: {backgroundColor: colors.border},
   teal: {backgroundColor: colors.primary},
   head: {left: 0, top: 0, backgroundColor: colors.surface, borderColor: colors.primary},
   screen: {flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background},
-});
+}));

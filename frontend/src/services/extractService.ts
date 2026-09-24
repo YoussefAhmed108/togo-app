@@ -23,6 +23,11 @@ export interface ExtractedPlace {
   /** Where the name was seen — overlay, signage, menu, caption. */
   evidence: string;
   note?: string;
+  /**
+   * Set when the venue is not on Google Maps: `selected` is then the venue's
+   * name pinned at this nearby spot (a mall, street…), with no place id.
+   */
+  fallback?: string;
 }
 
 /**
@@ -32,6 +37,8 @@ export interface ExtractedPlace {
 export interface ExtractResult extends ExtractedPlace {
   places: ExtractedPlace[];
   caption: string;
+  /** Echo to `feedback` — absent when the answer was not cached. */
+  feedback_keys?: string[];
 }
 
 export const extractService = {
@@ -51,5 +58,15 @@ export const extractService = {
       {timeout: 180000},
     );
     return res.data.data;
+  },
+
+  /**
+   * Tell the backend whether an extraction was right. Only confirmed answers
+   * are served from its cache; a wrong one is dropped. Best effort — a lost
+   * vote just means the next share re-runs the pipeline.
+   */
+  feedback: (keys: string[] | undefined, correct: boolean) => {
+    if (!keys?.length) return;
+    api.post('/places/extract/feedback', {feedback_keys: keys, correct}).catch(() => {});
   },
 };

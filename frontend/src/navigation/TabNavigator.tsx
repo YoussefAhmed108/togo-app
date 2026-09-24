@@ -1,12 +1,12 @@
 import React from 'react';
-import {StyleSheet, Text, View} from 'react-native';
+import {Text, View} from 'react-native';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import HomeScreen from '../screens/HomeScreen';
 import MapScreen from '../screens/app/MapScreen';
 import SpacesScreen from '../screens/app/SpacesScreen';
 import SettingsScreen from '../screens/app/SettingsScreen';
 import {TabParamList} from '../types/navigation';
-import {colors, fonts} from '../theme';
+import {colors, fonts, themedStyles} from '../theme';
 
 const Tab = createBottomTabNavigator<TabParamList>();
 
@@ -50,7 +50,7 @@ export function TabNavigator() {
   );
 }
 
-const s = StyleSheet.create({
+const s = themedStyles(() => ({
   bar: {
     backgroundColor: colors.surface,
     borderTopColor: colors.border,
@@ -61,4 +61,4 @@ const s = StyleSheet.create({
   icon: {alignItems: 'center', justifyContent: 'center'},
   glyph: {fontSize: 19},
   glyphIdle: {opacity: 0.4},
-});
+}));

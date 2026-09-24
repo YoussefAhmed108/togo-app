@@ -45,6 +45,10 @@ export const authService = {
     const res = await api.put<UserResponse>('/users/me', {name});
     return res.data.data;
   },
+
+  deleteMe: async (): Promise<void> => {
+    await api.delete('/users/me');
+  },
 };
 
 /** Decode the `pc` (profileComplete) claim from a JWT without a library. */

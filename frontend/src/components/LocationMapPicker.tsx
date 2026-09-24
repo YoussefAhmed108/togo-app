@@ -2,7 +2,6 @@ import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
   ActivityIndicator,
   Modal,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -12,7 +11,7 @@ import {GooglePlacesAutocomplete} from 'react-native-google-places-autocomplete'
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {GOOGLE_MAPS_API_KEY} from '../config/maps';
 import {useLocation} from '../hooks/useLocation';
-import {colors, fonts, radius, spacing, typography} from '../theme';
+import {colors, fonts, radius, spacing, typography, themedStyles} from '../theme';
 import {Pin} from './Pin';
 
 // Fallback map region — New York City. Only used when the device has no fix.
@@ -216,7 +215,7 @@ export function LocationMapPicker({visible, onConfirm, onClose}: Props) {
 
 // ── Styles ─────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   safe: {flex: 1, backgroundColor: colors.background},
 
   // Header
@@ -311,7 +310,7 @@ const styles = StyleSheet.create({
   },
   confirmBtnOff: {backgroundColor: colors.sandDeep},
   confirmText: {fontFamily: fonts.display, fontSize: 17, color: colors.white},
-});
+}));
 
 // Styles for GooglePlacesAutocomplete (passed as prop, plain objects)
 const searchStyles = {

@@ -3,7 +3,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  StyleSheet,
   Text,
   View,
 } from 'react-native';
@@ -12,7 +11,7 @@ import {AppButton} from '../../components/AppButton';
 import {AppInput} from '../../components/AppInput';
 import {ErrorBanner} from '../../components/ErrorBanner';
 import {useAuth} from '../../hooks/useAuth';
-import {colors, fonts, radius, shadows, spacing, typography} from '../../theme';
+import {colors, fonts, radius, shadows, spacing, typography, themedStyles} from '../../theme';
 
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,20}$/;
 
@@ -128,7 +127,7 @@ export function ProfileSetupScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   safe: {flex: 1, backgroundColor: colors.background},
   flex: {flex: 1},
   scroll: {flexGrow: 1, paddingHorizontal: spacing.lg, paddingTop: 72, paddingBottom: spacing.xl},
@@ -141,4 +140,4 @@ const styles = StyleSheet.create({
   hint: {marginTop: -8, marginBottom: spacing.md},
   hintText: {fontFamily: fonts.regular, fontSize: 11.5, lineHeight: 17, color: colors.textSecondary},
   submitBtn: {marginTop: spacing.xs},
-});
+}));

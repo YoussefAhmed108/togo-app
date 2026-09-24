@@ -4,7 +4,6 @@ import {
   Alert,
   Modal,
   ScrollView,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -13,9 +12,10 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {AppStackParamList} from '../../types/navigation';
 import {placeService} from '../../services/placeService';
+import {extractService} from '../../services/extractService';
 import {spaceDetailService} from '../../services/spaceDetailService';
 import {homeService, ApiSpace} from '../../services/homeService';
-import {colors, fonts, radius, spacing} from '../../theme';
+import {colors, fonts, radius, spacing, themedStyles} from '../../theme';
 import {Pin} from '../../components/Pin';
 import {displayAddress} from '../../utils/address';
 
@@ -41,7 +41,14 @@ type SavedRow = {name: string; where: string};
  * one destination on several places at once without touching their others.
  */
 export default function ReviewPlacesScreen({route, navigation}: Props) {
-  const {spaceId, sourceUrl} = route.params;
+  const {spaceId, sourceUrl, feedbackKeys} = route.params;
+  // Same prompt as CreatePlace: the backend serves this read from its cache
+  // only once a user confirms it.
+  const [voted, setVoted] = useState<boolean | null>(null);
+  const vote = (correct: boolean) => {
+    setVoted(correct);
+    extractService.feedback(feedbackKeys, correct);
+  };
   // A venue Google could not match has no pin, so it cannot be saved from
   // here — it is named below the list instead.
   const [places] = useState(() => route.params.places.filter(p => p.candidates.length > 0));
@@ -102,7 +109,7 @@ export default function ReviewPlacesScreen({route, navigation}: Props) {
     for (const {r, i} of included) {
       const c = candOf(i);
       try {
-        const place = await placeService.create(c.name, c.lat, c.lng, c.address, r.dests.includes('saved'), c.google_place_id, sourceUrl);
+        const place = await placeService.create(c.name, c.lat, c.lng, c.address, r.dests.includes('saved'), c.google_place_id || null, sourceUrl);
         const reached: Dest[] = r.dests.includes('saved') ? ['saved'] : [];
         for (const d of r.dests) {
           if (d === 'saved') continue;
@@ -205,6 +212,21 @@ export default function ReviewPlacesScreen({route, navigation}: Props) {
             : "Each place saves where its chips say. Tap the chips to change them, or Select to set several at once."}
         </Text>
 
+        {!selecting && voted === null && (
+          <View style={s.voteRow}>
+            <Text style={s.voteAsk}>Are these the right places?</Text>
+            <TouchableOpacity style={s.voteBtn} onPress={() => vote(true)} accessibilityLabel="Yes, right places">
+              <Text style={s.voteBtnText}>Yes</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={s.voteBtn} onPress={() => vote(false)} accessibilityLabel="No, wrong places">
+              <Text style={s.voteBtnText}>No</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        {voted === false && (
+          <Text style={s.help}>Thanks. Untick the wrong ones and add them by hand instead.</Text>
+        )}
+
         {selecting && (
           <View style={s.selectBar}>
             <Text style={s.selectCount}>{selected.length} selected</Text>
@@ -250,7 +272,9 @@ export default function ReviewPlacesScreen({route, navigation}: Props) {
                     </View>
                     <View style={s.addrRow}>
                       <Pin size={11} color={colors.textSecondary} filled />
-                      <Text style={s.rowAddr} numberOfLines={1}>{displayAddress(c.address) ?? c.address}</Text>
+                      <Text style={s.rowAddr} numberOfLines={1}>
+                        {p.fallback ? `Not on Google Maps — near ${p.fallback}` : displayAddress(c.address) ?? c.address}
+                      </Text>
                     </View>
                   </TouchableOpacity>
 
@@ -395,7 +419,7 @@ function CheckBox({on, partial}: {on: boolean; partial?: boolean}) {
 // ── Styles ────────────────────────────────────────────────────────────────────
 // Lifted from CreatePlaceScreen so the two flows read as one.
 
-const s = StyleSheet.create({
+const s = themedStyles(() => ({
   safe: {flex: 1, backgroundColor: colors.background},
   flex: {flex: 1},
 
@@ -449,6 +473,25 @@ const s = StyleSheet.create({
   swap: {fontFamily: fonts.bold, fontSize: 14, color: colors.textSecondary, marginTop: -6},
   addrRow: {flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3},
   rowAddr: {flex: 1, fontFamily: fonts.regular, fontSize: 11.5, color: colors.textSecondary},
+  voteRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 12,
+    marginBottom: 18,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+  },
+  voteAsk: {flex: 1, fontFamily: fonts.semibold, fontSize: 13.5, color: colors.text},
+  voteBtn: {
+    minHeight: 36,
+    paddingHorizontal: 16,
+    borderRadius: 18,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  voteBtnText: {fontFamily: fonts.bold, fontSize: 13.5, color: colors.primaryDeep},
 
   chips: {flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8},
   chip: {borderRadius: 999, paddingVertical: 5, paddingHorizontal: 10},
@@ -501,4 +544,4 @@ const s = StyleSheet.create({
   successWrap: {flex: 1, paddingHorizontal: spacing.lg, paddingTop: 72, paddingBottom: spacing.md},
   successCheck: {width: 64, height: 64, borderRadius: 32, backgroundColor: colors.success, alignItems: 'center', justifyContent: 'center', marginBottom: 20},
   successCheckIcon: {fontFamily: fonts.bold, fontSize: 28, color: colors.white},
-});
+}));

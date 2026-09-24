@@ -251,3 +251,20 @@ func TestProfileSetup_InvalidUsername(t *testing.T) {
 		t.Errorf("expected 400, got %d", rr.Code)
 	}
 }
+
+func TestRegister_NoPhoneStoresNull(t *testing.T) {
+	gotPhone := new(string)
+	store := &mockUserStore{
+		findByEmail: func(_ context.Context, _ string) (*models.User, error) { return nil, sql.ErrNoRows },
+		createUser: func(_ context.Context, _, _ string, p *string) (uint64, error) {
+			gotPhone = p
+			return 1, nil
+		},
+		storeRefreshToken: func(_ context.Context, _ uint64, _ string, _ time.Time) error { return nil },
+	}
+	rr := postJSON(t, newAuthHandler(store).Register,
+		map[string]string{"email": "user@example.com", "password": "password123"})
+	if rr.Code != http.StatusCreated || gotPhone != nil {
+		t.Fatalf("expected 201 with nil phone, got %d phone=%v", rr.Code, gotPhone)
+	}
+}

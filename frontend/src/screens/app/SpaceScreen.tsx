@@ -37,12 +37,13 @@ import {spaceService} from '../../services/spaceService';
 import memoryService from '../../services/memoryService';
 import {placeService} from '../../services/placeService';
 import {recommendationService, ApiRecommendation} from '../../services/recommendationService';
-import {colors, fonts, radius, shadows, spacing} from '../../theme';
+import {colors, fonts, radius, shadows, spacing, themedStyles} from '../../theme';
 import {categoryTint} from '../../components/home/PlaceCard';
 import {useLocation} from '../../hooks/useLocation';
 import {fetchEtas, fmtEta} from '../../services/etaService';
 import {regionOf, regionsOf} from '../../utils/region';
 import {useAuth} from '../../hooks/useAuth';
+import {getBlocked, showMemoryActions} from '../../services/moderation';
 import {displayAddress} from '../../utils/address';
 import {pickImage, PickedImage} from '../../utils/pickImage';
 
@@ -94,10 +95,11 @@ function placeEmoji(tags: string[]): string {
   return '📍';
 }
 
-const AVATAR_PALETTE = [colors.primary, colors.sage, colors.primaryDeep, colors.catDeli];
 function avatarColor(name: string): string {
+  // Built per call so it follows the current theme.
+  const palette = [colors.primary, colors.sage, colors.primaryDeep, colors.catDeli];
   const code = name.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
-  return AVATAR_PALETTE[code % AVATAR_PALETTE.length];
+  return palette[code % palette.length];
 }
 function initials(name: string): string {
   const p = name.trim().split(/\s+/);
@@ -248,7 +250,7 @@ function MemoryUploadModal({place, spaceId, onDismiss, onUploaded}: MemoryUpload
   );
 }
 
-const mu = StyleSheet.create({
+const mu = themedStyles(() => ({
   backdrop: {flex: 1, backgroundColor: colors.overlay},
   container: {
     backgroundColor: colors.background,
@@ -356,7 +358,7 @@ const mu = StyleSheet.create({
   },
   uploadBtnDisabled: {backgroundColor: colors.sandDeep},
   uploadBtnText: {fontFamily: fonts.display, fontSize: 17, color: colors.white},
-});
+}));
 
 // ── "Add Place to Space" bottom sheet ────────────────────────────────────────
 
@@ -453,7 +455,7 @@ function AddPlaceSheet({spaceId, existingIds, onDismiss, onAdded}: AddPlaceSheet
   );
 }
 
-const sheet = StyleSheet.create({
+const sheet = themedStyles(() => ({
   backdrop: {flex: 1, backgroundColor: colors.overlay},
   container: {
     backgroundColor: colors.background,
@@ -513,7 +515,7 @@ const sheet = StyleSheet.create({
     marginTop: 3,
   },
   rowAdd: {fontSize: 24, color: colors.primary, paddingHorizontal: spacing.sm},
-});
+}));
 
 
 // ── Memory place picker ──────────────────────────────────────────────────────
@@ -629,7 +631,7 @@ function MemoryPlacePickerModal({
   );
 }
 
-const picker = StyleSheet.create({
+const picker = themedStyles(() => ({
   searchWrap: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -708,7 +710,7 @@ const picker = StyleSheet.create({
     marginLeft: spacing.sm,
   },
   addBtnText: {fontFamily: fonts.semibold, fontSize: 14, color: colors.primary},
-});
+}));
 
 // ── Members modal ─────────────────────────────────────────────────────────────
 
@@ -789,7 +791,7 @@ function MembersModal({
   );
 }
 
-const mem = StyleSheet.create({
+const mem = themedStyles(() => ({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -827,7 +829,7 @@ const mem = StyleSheet.create({
     backgroundColor: colors.sand,
   },
   removeIcon: {fontSize: 15, color: colors.error},
-});
+}));
 
 
 // ── Edit space sheet ──────────────────────────────────────────────────────────
@@ -957,7 +959,7 @@ function EditSpaceSheet({
   );
 }
 
-const ed = StyleSheet.create({
+const ed = themedStyles(() => ({
   banner: {
     height: 150,
     borderRadius: radius.lg,
@@ -1023,7 +1025,7 @@ const ed = StyleSheet.create({
     marginTop: spacing.md,
   },
   saveText: {fontFamily: fonts.display, fontSize: 17, color: colors.white},
-});
+}));
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 
@@ -1088,10 +1090,13 @@ export default function SpaceScreen({route, navigation}: Props) {
     }
     if (placesResult.status === 'fulfilled') setPlaces(placesResult.value);
     if (membersResult.status === 'fulfilled') setMembers(membersResult.value);
-    if (memoriesResult.status === 'fulfilled') setMemories(memoriesResult.value);
+    if (memoriesResult.status === 'fulfilled') {
+      const blocked = user ? await getBlocked(user.id) : new Set<number>();
+      setMemories(memoriesResult.value.filter(m => !blocked.has(m.uploader_id)));
+    }
     if (recsResult.status === 'fulfilled') setSpaceRecs(recsResult.value);
     setLoading(false);
-  }, [spaceId]);
+  }, [spaceId, user]);
 
   useFocusEffect(useCallback(() => {
     load();
@@ -1400,9 +1405,23 @@ export default function SpaceScreen({route, navigation}: Props) {
                       horizontal
                       showsHorizontalScrollIndicator={false}
                       contentContainerStyle={s.photoRow}>
-                      {g.items.map(m => (
-                        <Image key={m.id} source={{uri: m.image_url}} style={s.photo} />
-                      ))}
+                      {g.items.map(m =>
+                        user && m.uploader_id !== user.id ? (
+                          // Long-press to report or block (guideline 1.2).
+                          <Pressable
+                            key={m.id}
+                            accessibilityHint="Long-press to report or block"
+                            onLongPress={() =>
+                              showMemoryActions(m, user.id, id =>
+                                setMemories(prev => prev.filter(x => x.uploader_id !== id)),
+                              )
+                            }>
+                            <Image source={{uri: m.image_url}} style={s.photo} />
+                          </Pressable>
+                        ) : (
+                          <Image key={m.id} source={{uri: m.image_url}} style={s.photo} />
+                        ),
+                      )}
                       <TouchableOpacity
                         style={s.photoAdd}
                         accessibilityLabel={`Add a memory at ${g.place.name}`}
@@ -1596,7 +1615,7 @@ function Chip({label, on, onPress}: {label: string; on: boolean; onPress: () => 
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const s = StyleSheet.create({
+const s = themedStyles(() => ({
   root: {flex: 1, backgroundColor: colors.background},
   flex: {flex: 1, minWidth: 0},
   mt3: {marginTop: 3},
@@ -1837,4 +1856,4 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   btnPText: {fontFamily: fonts.bold, fontSize: 15, color: colors.white},
-});
+}));

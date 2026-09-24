@@ -63,9 +63,14 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "password must be at most 72 bytes")
 		return
 	}
-	if req.PhoneNumber == "" || !phoneRe.MatchString(req.PhoneNumber) {
-		writeError(w, http.StatusBadRequest, "valid phone number required")
-		return
+	// Phone is optional (App Store 5.1.1(ii)); store NULL, not "", since the column is UNIQUE.
+	var phone *string
+	if req.PhoneNumber != "" {
+		if !phoneRe.MatchString(req.PhoneNumber) {
+			writeError(w, http.StatusBadRequest, "invalid phone number")
+			return
+		}
+		phone = &req.PhoneNumber
 	}
 
 	_, err := h.users.FindByEmail(r.Context(), req.Email)
@@ -86,7 +91,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, err := h.users.CreateUser(r.Context(), req.Email, string(hash), &req.PhoneNumber)
+	userID, err := h.users.CreateUser(r.Context(), req.Email, string(hash), phone)
 	if err != nil {
 		serverError(w, err)
 		return

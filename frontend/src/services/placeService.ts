@@ -25,6 +25,7 @@ export interface ApiMemoryWithSpace {
   place_id: number;
   space_id: number | null;
   space_name: string | null;
+  uploader_id: number;
   image_url: string;
   caption: string | null;
   dishes: ApiDish[];
